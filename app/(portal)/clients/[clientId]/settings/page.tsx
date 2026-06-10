@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { type ClientUpdateValues } from "@/lib/schemas";
@@ -15,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 export default async function ClientSettingsPage({
   params,
@@ -67,18 +65,6 @@ export default async function ClientSettingsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {client.name}
-          </h1>
-          <p className="text-muted-foreground">Client settings · {client.slug}</p>
-        </div>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/clients">Back to clients</Link>
-        </Button>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Details</CardTitle>

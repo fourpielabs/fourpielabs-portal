@@ -81,3 +81,24 @@ export async function requireRole(roles: Role[]): Promise<Profile> {
   }
   return profile;
 }
+
+/**
+ * Require access to a specific client's workspace: admins always, team members
+ * only when assigned via client_assignments. Clients (and unassigned team) are
+ * redirected to /clients. RLS is still the real enforcement; this guards the UI.
+ */
+export async function requireClientAccess(clientId: string): Promise<Profile> {
+  const profile = await requireProfile();
+  if (profile.role === "admin") return profile;
+  if (profile.role === "team") {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("client_assignments")
+      .select("client_id")
+      .eq("client_id", clientId)
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    if (data) return profile;
+  }
+  redirect("/clients");
+}

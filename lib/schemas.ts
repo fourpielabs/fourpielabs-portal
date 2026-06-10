@@ -75,3 +75,87 @@ export const assignmentSchema = z.object({
   clientId: z.string().uuid(),
   userId: z.string().uuid(),
 });
+
+// --- P3: team workspace ------------------------------------------------------
+
+const optionalText = z.string().trim().optional();
+
+export const checklistItemSchema = z.object({
+  phase_label: optionalText,
+  title: z.string().trim().min(1, "Title is required"),
+  link_url: optionalUrl,
+  assignee: z.enum(["client", "team"]),
+  visible_to_client: z.boolean(),
+});
+export type ChecklistItemValues = z.infer<typeof checklistItemSchema>;
+
+export const milestoneSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  description: optionalText,
+  phase_label: optionalText,
+  status: z.enum(["upcoming", "in_progress", "done"]),
+  due_date: optionalDate,
+  visible_to_client: z.boolean(),
+});
+export type MilestoneValues = z.infer<typeof milestoneSchema>;
+
+export const programSchema = z.object({
+  id: z.string().uuid(),
+  service_type: optionalText,
+  investment: optionalText,
+  start_date: optionalDate,
+  end_date: optionalDate,
+  comms_channel: optionalText,
+  best_way_to_reach: optionalText,
+  response_time: optionalText,
+  call_scheduling_note: optionalText,
+  revision_policy: optionalText,
+  whats_included: optionalText,
+  whats_not_included: optionalText,
+});
+export type ProgramValues = z.infer<typeof programSchema>;
+
+export const deliverableSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  description: optionalText,
+  type: z.enum([
+    "blog_post",
+    "landing_page",
+    "ad_creative",
+    "design",
+    "video",
+    "gbp_update",
+    "content_calendar",
+    "report",
+    "strategy_doc",
+    "other",
+  ]),
+  status: z.enum(["pending", "in_progress", "needs_review", "delivered"]),
+  due_date: optionalDate,
+  preview_url: optionalUrl,
+  visible_to_client: z.boolean(),
+});
+export type DeliverableValues = z.infer<typeof deliverableSchema>;
+
+export const fileMetaSchema = z.object({
+  category: z.enum([
+    "agreement",
+    "onboarding_form",
+    "welcome_doc",
+    "invoice",
+    "brand_asset",
+    "template",
+    "strategy_doc",
+    "report",
+    "other",
+  ]),
+  visible_to_client: z.boolean(),
+});
+
+export const updateSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  body: optionalText,
+  pinned: z.boolean(),
+  visible_to_client: z.boolean(),
+});
+export type UpdateValues = z.infer<typeof updateSchema>;
