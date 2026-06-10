@@ -104,6 +104,35 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > **Current status:** environment setup only. No app code yet. Do not start P1 until
 > the environment session is signed off.
 
+### Setup status (as of 2026-06-10)
+
+Done:
+- Repo initialized; remote `origin` = `github.com/fourpielabs/fourpielabs-portal`
+  (private). `main` pushed.
+- `PORTAL_SPEC.md`, this `CLAUDE.md`, `.gitignore`, `.env.local.example`, and
+  `supabase/` scaffold committed. `.env.local` present locally and gitignored.
+- `.mcp.json` at project scope: read-only hosted Supabase MCP
+  (`mcp.supabase.com`, `project_ref=frmukrgjkhlpxplhzeqj`, `read_only=true`) +
+  Vercel MCP (`mcp.vercel.com`). Secrets via `${SUPABASE_ACCESS_TOKEN}` /
+  `${SUPABASE_PROJECT_REF}` expansion — no literals committed.
+- Vercel project connected to the repo: the push **triggered a production
+  deployment**, which **failed as expected** (no Next.js app/`package.json`
+  yet). Deploys will go green once P1 scaffolds the app.
+
+Pending (needs the fourpielabs `SUPABASE_ACCESS_TOKEN` in Claude Code's own
+launch environment, not just a user shell):
+- `supabase link --project-ref frmukrgjkhlpxplhzeqj` — blocked: the CLI's
+  stored login is a *personal* account without access to this ref (returns
+  "account does not have the necessary privileges"). Set `SUPABASE_ACCESS_TOKEN`
+  (fourpielabs) + `SUPABASE_PROJECT_REF` in the environment that launches Claude
+  Code, relaunch, then run the link (DB password entered at the prompt; can be
+  left blank to skip until first `db push`).
+- **Supabase MCP connection unverified** for the same reason: the hosted server
+  reads `${SUPABASE_ACCESS_TOKEN}` from Claude Code's environment, and
+  project-scope MCP servers require approval + a reload. After setting the env
+  var and relaunching, approve the project MCP server, then run `/mcp` to
+  confirm `supabase` shows connected (read-only).
+
 ## Environment & tooling
 
 `.env.local` (never commit) holds the four spec §7 vars:
