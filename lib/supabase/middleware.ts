@@ -1,14 +1,24 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+/** Routes that an unauthenticated visitor is allowed to reach. */
+const AUTH_ROUTES = ["/login", "/accept-invite", "/forgot-password"];
+
+function isAuthRoute(pathname: string) {
+  return AUTH_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));
+}
+
+function isPublic(pathname: string) {
+  // "/" landing, the auth pages, and the /auth/* confirm+signout handlers.
+  return pathname === "/" || pathname.startsWith("/auth") || isAuthRoute(pathname);
+}
+
 /**
- * Refreshes the Supabase auth session on every request and propagates the
- * refreshed cookies onto the response. This is the canonical @supabase/ssr
- * middleware helper.
- *
- * NOTE (P1 step 4): role-aware redirects (unauthenticated -> /login, role ->
- * landing route) are layered on top of this in the auth-flow step. For now it
- * only keeps the session fresh.
+ * Refresh the Supabase session on every request, then apply coarse auth gating:
+ *   - unauthenticated + protected route  -> /login
+ *   - authenticated + auth route or "/"  -> /dashboard
+ * Fine-grained role enforcement still happens server-side (layouts/guards) and
+ * in Postgres RLS; this is the fast edge gate.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -34,9 +44,31 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Do not run code between createServerClient and getUser() — it refreshes the
-  // token, and a missing refresh can randomly log users out.
-  await supabase.auth.getUser();
+  // Do not run code between createServerClient and getUser().
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+
+  const redirectTo = (target: string) => {
+    const url = request.nextUrl.clone();
+    url.pathname = target;
+    url.search = "";
+    const redirect = NextResponse.redirect(url);
+    // carry over any refreshed auth cookies so we don't bounce the session
+    supabaseResponse.cookies
+      .getAll()
+      .forEach((c) => redirect.cookies.set(c.name, c.value));
+    return redirect;
+  };
+
+  if (!user && !isPublic(pathname)) {
+    return redirectTo("/login");
+  }
+  if (user && (isAuthRoute(pathname) || pathname === "/")) {
+    return redirectTo("/dashboard");
+  }
 
   return supabaseResponse;
 }

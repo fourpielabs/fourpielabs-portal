@@ -48,6 +48,10 @@ in invite metadata; a trigger on `auth.users` creates the `profiles` row).
 
 - All tables in `public`, **RLS enabled on every table**.
 - **Supabase migrations only** (`supabase/migrations/*.sql`) — never ad-hoc schema changes.
+- **⛔ DESTRUCTIVE-REMOTE RULE (standing, all sessions):** plain `supabase db reset`
+  (LOCAL) is always fine. **NEVER** run `supabase db reset --linked` — or any other
+  destructive command against the REMOTE database — without the user's explicit,
+  per-instance approval. This holds even when the remote looks empty.
 - RLS helpers (SECURITY DEFINER): `is_admin()`, `is_team()`, `my_client_id()`,
   `is_assigned(cid)`, `toggle_checklist_item(item_id)`.
 - `clients.internal_notes` is **never** readable by clients — expose client-safe columns
@@ -101,18 +105,34 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
   fail; unassigned-team access must fail); audit coverage; mobile/Lighthouse; deploy +
   custom domain.
 
-> **Current status:** P1 (Foundation) IN PROGRESS — app scaffolded and all
-> migrations written, **awaiting migration review before any `supabase db push`**.
-> Auth flow (login/accept-invite/forgot-password, middleware redirects) and the
-> seed script are deferred to after review approval. Route pages under
-> `app/(portal)/.../` are placeholders built out in P2–P5.
+> **Current status:** P1 (Foundation) COMPLETE. Migrations pushed to the linked
+> Tokyo project (`frmukrgjkhlpxplhzeqj`); auth flow built; demo data seeded.
+> Route pages under `app/(portal)/.../` (and admin/settings) remain placeholders
+> built out in P2–P5. **Next up: P2 (Admin).**
 >
 > Scaffold facts: Next.js 16 (App Router) + React 19 + Tailwind v4 +
 > shadcn/ui (radix). Brand amber accent in `app/globals.css`. Supabase clients
-> in `lib/supabase/{server,client,admin,middleware}.ts`; session-refresh
-> `middleware.ts` (Next 16 deprecates this name in favor of `proxy.ts` — renamed
-> in step 4 when adding redirects). Migrations: `supabase/migrations/2026061001000{1..8}_*.sql`.
+> in `lib/supabase/{server,client,admin,middleware}.ts`. Session refresh + auth
+> gating in `proxy.ts` (Next 16's rename of `middleware.ts`) via
+> `lib/supabase/middleware.ts`; server-side guards in `lib/auth/guards.ts`
+> (`requireProfile`, `requireRole`). Migrations: `supabase/migrations/2026061001000{1..8}_*.sql`.
 > Signups disabled in `supabase/config.toml`.
+>
+> **Auth flow:** `app/(auth)/{login,forgot-password,accept-invite}` (client forms,
+> RHF + Zod, browser Supabase client); `app/auth/confirm/route.ts` (token_hash
+> verify for invite/recovery — needs Supabase email templates pointed at it,
+> a launch task) and `app/auth/signout/route.ts`. Portal layout enforces
+> `requireProfile()`.
+>
+> **Seed:** `scripts/seed.ts` (`npm run seed`, service-role, idempotent). Creates
+> 2 clients (Premier Painting Co. = pipeline/SEO; Coastal Tours Co. = pulse/social)
+> + 3 users. Demo logins (password `FourPie!Demo2026`):
+> `demo-admin@example.com`, `demo-team@example.com` (assigned to both),
+> `demo-client@example.com` (Premier Painting). Re-running is safe.
+>
+> **Local env:** `.env.local` is populated (gitignored) with URL + anon +
+> service-role key (retrieved via the authenticated CLI) so `npm run dev`/`seed`
+> work locally.
 
 ### Schema notes
 
