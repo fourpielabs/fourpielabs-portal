@@ -56,6 +56,42 @@ export const FILE_CATEGORIES = [
   { value: "other", label: "Other" },
 ] as const;
 
+export const CONTENT_PLATFORMS = [
+  { value: "blog", label: "Blog" },
+  { value: "gbp", label: "Google Business" },
+  { value: "instagram", label: "Instagram" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "youtube", label: "YouTube" },
+  { value: "facebook", label: "Facebook" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "google_ads", label: "Google Ads" },
+  { value: "meta_ads", label: "Meta Ads" },
+  { value: "email", label: "Email" },
+  { value: "other", label: "Other" },
+] as const;
+
+export const CONTENT_STATUSES = [
+  { value: "idea", label: "Idea" },
+  { value: "drafting", label: "Drafting" },
+  { value: "in_review", label: "In review" },
+  { value: "approved", label: "Approved" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "published", label: "Published" },
+] as const;
+
+export const METRIC_UNITS = [
+  { value: "number", label: "Number" },
+  { value: "currency", label: "Currency" },
+  { value: "percent", label: "Percent" },
+  { value: "text", label: "Text" },
+] as const;
+
+export const COMPETITOR_PRIORITIES = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+] as const;
+
 export function labelOf(
   list: ReadonlyArray<{ value: string; label: string }>,
   value: string | null | undefined,

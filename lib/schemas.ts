@@ -159,3 +159,103 @@ export const updateSchema = z.object({
   visible_to_client: z.boolean(),
 });
 export type UpdateValues = z.infer<typeof updateSchema>;
+
+// --- P4: trackers ------------------------------------------------------------
+
+// Numeric form fields are kept as strings here (so RHF typing stays clean) and
+// parsed to number-or-null in the server actions via numFromStr().
+const optionalNumber = z.string().trim().optional();
+
+export const contentItemSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  platform: z.enum([
+    "blog",
+    "gbp",
+    "instagram",
+    "tiktok",
+    "youtube",
+    "facebook",
+    "linkedin",
+    "google_ads",
+    "meta_ads",
+    "email",
+    "other",
+  ]),
+  content_type: optionalText,
+  status: z.enum([
+    "idea",
+    "drafting",
+    "in_review",
+    "approved",
+    "scheduled",
+    "published",
+  ]),
+  publish_date: optionalDate,
+  cta: optionalText,
+  core_message: optionalText,
+  notes: optionalText,
+  asset_url: optionalUrl,
+  views_after_posting: optionalNumber,
+  visible_to_client: z.boolean(),
+});
+export type ContentItemValues = z.infer<typeof contentItemSchema>;
+
+export const metricDefinitionSchema = z.object({
+  label: z.string().trim().min(1, "Label is required"),
+  key: z
+    .string()
+    .trim()
+    .min(1, "Key is required")
+    .regex(/^[a-z0-9_]+$/, "Lowercase letters, numbers, underscores"),
+  unit: z.enum(["number", "currency", "percent", "text"]),
+  is_active: z.boolean(),
+});
+export type MetricDefinitionValues = z.infer<typeof metricDefinitionSchema>;
+
+export const competitorSchema = z.object({
+  name_or_handle: z.string().trim().min(1, "Name/handle is required"),
+  niche: optionalText,
+  follower_count: optionalNumber,
+  avg_views: optionalNumber,
+  top_content_format: optionalText,
+  hook_style: optionalText,
+  whats_working: optionalText,
+  gap_notes: optionalText,
+  adapted_idea: optionalText,
+  priority: z.enum(["low", "medium", "high"]),
+  visible_to_client: z.boolean(),
+});
+export type CompetitorValues = z.infer<typeof competitorSchema>;
+
+export const callTypeSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  duration_label: optionalText,
+  frequency_label: optionalText,
+  booking_url: optionalUrl,
+});
+export type CallTypeValues = z.infer<typeof callTypeSchema>;
+
+export const callRecordingSchema = z.object({
+  call_date: optionalDate,
+  call_type: optionalText,
+  recording_url: optionalUrl,
+  key_topic: optionalText,
+  visible_to_client: z.boolean(),
+});
+export type CallRecordingValues = z.infer<typeof callRecordingSchema>;
+
+export const meetingNoteSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  meeting_date: optionalDate,
+  body: optionalText,
+  visible_to_client: z.boolean(),
+});
+export type MeetingNoteValues = z.infer<typeof meetingNoteSchema>;
+
+export const reportSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  period_start: optionalDate,
+  period_end: optionalDate,
+  summary: optionalText,
+});
+export type ReportValues = z.infer<typeof reportSchema>;

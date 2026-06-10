@@ -116,8 +116,15 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > `lib/schemas.ts`, audit via service-role `lib/audit.ts`. Storage helpers in
 > `lib/actions/storage.ts` (upload + short-lived signed URLs; clients never get
 > a storage policy — signed-URL only, per review R1).
-> **Still placeholders (P4):** `content`, `metrics`, `competitors`, `calls`,
-> `notes`, `reports`. **Next up: P4 (Team workspace, trackers).**
+> **P4 COMPLETE (Team workspace, trackers):** content calendar (table + month
+> view, status workflow, filters), metrics (definitions manager, monthly entry
+> grid with upsert on `(definition_id, period)`, CSV import with template +
+> preview + per-row errors, Recharts numeric charts + text monthly table),
+> competitor tracker, calls (call_types + call_recordings), meeting notes,
+> reports (CRUD + optional PDF + publish/unpublish setting `published_at`;
+> unpublished never visible to clients via RLS). Actions: `lib/actions/{content,
+> metrics,competitors,calls,notes,reports}.ts`. **All per-client tabs now live.**
+> **Next up: P5 (Client experience).**
 >
 > Scaffold facts: Next.js 16 (App Router) + React 19 + Tailwind v4 +
 > shadcn/ui (radix). Brand amber accent in `app/globals.css`. Supabase clients
