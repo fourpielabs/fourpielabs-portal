@@ -29,6 +29,11 @@ create policy "clients_team_all" on public.clients
 -- caller's own client row. security_invoker = off deliberately bypasses the base
 -- table RLS, and the WHERE clause + dropped column are what keep it safe.
 -- Granted to authenticated only (anon has no my_client_id(), so it sees nothing).
+--
+-- !! EXPLICIT COLUMN LIST — NEVER `select *` HERE. This view bypasses RLS, so a
+-- !! wildcard would silently leak any column added to clients later (e.g. a new
+-- !! sensitive field like internal_notes). When you add a column to clients,
+-- !! add it here ONLY if it is safe for the client role to read.
 create view public.client_clients
 with (security_invoker = off)
 as
@@ -75,16 +80,8 @@ create policy "profiles_team_select" on public.profiles
     )
   );
 
--- client reads their "Your Partner" (primary_contact_user_id of their client).
-create policy "profiles_client_select_partner" on public.profiles
-  for select to authenticated
-  using (
-    id = (
-      select c.primary_contact_user_id
-      from public.clients c
-      where c.id = app.my_client_id()
-    )
-  );
+-- client reads their "Your Partner" through a NARROW definer view (below),
+-- not the full profiles row. No client SELECT policy on profiles for the partner.
 
 -- Guard: only an admin may change role / client_id / is_active. This backstops
 -- the permissive profiles_update_own policy against privilege self-escalation.
@@ -95,6 +92,12 @@ security definer
 set search_path = ''
 as $$
 begin
+  -- Allow privileged server contexts: the service_role client (admin invites,
+  -- assignments, deactivation, the seed script) connects with a null auth.uid(),
+  -- which would otherwise fail app.is_admin() and block legitimate writes.
+  if (select auth.role()) = 'service_role' then
+    return new;
+  end if;
   if app.is_admin() then
     return new;
   end if;
@@ -110,6 +113,25 @@ $$;
 create trigger trg_profiles_guard
   before update on public.profiles
   for each row execute function public.enforce_profile_self_update();
+
+-- "Your Partner" definer view: a client reads ONLY their assigned client's
+-- primary contact, and ONLY these four columns (no role/client_id/is_active,
+-- no other team members). security_invoker = off bypasses profiles RLS, and the
+-- WHERE clause restricts the result to exactly the caller's partner row.
+-- !! EXPLICIT COLUMN LIST — NEVER `select *` HERE (would leak profiles columns).
+create view public.client_partner
+with (security_invoker = off)
+as
+  select p.id, p.full_name, p.avatar_url, p.email
+  from public.profiles p
+  where p.id = (
+    select c.primary_contact_user_id
+    from public.clients c
+    where c.id = app.my_client_id()
+  );
+
+revoke all on public.client_partner from anon;
+grant select on public.client_partner to authenticated;
 
 -- -----------------------------------------------------------------------------
 -- client_assignments  (admin all; team reads own rows)

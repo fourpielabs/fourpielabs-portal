@@ -2,8 +2,10 @@
 -- 20260610010006_storage.sql
 -- Private Storage bucket `client-files` (spec §4 "Storage"). Path convention:
 --   {client_id}/{uuid}-{filename}  => the first path segment is the client_id.
--- Policies mirror the table rules. Downloads happen via short-lived signed URLs
--- minted by server actions; clients only get SELECT on their own folder.
+-- Admin/team policies mirror the table rules. CLIENTS HAVE NO STORAGE POLICY:
+-- they receive files exclusively via short-lived signed URLs minted by server
+-- actions AFTER a files.visible_to_client check (spec §4). Do not add a client
+-- storage.objects policy — signed URLs are the only client download path.
 -- (RLS on storage.objects is enabled by default on Supabase.)
 -- =============================================================================
 
@@ -30,10 +32,4 @@ create policy "client_files_team_all" on storage.objects
     and app.is_assigned( ((storage.foldername(name))[1])::uuid )
   );
 
--- client: read-only on their own client folder
-create policy "client_files_client_select" on storage.objects
-  for select to authenticated
-  using (
-    bucket_id = 'client-files'
-    and ((storage.foldername(name))[1])::uuid = app.my_client_id()
-  );
+-- (no client policy: clients download only through server-minted signed URLs)

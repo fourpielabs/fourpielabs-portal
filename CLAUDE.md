@@ -110,9 +110,27 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > Scaffold facts: Next.js 16 (App Router) + React 19 + Tailwind v4 +
 > shadcn/ui (radix). Brand amber accent in `app/globals.css`. Supabase clients
 > in `lib/supabase/{server,client,admin,middleware}.ts`; session-refresh
-> `middleware.ts` (Next 16 deprecates this name in favor of `proxy.ts` — revisit
-> when adding redirects). Migrations: `supabase/migrations/2026061001000{1..8}_*.sql`.
+> `middleware.ts` (Next 16 deprecates this name in favor of `proxy.ts` — renamed
+> in step 4 when adding redirects). Migrations: `supabase/migrations/2026061001000{1..8}_*.sql`.
 > Signups disabled in `supabase/config.toml`.
+
+### Schema notes
+
+- **Enums: exactly the 14 from spec §4** — `user_role`, `client_status`,
+  `client_industry`, `program_tier`, `checklist_kind`, `checklist_assignee`,
+  `milestone_status`, `deliverable_status`, `deliverable_type`, `content_status`,
+  `content_platform`, `metric_unit`, `file_category`, `competitor_priority`.
+  No extras. (A step-3 report said "16 enums" — that was a miscount; the
+  migration always defined 14.)
+- **Review changes applied pre-push (R1–R3):**
+  - R1 — no client policy on `storage.objects`; clients get files ONLY via
+    server-minted signed URLs after a `files.visible_to_client` check.
+  - R2 — `enforce_profile_self_update()` allows the `service_role` context
+    (`auth.role() = 'service_role'`) so admin/seed server actions aren't blocked.
+  - R3 — `client_clients` and the new `client_partner` definer view both use
+    explicit column lists (never `select *`); `client_partner` exposes only
+    `id, full_name, avatar_url, email`; the old full-row `client_select_partner`
+    profiles policy was removed.
 
 ### Setup status (as of 2026-06-10)
 
