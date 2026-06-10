@@ -135,7 +135,20 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > (`components/markdown.tsx`); enum labels humanized everywhere. Verified at the
 > data layer: hidden/unpublished items absent, base `clients` unreadable, RPC
 > denies team/off-boarding toggles, no cross-client leakage.
-> **Next up: P6 (Hardening & launch).**
+>
+> **P6 (Hardening) DONE in code:** `npm run test:rls` (`scripts/test-rls.ts`) —
+> 97/97 pass (client cross-client reads 0, every write 42501-denied, RPC gating,
+> team-unassigned + anon fully denied, storage signing denied). Audit coverage
+> verified across all mutation actions (fixed the metrics-reorder gap). Client
+> polish applied (charts window to data; humanized dates; collapsible completed
+> checklist; friendly empty states; bigger mobile tap target). Lighthouse mobile
+> on `/login`: a11y 96 / BP 100 / SEO 91 / perf ~28 (client-JS bound; see LAUNCH.md).
+>
+> **`LAUNCH.md`** is the go-live runbook (human dashboard tasks, in order):
+> Vercel Pro, Supabase Pro (no auto-pause), Resend SMTP, Auth URL + email
+> templates → `/auth/confirm`, custom domain + DNS, `NEXT_PUBLIC_SITE_URL`
+> switch, DB-password rotation + User-scope cleanup, and LAST: deactivate the
+> 3 demo accounts via the UI. **Remaining before live = those LAUNCH.md steps.**
 >
 > Scaffold facts: Next.js 16 (App Router) + React 19 + Tailwind v4 +
 > shadcn/ui (radix). Brand amber accent in `app/globals.css`. Supabase clients

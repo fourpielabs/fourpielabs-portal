@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { DELIVERABLE_STATUSES, DELIVERABLE_TYPES, labelOf } from "@/lib/constants";
+import { formatDate } from "@/lib/format";
 import { DownloadButton } from "@/components/files/download-button";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,11 +60,9 @@ export default async function ClientDeliverablesPage() {
                     </p>
                   )}
                   <div className="flex flex-wrap gap-3 pt-1 text-xs text-muted-foreground">
-                    {d.due_date && <span>Due {d.due_date}</span>}
+                    {d.due_date && <span>Due {formatDate(d.due_date)}</span>}
                     {d.delivered_at && (
-                      <span>
-                        Delivered {new Date(d.delivered_at).toLocaleDateString()}
-                      </span>
+                      <span>Delivered {formatDate(d.delivered_at)}</span>
                     )}
                   </div>
                 </div>

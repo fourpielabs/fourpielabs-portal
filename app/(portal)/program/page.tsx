@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { labelOf, PROGRAMS } from "@/lib/constants";
+import { formatMonthYear } from "@/lib/format";
 import { Markdown } from "@/components/markdown";
 import {
   Card,
@@ -29,13 +30,27 @@ export default async function ClientProgramPage() {
       .order("sort_order"),
   ]);
 
+  // Hide rows with no value; End date falls back to "Ongoing".
   const details: { label: string; value: string | null }[] = [
     { label: "Program", value: labelOf(PROGRAMS, client?.program) },
     { label: "Service type", value: client?.service_type ?? null },
     { label: "Investment", value: client?.investment ?? null },
-    { label: "Start date", value: client?.start_date ?? null },
-    { label: "End date", value: client?.end_date ?? null },
-  ];
+    {
+      label: "Started",
+      value: client?.start_date ? formatMonthYear(client.start_date) : null,
+    },
+    {
+      label: "Ends",
+      value: client?.end_date ? formatMonthYear(client.end_date) : "Ongoing",
+    },
+  ].filter((d) => d.value !== null);
+
+  const guidelines = [
+    { label: "Best way to reach us", value: client?.best_way_to_reach },
+    { label: "Response time", value: client?.response_time },
+    { label: "Scheduling calls", value: client?.call_scheduling_note },
+    { label: "Revisions", value: client?.revision_policy },
+  ].filter((d) => d.value && d.value.trim() !== "");
 
   return (
     <div className="space-y-6">
@@ -53,7 +68,7 @@ export default async function ClientProgramPage() {
             {details.map((d) => (
               <div key={d.label} className="flex justify-between gap-4 border-b py-1">
                 <dt className="text-sm text-muted-foreground">{d.label}</dt>
-                <dd className="text-sm font-medium">{d.value ?? "—"}</dd>
+                <dd className="text-sm font-medium">{d.value}</dd>
               </div>
             ))}
           </dl>
@@ -129,27 +144,24 @@ export default async function ClientProgramPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Working together</CardTitle>
-          <CardDescription>How and when to reach us.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-            {[
-              { label: "Best way to reach us", value: client?.best_way_to_reach },
-              { label: "Response time", value: client?.response_time },
-              { label: "Scheduling calls", value: client?.call_scheduling_note },
-              { label: "Revisions", value: client?.revision_policy },
-            ].map((d) => (
-              <div key={d.label}>
-                <dt className="text-xs text-muted-foreground">{d.label}</dt>
-                <dd className="text-sm">{d.value || "—"}</dd>
-              </div>
-            ))}
-          </dl>
-        </CardContent>
-      </Card>
+      {guidelines.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Working together</CardTitle>
+            <CardDescription>How and when to reach us.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+              {guidelines.map((d) => (
+                <div key={d.label}>
+                  <dt className="text-xs text-muted-foreground">{d.label}</dt>
+                  <dd className="text-sm">{d.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

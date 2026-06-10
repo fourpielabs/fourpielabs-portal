@@ -3,6 +3,7 @@
 import { Markdown } from "@/components/markdown";
 import { DownloadButton } from "@/components/files/download-button";
 import { Badge } from "@/components/ui/badge";
+import { formatReportPeriod } from "@/lib/format";
 
 export type ClientReport = {
   id: string;
@@ -35,9 +36,9 @@ export function ClientReports({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{r.title}</span>
-              {(r.period_start || r.period_end) && (
+              {formatReportPeriod(r.period_start, r.period_end) && (
                 <Badge variant="secondary" className="text-[10px]">
-                  {r.period_start ?? "—"} → {r.period_end ?? "—"}
+                  {formatReportPeriod(r.period_start, r.period_end)}
                 </Badge>
               )}
             </div>

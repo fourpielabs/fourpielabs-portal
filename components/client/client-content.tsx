@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 
 import { CONTENT_PLATFORMS, CONTENT_STATUSES, labelOf } from "@/lib/constants";
+import { formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -87,7 +88,7 @@ export function ClientContent({ items }: { items: ClientContentItem[] }) {
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
                   <span>{labelOf(CONTENT_PLATFORMS, i.platform)}</span>
                   {i.content_type && <span>· {i.content_type}</span>}
-                  {i.publish_date && <span>· {i.publish_date}</span>}
+                  {i.publish_date && <span>· {formatDate(i.publish_date)}</span>}
                 </div>
               </div>
               <Badge variant={statusVariant(i.status)} className="text-[10px]">

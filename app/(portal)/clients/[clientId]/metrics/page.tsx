@@ -113,7 +113,6 @@ export default async function MetricsPage({
           <MetricsCharts
             numericDefs={numericDefs}
             textDefs={textDefs}
-            periods={periods}
             entries={(histEntries ?? []) as Entry[]}
           />
         </TabsContent>

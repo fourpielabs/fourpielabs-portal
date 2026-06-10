@@ -39,6 +39,8 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
   const total = items.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
   const groups = groupByPhase(items);
+  const complete = total > 0 && done === total;
+  const [expanded, setExpanded] = useState(!complete);
 
   async function toggle(id: string) {
     setPending(id);
@@ -62,6 +64,20 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
     );
   }
 
+  if (complete && !expanded) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+        <span className="flex items-center gap-2 text-sm font-medium">
+          <CircleCheck className="size-5 text-primary" />
+          Onboarding complete — you&apos;re all set!
+        </span>
+        <Button variant="ghost" size="sm" onClick={() => setExpanded(true)}>
+          View steps
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
@@ -71,6 +87,11 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
         <span className="text-sm font-medium">
           {done}/{total}
         </span>
+        {complete && (
+          <Button variant="ghost" size="sm" onClick={() => setExpanded(false)}>
+            Hide
+          </Button>
+        )}
       </div>
 
       {groups.map((g) => (
@@ -87,8 +108,8 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
                     onClick={() => tickable && toggle(it.id)}
                     className={
                       tickable
-                        ? "shrink-0 text-primary disabled:opacity-50"
-                        : "shrink-0 cursor-default"
+                        ? "flex size-9 shrink-0 items-center justify-center rounded-full text-primary hover:bg-primary/10 disabled:opacity-50"
+                        : "flex size-9 shrink-0 cursor-default items-center justify-center"
                     }
                     aria-label={
                       tickable

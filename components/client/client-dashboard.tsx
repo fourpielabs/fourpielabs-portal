@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { labelOf, PROGRAMS, DELIVERABLE_STATUSES } from "@/lib/constants";
-import { formatMetricValue, initials } from "@/lib/format";
+import { formatMetricValue, formatMonthYear, initials } from "@/lib/format";
 import {
   ClientChecklist,
   type ClientChecklistItem,
@@ -110,8 +110,12 @@ export async function ClientDashboard({ clientId }: { clientId: string }) {
               <Badge variant="secondary">
                 {labelOf(PROGRAMS, client?.program)}
               </Badge>
-              {client?.start_date && <span>Since {client.start_date}</span>}
-              {client?.end_date && <span>· through {client.end_date}</span>}
+              {client?.start_date && (
+                <span>Since {formatMonthYear(client.start_date)}</span>
+              )}
+              {client?.end_date && (
+                <span>· through {formatMonthYear(client.end_date)}</span>
+              )}
             </div>
           </div>
           {partner && (
@@ -138,24 +142,29 @@ export async function ClientDashboard({ clientId }: { clientId: string }) {
 
       {/* KPIs */}
       {kpis.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {kpis.map((k) => (
-            <Card key={k.label}>
-              <CardContent className="pt-6">
-                <div className="text-xs text-muted-foreground">{k.label}</div>
-                <div className="text-2xl font-semibold">
-                  {formatMetricValue(k.unit, k.cur, null)}
-                </div>
-                {k.delta !== null && k.delta !== 0 && (
-                  <div
-                    className={`text-xs ${k.delta > 0 ? "text-green-600" : "text-muted-foreground"}`}
-                  >
-                    {k.delta > 0 ? "▲" : "▼"} {Math.abs(k.delta).toLocaleString()} vs prev
+        <div className="space-y-2">
+          <div className="text-sm font-medium text-muted-foreground">
+            This month{latest ? ` · ${formatMonthYear(latest)}` : ""}
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {kpis.map((k) => (
+              <Card key={k.label}>
+                <CardContent className="pt-6">
+                  <div className="text-xs text-muted-foreground">{k.label}</div>
+                  <div className="text-2xl font-semibold">
+                    {formatMetricValue(k.unit, k.cur, null)}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  {k.delta !== null && k.delta !== 0 && (
+                    <div
+                      className={`text-xs ${k.delta > 0 ? "text-green-600" : "text-muted-foreground"}`}
+                    >
+                      {k.delta > 0 ? "▲" : "▼"} {Math.abs(k.delta).toLocaleString()} vs last month
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 

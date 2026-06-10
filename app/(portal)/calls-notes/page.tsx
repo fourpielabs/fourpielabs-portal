@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/format";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,7 +86,7 @@ export default async function ClientCallsNotesPage() {
                       {r.call_type ?? "Call"}
                       {r.call_date && (
                         <span className="ml-2 text-xs text-muted-foreground">
-                          {r.call_date}
+                          {formatDate(r.call_date)}
                         </span>
                       )}
                     </div>
@@ -123,7 +124,7 @@ export default async function ClientCallsNotesPage() {
                   <span className="font-medium">{n.title}</span>
                   {n.meeting_date && (
                     <span className="text-xs text-muted-foreground">
-                      {n.meeting_date}
+                      {formatDate(n.meeting_date)}
                     </span>
                   )}
                 </div>

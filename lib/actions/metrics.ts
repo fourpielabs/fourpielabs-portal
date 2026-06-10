@@ -158,6 +158,15 @@ export async function moveMetricDefinitionAction(
     .update({ sort_order: current.sort_order })
     .eq("id", neighbor.id)
     .eq("client_id", clientId);
+
+  await logAudit({
+    actorId: me.id,
+    action: "metric_definition.reordered",
+    entity: "metric_definition",
+    entityId: id,
+    clientId,
+    metadata: { direction },
+  });
   revalidate(clientId);
   return { ok: true };
 }

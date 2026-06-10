@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { formatMonthShort, monthsBetween } from "@/lib/format";
 import {
   Select,
   SelectContent,
@@ -39,20 +40,23 @@ export type Entry = {
   value_text: string | null;
 };
 
-const ym = (p: string) => p.slice(0, 7);
-
 export function MetricsCharts({
   numericDefs,
   textDefs,
-  periods,
   entries,
 }: {
   numericDefs: DefLite[];
   textDefs: DefLite[];
-  periods: string[]; // ascending
   entries: Entry[];
 }) {
   const [selected, setSelected] = useState(numericDefs[0]?.id ?? "");
+
+  // Window the axis to the months that actually have data (first → latest).
+  const axis = useMemo(() => {
+    const present = [...new Set(entries.map((e) => e.period))].sort();
+    if (present.length === 0) return [];
+    return monthsBetween(present[0], present[present.length - 1]);
+  }, [entries]);
 
   const numericMap = useMemo(() => {
     const m = new Map<string, number | null>();
@@ -66,10 +70,12 @@ export function MetricsCharts({
     return m;
   }, [entries]);
 
-  const chartData = periods.map((p) => ({
-    period: ym(p),
+  const chartData = axis.map((p) => ({
+    period: formatMonthShort(p),
     value: numericMap.get(`${selected}|${p}`) ?? null,
   }));
+
+  const textColumns = [...axis].reverse(); // newest first
 
   return (
     <div className="space-y-6">
@@ -91,7 +97,7 @@ export function MetricsCharts({
             </Select>
           )}
         </div>
-        {numericDefs.length === 0 || periods.length === 0 ? (
+        {numericDefs.length === 0 || axis.length === 0 ? (
           <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
             Charts appear once you have numeric metrics with monthly entries.
           </div>
@@ -117,17 +123,17 @@ export function MetricsCharts({
         )}
       </div>
 
-      {textDefs.length > 0 && (
+      {textDefs.length > 0 && axis.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Text metrics by month</h3>
+          <h3 className="text-sm font-medium">Highlights by month</h3>
           <div className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="sticky left-0 bg-card">Metric</TableHead>
-                  {periods.map((p) => (
+                  {textColumns.map((p) => (
                     <TableHead key={p} className="whitespace-nowrap">
-                      {ym(p)}
+                      {formatMonthShort(p)}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -138,9 +144,9 @@ export function MetricsCharts({
                     <TableCell className="sticky left-0 bg-card font-medium">
                       {d.label}
                     </TableCell>
-                    {periods.map((p) => (
-                      <TableCell key={p} className="text-sm text-muted-foreground">
-                        {textMap.get(`${d.id}|${p}`) ?? "—"}
+                    {textColumns.map((p) => (
+                      <TableCell key={p} className="min-w-40 align-top text-sm text-muted-foreground">
+                        {textMap.get(`${d.id}|${p}`) || "—"}
                       </TableCell>
                     ))}
                   </TableRow>

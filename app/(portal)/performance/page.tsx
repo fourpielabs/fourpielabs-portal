@@ -15,8 +15,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const pad = (n: number) => String(n).padStart(2, "0");
-
 function priorityVariant(p: string): "default" | "secondary" | "outline" {
   if (p === "high") return "default";
   if (p === "low") return "outline";
@@ -27,13 +25,6 @@ export default async function ClientPerformancePage() {
   const profile = await requireRole(["client"]);
   const supabase = await createClient();
 
-  const now = new Date();
-  const periods: string[] = [];
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    periods.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-01`);
-  }
-
   const [{ data: defs }, { data: entries }, { data: competitors }, { data: reports }] =
     await Promise.all([
       // RLS: client sees active definitions only
@@ -41,10 +32,11 @@ export default async function ClientPerformancePage() {
         .from("metric_definitions")
         .select("id, label, unit, sort_order")
         .order("sort_order"),
+      // All entries — the chart windows itself to months that have data
       supabase
         .from("metric_entries")
         .select("definition_id, period, value_numeric, value_text")
-        .in("period", periods),
+        .order("period"),
       // RLS: visible competitors only
       supabase
         .from("competitors")
@@ -76,7 +68,6 @@ export default async function ClientPerformancePage() {
           <MetricsCharts
             numericDefs={numericDefs}
             textDefs={textDefs}
-            periods={periods}
             entries={(entries ?? []) as Entry[]}
           />
         </CardContent>
