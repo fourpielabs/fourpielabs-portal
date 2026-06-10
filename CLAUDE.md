@@ -101,8 +101,18 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
   fail; unassigned-team access must fail); audit coverage; mobile/Lighthouse; deploy +
   custom domain.
 
-> **Current status:** environment setup only. No app code yet. Do not start P1 until
-> the environment session is signed off.
+> **Current status:** P1 (Foundation) IN PROGRESS — app scaffolded and all
+> migrations written, **awaiting migration review before any `supabase db push`**.
+> Auth flow (login/accept-invite/forgot-password, middleware redirects) and the
+> seed script are deferred to after review approval. Route pages under
+> `app/(portal)/.../` are placeholders built out in P2–P5.
+>
+> Scaffold facts: Next.js 16 (App Router) + React 19 + Tailwind v4 +
+> shadcn/ui (radix). Brand amber accent in `app/globals.css`. Supabase clients
+> in `lib/supabase/{server,client,admin,middleware}.ts`; session-refresh
+> `middleware.ts` (Next 16 deprecates this name in favor of `proxy.ts` — revisit
+> when adding redirects). Migrations: `supabase/migrations/2026061001000{1..8}_*.sql`.
+> Signups disabled in `supabase/config.toml`.
 
 ### Setup status (as of 2026-06-10)
 
