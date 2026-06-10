@@ -105,10 +105,14 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
   fail; unassigned-team access must fail); audit coverage; mobile/Lighthouse; deploy +
   custom domain.
 
-> **Current status:** P1 (Foundation) COMPLETE. Migrations pushed to the linked
-> Tokyo project (`frmukrgjkhlpxplhzeqj`); auth flow built; demo data seeded.
-> Route pages under `app/(portal)/.../` (and admin/settings) remain placeholders
-> built out in P2–P5. **Next up: P2 (Admin).**
+> **Current status:** P1 + P2 COMPLETE. Migrations on the linked Tokyo project
+> (`frmukrgjkhlpxplhzeqj`); auth flow + demo seed (P1); admin workspace (P2):
+> clients CRUD (create triggers seeding), invite flow (admin API), users
+> deactivate/reactivate, team↔client assignments, audit viewer. Server actions
+> in `lib/actions/{clients,users}.ts`, Zod in `lib/schemas.ts`, audit via
+> service-role `lib/audit.ts`. Per-client feature pages under
+> `app/(portal)/clients/[clientId]/{content,metrics,...}` are still placeholders.
+> **Next up: P3 (Team workspace, core).**
 >
 > Scaffold facts: Next.js 16 (App Router) + React 19 + Tailwind v4 +
 > shadcn/ui (radix). Brand amber accent in `app/globals.css`. Supabase clients
