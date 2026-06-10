@@ -119,26 +119,29 @@ Done:
   deployment**, which **failed as expected** (no Next.js app/`package.json`
   yet). Deploys will go green once P1 scaffolds the app.
 
-Pending — both blocked on the **same root cause**: the fourpielabs
-`SUPABASE_ACCESS_TOKEN` must be in **Claude Code's own launch environment**.
-Tool subprocesses (and the MCP client) inherit env vars captured when Claude
-Code starts; vars set in a separate terminal afterward — or via `setx`, which
-only affects *new* processes — are invisible until a **full relaunch**. The
-CLI's stored login is a *personal* account without access to this ref
-("account does not have the necessary privileges"), so the env token is what
-makes link/MCP target fourpielabs.
+Done:
+- **`supabase link` complete and verified on the fourpielabs project.** The
+  fourpielabs `SUPABASE_ACCESS_TOKEN` (persisted at Windows User scope)
+  overrode the CLI's stored personal login; `supabase projects list` shows the
+  `●` LINKED marker on `frmukrgjkhlpxplhzeqj` = `fourpielabs-portal`
+  (org `sokuiylewhqvrpfsafxv`), and `supabase/.temp/project-ref` matches. The
+  DB password was skipped at link time — supply it (prompt or
+  `SUPABASE_DB_PASSWORD`) before the first `supabase db push`.
+- `.mcp.json` now hardcodes the (public, non-secret) `project_ref`; only the
+  token comes from `${SUPABASE_ACCESS_TOKEN}` env expansion.
 
-**Next session — after relaunching Claude Code with `SUPABASE_ACCESS_TOKEN`
-and `SUPABASE_PROJECT_REF=frmukrgjkhlpxplhzeqj` set persistently:**
-1. Verify both env vars are visible (presence only, never echo).
-2. `supabase link --project-ref frmukrgjkhlpxplhzeqj` (env token must override
-   the stored personal login; DB password at the prompt, or blank to skip until
-   first `db push`). Confirm the link landed on the **fourpielabs** project,
-   not a personal one (`supabase projects list` → LINKED on the fourpielabs row).
-3. Approve the project-scope `supabase` MCP server, then `/mcp` to confirm it
-   shows **connected (read-only)**.
-4. Then this environment-setup phase is fully signed off — only after that,
-   start P1.
+Pending — in-IDE Supabase MCP connection:
+- The hosted MCP server reads `${SUPABASE_ACCESS_TOKEN}` from **Claude Code's
+  own process env**, which is still stale: env vars are captured when the VS
+  Code app launches, and a new Claude *session* inside an already-running VS
+  Code does **not** re-read them. The token IS persisted at User scope (so a
+  fresh VS Code launch will inherit it) — the running process just predates it.
+- **To finish:** fully **quit and reopen VS Code** (the whole app, not just a
+  new Claude chat), approve the project-scope `supabase` MCP server when
+  prompted, then run `/mcp` to confirm `supabase` shows **connected
+  (read-only)**. Credential validity is already proven (link + projects list
+  succeeded with this token), so this is the last mechanical step.
+- After that, the environment-setup phase is fully signed off — only then start P1.
 
 ## Environment & tooling
 
