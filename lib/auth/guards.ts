@@ -100,5 +100,6 @@ export async function requireClientAccess(clientId: string): Promise<Profile> {
       .maybeSingle();
     if (data) return profile;
   }
-  redirect("/clients");
+  // clients never reach the team workspace; send them to their own dashboard
+  redirect(profile.role === "client" ? "/dashboard" : "/clients");
 }

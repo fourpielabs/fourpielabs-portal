@@ -124,7 +124,18 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > reports (CRUD + optional PDF + publish/unpublish setting `published_at`;
 > unpublished never visible to clients via RLS). Actions: `lib/actions/{content,
 > metrics,competitors,calls,notes,reports}.ts`. **All per-client tabs now live.**
-> **Next up: P5 (Client experience).**
+>
+> **P5 COMPLETE (Client experience):** client-only top-level routes
+> `/{dashboard,program,content,performance,deliverables,calls-notes,documents}`
+> with client nav (no team chrome; clients redirected off `/clients` + `/admin`).
+> Read-only throughout except the onboarding checklist toggle via the
+> `toggle_checklist_item` RPC (`components/client/client-checklist.tsx`). Client
+> reads the safe `client_clients` + `client_partner` views; all lists are
+> RLS-scoped to visible/published. Markdown via `react-markdown`
+> (`components/markdown.tsx`); enum labels humanized everywhere. Verified at the
+> data layer: hidden/unpublished items absent, base `clients` unreadable, RPC
+> denies team/off-boarding toggles, no cross-client leakage.
+> **Next up: P6 (Hardening & launch).**
 >
 > Scaffold facts: Next.js 16 (App Router) + React 19 + Tailwind v4 +
 > shadcn/ui (radix). Brand amber accent in `app/globals.css`. Supabase clients

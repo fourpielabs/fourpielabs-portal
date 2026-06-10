@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth/guards";
+import { requireRole } from "@/lib/auth/guards";
 import { labelOf, PROGRAMS, CLIENT_STATUSES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,8 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 }
 
 export default async function ClientsPage() {
-  const profile = await requireProfile();
+  // team workspace list — clients are redirected to /dashboard
+  const profile = await requireRole(["admin", "team"]);
   const supabase = await createClient();
 
   // RLS scopes this: admin sees all, team sees assigned clients only.

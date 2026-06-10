@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth/guards";
 import { Button } from "@/components/ui/button";
+import { PortalNav, type NavItem } from "@/components/portal-nav";
 
 const ROLE_LABEL: Record<string, string> = {
   admin: "Admin",
@@ -8,9 +9,18 @@ const ROLE_LABEL: Record<string, string> = {
   client: "Client",
 };
 
-type NavItem = { href: string; label: string };
-
 function navFor(role: string): NavItem[] {
+  if (role === "client") {
+    return [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/program", label: "Program" },
+      { href: "/content", label: "Content" },
+      { href: "/performance", label: "Performance" },
+      { href: "/deliverables", label: "Deliverables" },
+      { href: "/calls-notes", label: "Calls & Notes" },
+      { href: "/documents", label: "Documents" },
+    ];
+  }
   const items: NavItem[] = [{ href: "/dashboard", label: "Dashboard" }];
   if (role === "admin" || role === "team") {
     items.push({ href: "/clients", label: "Clients" });
@@ -24,11 +34,6 @@ function navFor(role: string): NavItem[] {
   return items;
 }
 
-/**
- * Portal shell + auth guard. requireProfile() redirects unauthenticated or
- * deactivated users to /login. Full role-aware navigation (team/admin sidebar
- * vs. client top-nav) is built out in P2+. RLS remains the real enforcement.
- */
 export default async function PortalLayout({
   children,
 }: {
@@ -46,21 +51,13 @@ export default async function PortalLayout({
               <span className="inline-block size-3 rounded-full bg-primary" />
               <span className="font-semibold tracking-tight">4Pie Labs</span>
             </Link>
-            <nav className="hidden items-center gap-1 sm:flex">
-              {nav.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+            <PortalNav items={nav} className="hidden items-center gap-1 sm:flex" />
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">
-              {profile.full_name ?? profile.email}
+              <span className="hidden sm:inline">
+                {profile.full_name ?? profile.email}
+              </span>
               <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs">
                 {ROLE_LABEL[profile.role] ?? profile.role}
               </span>
@@ -72,17 +69,10 @@ export default async function PortalLayout({
             </form>
           </div>
         </div>
-        <nav className="flex items-center gap-1 overflow-x-auto px-4 pb-2 sm:hidden">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="whitespace-nowrap rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <PortalNav
+          items={nav}
+          className="flex items-center gap-1 overflow-x-auto px-4 pb-2 sm:hidden"
+        />
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         {children}
