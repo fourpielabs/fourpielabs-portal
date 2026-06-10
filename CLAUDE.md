@@ -119,19 +119,26 @@ Done:
   deployment**, which **failed as expected** (no Next.js app/`package.json`
   yet). Deploys will go green once P1 scaffolds the app.
 
-Pending (needs the fourpielabs `SUPABASE_ACCESS_TOKEN` in Claude Code's own
-launch environment, not just a user shell):
-- `supabase link --project-ref frmukrgjkhlpxplhzeqj` — blocked: the CLI's
-  stored login is a *personal* account without access to this ref (returns
-  "account does not have the necessary privileges"). Set `SUPABASE_ACCESS_TOKEN`
-  (fourpielabs) + `SUPABASE_PROJECT_REF` in the environment that launches Claude
-  Code, relaunch, then run the link (DB password entered at the prompt; can be
-  left blank to skip until first `db push`).
-- **Supabase MCP connection unverified** for the same reason: the hosted server
-  reads `${SUPABASE_ACCESS_TOKEN}` from Claude Code's environment, and
-  project-scope MCP servers require approval + a reload. After setting the env
-  var and relaunching, approve the project MCP server, then run `/mcp` to
-  confirm `supabase` shows connected (read-only).
+Pending — both blocked on the **same root cause**: the fourpielabs
+`SUPABASE_ACCESS_TOKEN` must be in **Claude Code's own launch environment**.
+Tool subprocesses (and the MCP client) inherit env vars captured when Claude
+Code starts; vars set in a separate terminal afterward — or via `setx`, which
+only affects *new* processes — are invisible until a **full relaunch**. The
+CLI's stored login is a *personal* account without access to this ref
+("account does not have the necessary privileges"), so the env token is what
+makes link/MCP target fourpielabs.
+
+**Next session — after relaunching Claude Code with `SUPABASE_ACCESS_TOKEN`
+and `SUPABASE_PROJECT_REF=frmukrgjkhlpxplhzeqj` set persistently:**
+1. Verify both env vars are visible (presence only, never echo).
+2. `supabase link --project-ref frmukrgjkhlpxplhzeqj` (env token must override
+   the stored personal login; DB password at the prompt, or blank to skip until
+   first `db push`). Confirm the link landed on the **fourpielabs** project,
+   not a personal one (`supabase projects list` → LINKED on the fourpielabs row).
+3. Approve the project-scope `supabase` MCP server, then `/mcp` to confirm it
+   shows **connected (read-only)**.
+4. Then this environment-setup phase is fully signed off — only after that,
+   start P1.
 
 ## Environment & tooling
 
