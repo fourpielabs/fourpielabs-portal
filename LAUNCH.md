@@ -227,8 +227,10 @@ findings are documented there.
 
 ---
 
-## Performance note (from P6 Lighthouse, mobile)
-- Login page: **Accessibility 96 · Best-practices 100 · SEO 91 · Performance ~28 (mobile, lab)**.
+## Performance note (Lighthouse, mobile)
+- Login page **after the UI reskin**: **Accessibility 100 · Best-practices 96 · SEO 91 · Performance 55 (mobile, lab)**.
+  (Pre-reskin baseline was a11y 96 / BP 100 / SEO 91 / perf ~28; `next/font` + the lighter
+  dark auth shell roughly doubled performance and took a11y to 100.)
 - Mobile performance is dominated by client JS (the Supabase auth client bundled into the
   login form + framework hydration). Real-world warm loads beat the throttled lab number.
 - **Optional optimization** (deferred to avoid destabilizing the verified auth flow):
