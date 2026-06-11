@@ -30,6 +30,16 @@ a client portal** (clients would hit a dead site). Move to at least **Pro**.
 1. Supabase → project `frmukrgjkhlpxplhzeqj` → **Settings → Billing** → subscribe to **Pro**.
 2. Confirm **"Pause after inactivity" is gone** (Pro projects don't auto-pause).
 3. (Recommended) enable **Point-in-Time Recovery** / daily backups.
+4. **Enable leaked-password protection (HIBP)** — Pro-only, currently blocked on Free
+   (`402`). Once on Pro, run:
+   ```bash
+   curl -s -X PATCH -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+     -H "Content-Type: application/json" -d '{"password_hibp_enabled":true}' \
+     "https://api.supabase.com/v1/projects/frmukrgjkhlpxplhzeqj/config/auth"
+   ```
+   Then re-run the advisors command — `auth_leaked_password_protection` should clear,
+   leaving only the 3 accepted findings (2 client-safe definer views + the
+   `toggle_checklist_item` client RPC).
 
 ## 3. Custom SMTP via Resend (so invites/recovery emails actually deliver)
 Supabase's built-in mailer is rate-limited (~2–4/hr) and only reliably mails project

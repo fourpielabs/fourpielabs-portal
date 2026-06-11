@@ -39,8 +39,10 @@ How the portal protects client data, layer by layer. Safe to share with clients.
     App Router injects inline bootstrap/RSC scripts (no per-request nonce), and
     Tailwind/Recharts emit inline styles. `'unsafe-eval'` is **not** allowed in production.
 - **Authentication:** invite-only (`disable_signup = true`); email + password; minimum
-  **12-character** passwords (client-enforced with a strength hint; server minimum +
-  **HaveIBeenPwned leaked-password check** set via the Management API). Email links use
+  **12-character** passwords (enforced client + server) with a strength hint; an email
+  rate limit (100/hr) and a "your password was changed" notification. The
+  **HaveIBeenPwned leaked-password check** is a Supabase Pro feature — enabled at the
+  Pro upgrade (LAUNCH.md §2). Email links use
   the **token_hash** flow through a prefetch-safe `/auth/confirm` **interstitial**
   (the one-time token is consumed only on a human button click, not on scanner GETs).
 - **Sessions:** `@supabase/ssr` cookies are `HttpOnly`, `Secure` (prod), `SameSite=Lax`;
@@ -60,7 +62,7 @@ Command in LAUNCH.md → "Security advisors". Current state after this pass
 |---|---|---|
 | `security_definer_view` — `client_clients`, `client_partner` | ERROR ×2 | **Accepted.** These are the intentional client-safe projections: they deliberately bypass RLS to filter to `my_client_id()` and expose only safe columns (no `internal_notes`, no full profiles row). Granted to `authenticated` only. This is the spec's "client-safe view" pattern. |
 | `authenticated_security_definer_function_executable` — `toggle_checklist_item` | WARN | **Accepted.** This is the single client write RPC by design; it validates ownership/kind/assignee internally and only mutates `is_done/done_by/done_at`. |
-| `auth_leaked_password_protection` disabled | WARN | **Fixed** (enabled HIBP via the Management API, SEC-2). |
+| `auth_leaked_password_protection` disabled | WARN | **Pending Pro.** HIBP leaked-password protection is a Supabase **Pro** feature (the Management API returns `402` on Free). Min length 12 + client strength hint are already enforced; enable HIBP at the Pro upgrade (LAUNCH.md §2). |
 | 6× trigger-function executable (anon/authenticated) | WARN | **Fixed** — `EXECUTE` revoked from API roles on `handle_new_user`, `seed_new_client`, `enforce_profile_self_update` (migration `20260611120000`); triggers still fire. |
 
 ## Dependency audit
