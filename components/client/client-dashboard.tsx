@@ -7,6 +7,7 @@ import {
   ClientChecklist,
   type ClientChecklistItem,
 } from "@/components/client/client-checklist";
+import { Greeting } from "@/components/client/greeting";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -75,18 +76,23 @@ export async function ClientDashboard({ clientId }: { clientId: string }) {
   const periods = [...new Set(rows.map((r) => r.period))].sort().reverse();
   const latest = periods[0];
   const prev = periods[1];
+  const periodsAsc = [...periods].reverse();
   const monthLabel = latest ? formatMonthYear(latest) : "";
   const kpis = rows
     .filter((r) => r.period === latest && r.definition && r.definition.unit !== "text")
     .sort((a, b) => (a.definition!.sort_order ?? 0) - (b.definition!.sort_order ?? 0))
     .slice(0, 4)
     .map((r) => {
+      const label = r.definition!.label;
       const before = rows.find(
-        (x) => x.period === prev && x.definition?.label === r.definition!.label,
+        (x) => x.period === prev && x.definition?.label === label,
       )?.value_numeric ?? null;
       const cur = r.value_numeric ?? null;
       const delta = cur !== null && before !== null ? cur - before : null;
-      return { label: r.definition!.label, unit: r.definition!.unit, cur, before, delta };
+      const series = periodsAsc
+        .slice(-6)
+        .map((p) => rows.find((x) => x.period === p && x.definition?.label === label)?.value_numeric ?? 0);
+      return { label, unit: r.definition!.unit, cur, before, delta, series };
     });
 
   // roadmap
@@ -109,16 +115,7 @@ export async function ClientDashboard({ clientId }: { clientId: string }) {
       {/* greeting + partner */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl leading-[1.05] font-medium tracking-[-0.02em] text-balance sm:text-5xl">
-            Welcome, {firstName} —{" "}
-            {monthLabel ? (
-              <>
-                here&apos;s <span className="font-bold">{monthLabel}</span> at a glance
-              </>
-            ) : (
-              <>your portal at a glance</>
-            )}
-          </h1>
+          <Greeting name={firstName} monthLabel={monthLabel} />
           <p className="mt-1 text-sm text-ink-2">
             <span className="font-semibold">{labelOf(PROGRAMS, client?.program)}</span>
             {dayLabel ? ` · ${dayLabel}` : ""}
@@ -170,6 +167,23 @@ export async function ClientDashboard({ clientId }: { clientId: string }) {
                   <div className="text-xs text-ink-3 tabular-nums">
                     {k.before !== null ? `vs ${k.before.toLocaleString()} last month` : monthLabel}
                   </div>
+                  {k.series.filter((v) => v > 0).length > 1 && (
+                    <div className="flex h-8 items-end gap-1" aria-hidden>
+                      {(() => {
+                        const max = Math.max(...k.series, 1);
+                        return k.series.map((v, i) => (
+                          <div
+                            key={i}
+                            className="flex-1 rounded-sm"
+                            style={{
+                              height: `${Math.max(8, (v / max) * 100)}%`,
+                              background: i === k.series.length - 1 ? "#D97706" : "#FDE68A",
+                            }}
+                          />
+                        ));
+                      })()}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

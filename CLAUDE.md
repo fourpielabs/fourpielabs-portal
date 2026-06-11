@@ -86,6 +86,11 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 - Service-role key is **server-only — never `NEXT_PUBLIC`**.
 - Loading / empty / error states everywhere; fully mobile-responsive (clients use phones).
   Friendly empty states.
+- **Design-vs-RLS precedent (standing, from the UI phase):** when an approved mockup
+  implies access a role's RLS doesn't grant, **RLS wins** and the UI adapts — never
+  widen RLS to match a mockup. Example: the staff client-overview "activity feed" is a
+  derived read of deliverables/updates/reports (works for team), **not** a raw
+  `audit_log` read (admin-only).
 
 ## Build phases (complete + verify each before the next)
 

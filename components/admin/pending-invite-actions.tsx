@@ -67,7 +67,9 @@ export function PendingInviteActions({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={revoke}>Revoke</AlertDialogAction>
+            <AlertDialogAction variant="destructive" onClick={revoke}>
+              Revoke
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

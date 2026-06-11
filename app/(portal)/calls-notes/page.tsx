@@ -35,8 +35,8 @@ export default async function ClientCallsNotesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Calls &amp; Notes</h1>
-        <p className="text-muted-foreground">Book time with us and catch up on sessions.</p>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Calls &amp; Notes</h1>
+        <p className="text-sm text-ink-2">Book time with us and catch up on sessions.</p>
       </div>
 
       {(callTypes ?? []).length > 0 && (

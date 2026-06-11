@@ -12,6 +12,7 @@ type MetricEntry = {
   value_text: string | null;
   period: string;
   definition: { label: string; unit: string; sort_order: number } | null;
+  creator: { full_name: string | null; email: string | null } | null;
 };
 
 function fmtMetric(e: MetricEntry): string {
@@ -47,7 +48,7 @@ export default async function ClientOverviewPage({
       .eq("kind", "onboarding"),
     supabase
       .from("metric_entries")
-      .select("value_numeric, value_text, period, definition:metric_definitions(label, unit, sort_order)")
+      .select("value_numeric, value_text, period, definition:metric_definitions(label, unit, sort_order), creator:profiles!created_by(full_name, email)")
       .eq("client_id", clientId)
       .order("period", { ascending: false })
       .limit(40),
@@ -174,7 +175,13 @@ export default async function ClientOverviewPage({
               <div>
                 <h3 className="font-semibold">Latest metrics</h3>
                 <p className="text-xs text-ink-3">
-                  {latestPeriod ? `Entered ${formatMonthYear(latestPeriod)}` : "No entries yet"}
+                  {latestPeriod
+                    ? `Entered ${formatMonthYear(latestPeriod)}${
+                        snapshot[0]?.creator?.full_name || snapshot[0]?.creator?.email
+                          ? ` by ${snapshot[0]?.creator?.full_name ?? snapshot[0]?.creator?.email}`
+                          : ""
+                      }`
+                    : "No entries yet"}
                 </p>
               </div>
               <Button asChild size="sm" variant="outline">

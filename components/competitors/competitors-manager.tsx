@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import {
   Select,
   SelectContent,
@@ -63,11 +64,6 @@ export type Competitor = {
   visible_to_client: boolean;
 };
 
-function priorityVariant(p: string): "default" | "secondary" | "outline" {
-  if (p === "high") return "default";
-  if (p === "low") return "outline";
-  return "secondary";
-}
 
 function CompetitorDialog({
   clientId,
@@ -259,9 +255,7 @@ export function CompetitorsManager({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{c.name_or_handle}</span>
-                    <Badge variant={priorityVariant(c.priority)} className="text-[10px]">
-                      {labelOf(COMPETITOR_PRIORITIES, c.priority)}
-                    </Badge>
+                    <StatusChip kind="priority" value={c.priority} />
                     {!c.visible_to_client && (
                       <Badge variant="outline" className="text-[10px]">
                         hidden

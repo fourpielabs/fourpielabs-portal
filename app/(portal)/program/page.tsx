@@ -10,13 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-
-const MS_STATUS: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
-  done: { label: "Done", variant: "default" },
-  in_progress: { label: "In progress", variant: "secondary" },
-  upcoming: { label: "Upcoming", variant: "outline" },
-};
+import { StatusChip } from "@/components/ui/status-chip";
 
 export default async function ClientProgramPage() {
   await requireRole(["client"]);
@@ -55,8 +49,8 @@ export default async function ClientProgramPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Your program</h1>
-        <p className="text-muted-foreground">Everything your engagement covers.</p>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Your program</h1>
+        <p className="text-sm text-ink-2">Everything your engagement covers.</p>
       </div>
 
       <Card>
@@ -88,9 +82,8 @@ export default async function ClientProgramPage() {
           ) : (
             <ol className="space-y-3">
               {(milestones ?? []).map((m) => {
-                const s = MS_STATUS[m.status] ?? MS_STATUS.upcoming;
                 return (
-                  <li key={m.id} className="flex gap-3 rounded-lg border p-3">
+                  <li key={m.id} className="flex gap-3 rounded-xl border border-border p-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">{m.title}</span>
@@ -106,9 +99,7 @@ export default async function ClientProgramPage() {
                         </p>
                       )}
                     </div>
-                    <Badge variant={s.variant} className="h-fit">
-                      {s.label}
-                    </Badge>
+                    <StatusChip kind="milestone" value={m.status} className="h-fit" />
                   </li>
                 );
               })}

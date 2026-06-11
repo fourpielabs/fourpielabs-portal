@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import {
   Dialog,
   DialogContent,
@@ -214,11 +214,7 @@ export function ReportsManager({
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{r.title}</span>
-                    {r.published ? (
-                      <Badge>Published</Badge>
-                    ) : (
-                      <Badge variant="outline">Draft — hidden from client</Badge>
-                    )}
+                    <StatusChip kind="report" value={r.published ? "published" : "draft"} />
                   </div>
                   {(r.period_start || r.period_end) && (
                     <div className="text-xs text-muted-foreground">

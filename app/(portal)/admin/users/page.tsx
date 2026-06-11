@@ -5,7 +5,7 @@ import { labelOf, ROLES } from "@/lib/constants";
 import { InviteForm } from "@/components/admin/invite-form";
 import { UserActiveToggle } from "@/components/admin/user-active-toggle";
 import { PendingInviteActions } from "@/components/admin/pending-invite-actions";
-import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import {
   Card,
   CardContent,
@@ -67,8 +67,8 @@ export default async function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
-        <p className="text-muted-foreground">
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Users</h1>
+        <p className="text-sm text-ink-2">
           Invite users, manage roles &amp; access, and deactivate accounts.
         </p>
       </div>
@@ -101,24 +101,34 @@ export default async function AdminUsersPage() {
           <TableBody>
             {(profiles ?? []).map((p) => {
               const pending = isPending(p);
+              const self = p.id === me.id;
+              const statusValue = !p.is_active ? "inactive" : pending ? "pending" : "active";
               return (
-                <TableRow key={p.id}>
+                <TableRow
+                  key={p.id}
+                  className={
+                    pending ? "bg-[var(--pending-row)]" : !p.is_active ? "opacity-60" : ""
+                  }
+                >
                   <TableCell className="font-medium">
-                    {p.full_name ?? "—"}
-                    <div className="text-xs text-muted-foreground">{p.email}</div>
+                    <span className="flex items-center gap-2">
+                      <span className={!p.is_active ? "text-ink-faint line-through" : ""}>
+                        {p.full_name ?? "—"}
+                      </span>
+                      {self && (
+                        <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold text-ink-2">
+                          You
+                        </span>
+                      )}
+                    </span>
+                    <div className="text-xs text-ink-3">{p.email}</div>
                   </TableCell>
                   <TableCell>{labelOf(ROLES, p.role)}</TableCell>
-                  <TableCell className="max-w-[16rem] text-sm text-muted-foreground">
+                  <TableCell className="max-w-[16rem] text-sm text-ink-3">
                     {scopeFor(p)}
                   </TableCell>
                   <TableCell>
-                    {!p.is_active ? (
-                      <Badge variant="outline">Inactive</Badge>
-                    ) : pending ? (
-                      <Badge variant="secondary">Pending invite</Badge>
-                    ) : (
-                      <Badge>Active</Badge>
-                    )}
+                    <StatusChip kind="user" value={statusValue} />
                   </TableCell>
                   <TableCell className="text-right">
                     {pending ? (

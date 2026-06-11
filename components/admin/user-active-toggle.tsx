@@ -60,7 +60,7 @@ export function UserActiveToggle({ userId, isActive, isSelf, label }: Props) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => apply(false)}>
+            <AlertDialogAction variant="destructive" onClick={() => apply(false)}>
               Deactivate
             </AlertDialogAction>
           </AlertDialogFooter>

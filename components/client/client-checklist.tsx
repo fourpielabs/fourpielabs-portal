@@ -129,7 +129,7 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
                     disabled={busy}
                     onClick={() => toggle(it.id)}
                     aria-label={checked ? "Mark not done" : "Mark done"}
-                    className="inline-flex size-6 shrink-0 items-center justify-center rounded-full disabled:opacity-60"
+                    className="-m-2.5 inline-flex shrink-0 items-center justify-center rounded-full p-2.5 disabled:opacity-60"
                   >
                     {checked ? (
                       <span
