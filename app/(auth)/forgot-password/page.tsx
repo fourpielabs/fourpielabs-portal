@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 
-import { createClient } from "@/lib/supabase/client";
+import { sendPasswordResetAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,16 +34,11 @@ export default function ForgotPasswordPage() {
 
   async function onSubmit({ email }: FormValues) {
     setSubmitting(true);
-    const supabase = createClient();
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      // /auth/confirm verifies the recovery token, then sends them to set a password
-      redirectTo: `${siteUrl}/auth/confirm?next=/accept-invite`,
-    });
+    // server action: maps the error, logs raw server-side, audits failures
+    const res = await sendPasswordResetAction(email);
     setSubmitting(false);
-    if (error) {
-      toast.error("Couldn't send reset email", { description: error.message });
+    if (!res.ok) {
+      toast.error("Couldn't send reset email", { description: res.error });
       return;
     }
     setSent(true);

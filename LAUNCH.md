@@ -163,6 +163,44 @@ Do this whenever you're ready to move off the Vercel URL. Mini-checklist:
 
 ---
 
+## Troubleshooting — email sending (SMTP)
+
+The app now surfaces a **mapped, specific** error on invite/reset failures (e.g.
+"SMTP authentication failed", "Sender domain not verified", "rate limit hit") and
+writes **`user.invite_failed`** / **`password_reset.failed`** to the audit log with
+the **raw error in `metadata`**. So first stop: **Admin → Audit**, filter by those
+actions, read the raw message. Supabase frequently returns a generic
+"Error sending invite email" to the API and keeps the real SMTP cause only in its
+logs — so isolate with these three steps, in order:
+
+1. **Dashboard-native send test** (is it the app or Supabase/SMTP?).
+   Supabase → **Authentication → Users → Invite user** (or "Send magic link") to a
+   real address straight from the dashboard. If the **dashboard send also fails**,
+   the app is innocent — it's SMTP/Supabase config. If the dashboard send works but
+   the app's doesn't, look at the app (env/redirect), not SMTP.
+2. **Resend → Emails log** (did the message reach Resend, and what happened?).
+   - **Nothing in the log** → Supabase never reached Resend: wrong SMTP host/port,
+     or a bad/incorrect **API key** (SMTP auth). Recheck Supabase → SMTP Settings.
+   - **Logged but failed/bounced** → it reached Resend but Resend rejected it:
+     usually the **sender domain isn't verified** (`mail.fourpielabs.com`) or a bad
+     recipient.
+3. **Supabase → Authentication → Logs** (the exact SMTP error).
+   Find the failed send and read the literal SMTP response (e.g. `535` auth failed,
+   `550` domain/sender not allowed, `429` rate limited). That code tells you which
+   of the above it is.
+
+### ⚠️ Account-mismatch trap (the most common cause)
+The Resend **API key must come from the exact Resend account/workspace where
+`mail.fourpielabs.com` is verified.** A key generated in a *different* Resend
+account will authenticate fine (SMTP login succeeds) but that account has **no
+verified `mail.fourpielabs.com`**, so every send is rejected as
+"domain not verified" — which looks like an app bug but isn't. Confirm in Resend
+that the **verified domain and the API key live in the same account**, and that the
+**Sender email** in Supabase SMTP Settings is `noreply@mail.fourpielabs.com` (a
+subdomain of the verified domain).
+
+---
+
 ## Performance note (from P6 Lighthouse, mobile)
 - Login page: **Accessibility 96 · Best-practices 100 · SEO 91 · Performance ~28 (mobile, lab)**.
 - Mobile performance is dominated by client JS (the Supabase auth client bundled into the

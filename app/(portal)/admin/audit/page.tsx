@@ -15,10 +15,13 @@ const ACTIONS = [
   "client.updated",
   "client.status_changed",
   "user.invited",
+  "user.invite_failed",
   "user.deactivated",
   "user.reactivated",
   "assignment.created",
   "assignment.removed",
+  "password_reset.requested",
+  "password_reset.failed",
 ];
 
 const selectClass =

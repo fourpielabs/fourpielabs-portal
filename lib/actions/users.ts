@@ -6,17 +6,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/guards";
 import { logAudit } from "@/lib/audit";
 import { inviteSchema, type InviteValues } from "@/lib/schemas";
+import { mapEmailSendError } from "@/lib/auth/email-errors";
 
 type Result<T = undefined> =
   | { ok: true; data?: T }
   | { ok: false; error: string };
-
-function isRateLimit(message: string, status?: number) {
-  return (
-    status === 429 ||
-    /rate limit|too many|exceeded/i.test(message)
-  );
-}
 
 /**
  * Invite a user via the Auth admin API (service role). role + client_id +
@@ -48,17 +42,30 @@ export async function sendInviteAction(
   });
 
   if (error) {
-    if (isRateLimit(error.message, (error as { status?: number }).status)) {
-      return {
-        ok: false,
-        error:
-          "Supabase's email rate limit was hit. Wait a few minutes and try again, or configure a custom SMTP provider for higher limits.",
-      };
-    }
-    if (/already.*registered|already been registered/i.test(error.message)) {
-      return { ok: false, error: "That email is already registered." };
-    }
-    return { ok: false, error: error.message };
+    const status = (error as { status?: number }).status;
+    // raw error → server logs + audit trail (failures previously left no trace)
+    console.error("inviteUserByEmail failed:", {
+      email: v.email,
+      role: v.role,
+      status,
+      message: error.message,
+    });
+    await logAudit({
+      actorId: admin.id,
+      action: "user.invite_failed",
+      entity: "invitation",
+      clientId,
+      metadata: {
+        email: v.email,
+        role: v.role,
+        status: status ?? null,
+        error: error.message,
+      },
+    });
+    return {
+      ok: false,
+      error: mapEmailSendError(error.message, status, { adminViewer: true }),
+    };
   }
 
   // record the invitation (RLS: admin only — server client as admin works)
