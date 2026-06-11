@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/guards";
 import { labelOf, ROLES } from "@/lib/constants";
 import { InviteForm } from "@/components/admin/invite-form";
 import { UserActiveToggle } from "@/components/admin/user-active-toggle";
+import { PendingInviteActions } from "@/components/admin/pending-invite-actions";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -23,8 +25,9 @@ import {
 export default async function AdminUsersPage() {
   const me = await requireRole(["admin"]);
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
-  const [{ data: profiles }, { data: clients }, { data: assignments }] =
+  const [{ data: profiles }, { data: clients }, { data: assignments }, authList] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -33,7 +36,15 @@ export default async function AdminUsersPage() {
         .order("full_name"),
       supabase.from("clients").select("id, name").order("name"),
       supabase.from("client_assignments").select("user_id, client_id"),
+      adminClient.auth.admin.listUsers({ perPage: 1000 }),
     ]);
+
+  // pending = invited but never accepted (no email_confirmed_at on the auth user)
+  const confirmed = new Map(
+    (authList.data?.users ?? []).map((u) => [u.id, Boolean(u.email_confirmed_at)]),
+  );
+  const isPending = (p: { id: string; is_active: boolean }) =>
+    p.is_active && confirmed.get(p.id) === false;
 
   const clientName = new Map((clients ?? []).map((c) => [c.id, c.name]));
   const assignedByUser = new Map<string, string[]>();
@@ -43,11 +54,7 @@ export default async function AdminUsersPage() {
     assignedByUser.set(a.user_id, list);
   }
 
-  function scopeFor(p: {
-    id: string;
-    role: string;
-    client_id: string | null;
-  }) {
+  function scopeFor(p: { id: string; role: string; client_id: string | null }) {
     if (p.role === "client")
       return p.client_id ? (clientName.get(p.client_id) ?? "—") : "—";
     if (p.role === "team") {
@@ -70,9 +77,9 @@ export default async function AdminUsersPage() {
         <CardHeader>
           <CardTitle>Invite a user</CardTitle>
           <CardDescription>
-            Sends a Supabase invitation. Client invites require a client. If the
-            email rate limit is hit, you&apos;ll see a notice — wait a few
-            minutes or configure custom SMTP.
+            Sends a Supabase invitation. Client invites require a client. If a
+            send fails you&apos;ll see a specific reason (and it&apos;s recorded
+            in the audit log).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -92,33 +99,45 @@ export default async function AdminUsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(profiles ?? []).map((p) => (
-              <TableRow key={p.id}>
-                <TableCell className="font-medium">
-                  {p.full_name ?? "—"}
-                  <div className="text-xs text-muted-foreground">{p.email}</div>
-                </TableCell>
-                <TableCell>{labelOf(ROLES, p.role)}</TableCell>
-                <TableCell className="max-w-[16rem] text-sm text-muted-foreground">
-                  {scopeFor(p)}
-                </TableCell>
-                <TableCell>
-                  {p.is_active ? (
-                    <Badge>Active</Badge>
-                  ) : (
-                    <Badge variant="outline">Inactive</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <UserActiveToggle
-                    userId={p.id}
-                    isActive={p.is_active}
-                    isSelf={p.id === me.id}
-                    label={p.full_name ?? p.email ?? "this user"}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
+            {(profiles ?? []).map((p) => {
+              const pending = isPending(p);
+              return (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">
+                    {p.full_name ?? "—"}
+                    <div className="text-xs text-muted-foreground">{p.email}</div>
+                  </TableCell>
+                  <TableCell>{labelOf(ROLES, p.role)}</TableCell>
+                  <TableCell className="max-w-[16rem] text-sm text-muted-foreground">
+                    {scopeFor(p)}
+                  </TableCell>
+                  <TableCell>
+                    {!p.is_active ? (
+                      <Badge variant="outline">Inactive</Badge>
+                    ) : pending ? (
+                      <Badge variant="secondary">Pending invite</Badge>
+                    ) : (
+                      <Badge>Active</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {pending ? (
+                      <PendingInviteActions
+                        userId={p.id}
+                        label={p.full_name ?? p.email ?? "this user"}
+                      />
+                    ) : (
+                      <UserActiveToggle
+                        userId={p.id}
+                        isActive={p.is_active}
+                        isSelf={p.id === me.id}
+                        label={p.full_name ?? p.email ?? "this user"}
+                      />
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

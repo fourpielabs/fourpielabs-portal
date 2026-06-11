@@ -150,6 +150,18 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > switch, DB-password rotation + User-scope cleanup, and LAST: deactivate the
 > 3 demo accounts via the UI. **Remaining before live = those LAUNCH.md steps.**
 >
+> **Auth pipeline (config now managed via the Management API, not the dashboard):**
+> Supabase auth config PATCHed to `site_url=https://fourpielabs-portal.vercel.app`
+> (no trailing slash), `uri_allow_list` = that `/**` + `http://localhost:3000/**`,
+> `disable_signup=true`, branded subjects, and the **token_hash templates pointing
+> at `/auth/confirm`** (replacing the stock `{{ .ConfirmationURL }}` that caused
+> "expired link"). `/auth/confirm` is now a **click-through interstitial**
+> (`app/auth/confirm/page.tsx` → POST `verifyEmailOtpAction`) so email-scanner
+> prefetch can't burn the one-time token. Users list detects **Pending invite**
+> (auth `email_confirmed_at` null) with **Resend/Revoke** actions
+> (`lib/actions/users.ts`). Invite/reset failures map to specific errors + audit
+> (`user.invite_failed/_resent/_revoked`, `password_reset.failed`).
+>
 > Scaffold facts: Next.js 16 (App Router) + React 19 + Tailwind v4 +
 > shadcn/ui (radix). Brand amber accent in `app/globals.css`. Supabase clients
 > in `lib/supabase/{server,client,admin,middleware}.ts`. Session refresh + auth

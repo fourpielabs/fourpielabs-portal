@@ -1,11 +1,42 @@
 "use server";
 
 import { z } from "zod";
+import { redirect } from "next/navigation";
+import { type EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
 import { mapEmailSendError } from "@/lib/auth/email-errors";
 
 type Result = { ok: true } | { ok: false; error: string };
+
+const ALLOWED_TYPES: EmailOtpType[] = ["invite", "recovery", "email"];
+
+/**
+ * Verify an email OTP (token_hash) and establish the session. Invoked by a POST
+ * from the /auth/confirm interstitial (a human button click) — never on a bare
+ * GET — so email-scanner prefetches can't burn the one-time token. On success,
+ * redirects to a RELATIVE `next`; on failure, back to /login.
+ */
+export async function verifyEmailOtpAction(formData: FormData): Promise<void> {
+  const token_hash = String(formData.get("token_hash") ?? "");
+  const rawType = String(formData.get("type") ?? "");
+  const next = String(formData.get("next") ?? "/dashboard");
+  const type = ALLOWED_TYPES.includes(rawType as EmailOtpType)
+    ? (rawType as EmailOtpType)
+    : null;
+
+  if (!token_hash || !type) redirect("/login?error=link");
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ type, token_hash });
+  if (error) {
+    console.error("verifyOtp failed:", { type, message: error.message });
+    redirect("/login?error=link");
+  }
+
+  // only relative redirects (open-redirect guard)
+  redirect(next.startsWith("/") ? next : "/dashboard");
+}
 
 const schema = z.object({ email: z.string().trim().email("Enter a valid email") });
 

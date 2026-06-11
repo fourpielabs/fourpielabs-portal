@@ -90,6 +90,97 @@ export async function sendInviteAction(
 }
 
 /**
+ * Resend a stuck invite (user invited but never accepted). The Auth admin API
+ * has no direct "resend", so we delete the unaccepted user and re-invite with
+ * the same metadata. Guarded to pending (unconfirmed) users only. Admin only.
+ */
+export async function resendInviteAction(userId: string): Promise<Result> {
+  const me = await requireRole(["admin"]);
+  const adminClient = createAdminClient();
+
+  const { data: got } = await adminClient.auth.admin.getUserById(userId);
+  if (!got?.user) return { ok: false, error: "User not found." };
+  if (got.user.email_confirmed_at) {
+    return { ok: false, error: "This user already accepted their invite." };
+  }
+
+  const supabase = await createClient();
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("email, role, client_id, full_name")
+    .eq("id", userId)
+    .single();
+  const email = prof?.email ?? got.user.email;
+  if (!email) return { ok: false, error: "No email on file for this user." };
+
+  // capture metadata, then delete + re-invite (cascades the old profile row)
+  const role = prof?.role ?? "client";
+  const clientId = prof?.client_id ?? null;
+  await adminClient.auth.admin.deleteUser(userId);
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const { error } = await adminClient.auth.admin.inviteUserByEmail(email, {
+    data: { role, client_id: clientId, full_name: prof?.full_name ?? null },
+    redirectTo: `${siteUrl}/accept-invite`,
+  });
+  if (error) {
+    const status = (error as { status?: number }).status;
+    console.error("resendInvite failed:", { email, status, message: error.message });
+    await logAudit({
+      actorId: me.id,
+      action: "user.invite_failed",
+      entity: "invitation",
+      clientId,
+      metadata: { email, resend: true, status: status ?? null, error: error.message },
+    });
+    return { ok: false, error: mapEmailSendError(error.message, status, { adminViewer: true }) };
+  }
+
+  await supabase.from("invitations").insert({
+    email,
+    role,
+    client_id: clientId,
+    invited_by: me.id,
+  });
+  await logAudit({
+    actorId: me.id,
+    action: "user.invite_resent",
+    entity: "invitation",
+    clientId,
+    metadata: { email, role },
+  });
+  revalidatePath("/admin/users");
+  return { ok: true };
+}
+
+/** Revoke a pending invite — deletes the unaccepted auth user. Admin only. */
+export async function revokeInviteAction(userId: string): Promise<Result> {
+  const me = await requireRole(["admin"]);
+  if (userId === me.id) return { ok: false, error: "You can't revoke your own account." };
+  const adminClient = createAdminClient();
+
+  const { data: got } = await adminClient.auth.admin.getUserById(userId);
+  if (!got?.user) return { ok: false, error: "User not found." };
+  if (got.user.email_confirmed_at) {
+    return { ok: false, error: "This user already accepted — deactivate instead of revoke." };
+  }
+
+  const email = got.user.email;
+  const { error } = await adminClient.auth.admin.deleteUser(userId);
+  if (error) return { ok: false, error: error.message };
+
+  await logAudit({
+    actorId: me.id,
+    action: "user.invite_revoked",
+    entity: "profile",
+    entityId: userId,
+    metadata: { email },
+  });
+  revalidatePath("/admin/users");
+  return { ok: true };
+}
+
+/**
  * Deactivate / reactivate a user (profiles.is_active). Deactivated users are
  * blocked at the auth gate on their next request (requireProfile signs them out
  * and redirects to /login). Admin only; admins can't deactivate themselves.

@@ -16,6 +16,8 @@ const ACTIONS = [
   "client.status_changed",
   "user.invited",
   "user.invite_failed",
+  "user.invite_resent",
+  "user.invite_revoked",
   "user.deactivated",
   "user.reactivated",
   "assignment.created",
