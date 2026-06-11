@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #FAFAF8; }
+    * { box-sizing: border-box; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</helmet>
+
+<div style="min-height: 100vh; background: #FAFAF8; font-family: Inter, system-ui, sans-serif; color: #18181B; padding: 56px 40px 120px">
+  <div style="max-width: 1220px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px">
+
+    <!-- ============ HEADER ============ -->
+    <header style="display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -0.01em; white-space: nowrap">4Pie Labs<span style="color: #D97706">.</span></div>
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8E8B84">Keystone 3 of 6 · For approval</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em">K3 · Client Performance</h1>
+        <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #57534E; max-width: 720px; text-wrap: pretty">The proof surface. The chart is live — <span style="font-weight: 600; color: #18181B">use the metric selector</span> to switch between Leads, Phone calls and GBP views; the axis, line and tooltip re-window to the months with data (Nov 2025 – Mar 2026).</p>
+      </div>
+    </header>
+
+    <!-- ============ DESKTOP 1440 ============ -->
+    <section style="display: flex; flex-direction: column; gap: 14px" data-screen-label="K3 Desktop 1440">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">Desktop · 1440</span>
+        <span style="font-size: 12px; color: #8E8B84">Interactive metric selector</span>
+      </div>
+      <div ref="{{ frameRef }}" style="width: 100%; position: relative; overflow: hidden; border-radius: 16px; border: 1px solid #E7E5E0; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04); height: {{ frameH }}px">
+        <div style="width: 1440px; height: 1790px; transform-origin: top left; background: #FAFAF8; position: relative; transform: scale({{ frameScale }})">
+
+          <!-- Top nav -->
+          <div style="background: #FFFFFF; border-bottom: 1px solid #E7E5E0">
+            <div style="max-width: 1280px; margin: 0 auto; height: 72px; padding: 0 32px; display: flex; align-items: center; gap: 28px">
+              <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.01em; white-space: nowrap">4Pie Labs<span style="color: #D97706">.</span></span>
+              <div style="display: flex; align-items: center; gap: 4px; flex: 1">
+                <span style="font-size: 13.5px; font-weight: 500; color: #57534E; border-radius: 999px; padding: 8px 14px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #FAFAF8; color: #18181B">Dashboard</span>
+                <span style="font-size: 13.5px; font-weight: 500; color: #57534E; border-radius: 999px; padding: 8px 14px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #FAFAF8; color: #18181B">Program</span>
+                <span style="font-size: 13.5px; font-weight: 500; color: #57534E; border-radius: 999px; padding: 8px 14px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #FAFAF8; color: #18181B">Content</span>
+                <span style="font-size: 13.5px; font-weight: 600; color: #18181B; background: #F4F4F0; border-radius: 999px; padding: 8px 14px; cursor: pointer">Performance</span>
+                <span style="font-size: 13.5px; font-weight: 500; color: #57534E; border-radius: 999px; padding: 8px 14px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #FAFAF8; color: #18181B">Deliverables</span>
+                <span style="font-size: 13.5px; font-weight: 500; color: #57534E; border-radius: 999px; padding: 8px 14px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #FAFAF8; color: #18181B">Calls &amp; Notes</span>
+                <span style="font-size: 13.5px; font-weight: 500; color: #57534E; border-radius: 999px; padding: 8px 14px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #FAFAF8; color: #18181B">Documents</span>
+              </div>
+              <span style="width: 38px; height: 38px; border-radius: 50%; background: #FEF3C7; color: #92400E; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; cursor: pointer">PM</span>
+            </div>
+          </div>
+
+          <!-- Main -->
+          <div style="max-width: 1280px; margin: 0 auto; padding: 44px 32px 64px; display: flex; flex-direction: column; gap: 28px">
+
+            <!-- Title -->
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px">
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 38px; line-height: 1.08; letter-spacing: -0.02em">Your numbers, live</h2>
+                <span style="font-size: 13.5px; color: #57534E">Premier Painting Co. · data through March 2026 · fresh numbers land the 1st of each month</span>
+              </div>
+              <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #92400E; background: #FEF3C7; border: 1px solid #FDE68A; border-radius: 999px; padding: 7px 14px; flex-shrink: 0"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706"></span>Live · +18 citations this week</span>
+            </div>
+
+            <!-- Chart card -->
+            <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 26px 28px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04)">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+                <div style="display: flex; flex-direction: column; gap: 2px">
+                  <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 20px; letter-spacing: -0.01em">{{ selMetric }}</span>
+                  <span style="font-size: 12.5px; color: #8E8B84">Nov 2025 – Mar 2026 · windowed to months with data</span>
+                </div>
+                <div style="position: relative">
+                  <button onClick="{{ toggleSel }}" style="display: inline-flex; align-items: center; gap: 8px; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; padding: 0 16px; height: 42px; cursor: pointer; transition: border-color 160ms ease-out" style-hover="border-color: #18181B">{{ selMetric }}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                  <sc-if value="{{ selOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="position: absolute; top: 48px; right: 0; z-index: 5; border: 1px solid #E7E5E0; border-radius: 12px; background: #FFFFFF; box-shadow: 0 12px 32px rgba(24,24,27,0.10), 0 2px 6px rgba(24,24,27,0.05); padding: 6px; display: flex; flex-direction: column; gap: 2px; width: 190px">
+                      <div onClick="{{ pickLeads }}" style="display: flex; align-items: center; justify-content: space-between; font-size: 13.5px; padding: 9px 12px; border-radius: 8px; cursor: pointer; transition: background 150ms ease-out" style-hover="background: #FAFAF8">Leads {{ checkLeads }}</div>
+                      <div onClick="{{ pickCalls }}" style="display: flex; align-items: center; justify-content: space-between; font-size: 13.5px; padding: 9px 12px; border-radius: 8px; cursor: pointer; transition: background 150ms ease-out" style-hover="background: #FAFAF8">Phone calls {{ checkCalls }}</div>
+                      <div onClick="{{ pickViews }}" style="display: flex; align-items: center; justify-content: space-between; font-size: 13.5px; padding: 9px 12px; border-radius: 8px; cursor: pointer; transition: background 150ms ease-out" style-hover="background: #FAFAF8">GBP views {{ checkViews }}</div>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+              <div style="position: relative">
+                <svg viewBox="0 0 1140 280" style="width: 100%; height: auto; display: block">
+                  <defs>
+                    <linearGradient id="k3-amberfill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#D97706" stop-opacity="0.22"></stop>
+                      <stop offset="100%" stop-color="#D97706" stop-opacity="0"></stop>
+                    </linearGradient>
+                  </defs>
+                  <line x1="56" y1="30" x2="1110" y2="30" stroke="#F4F4F0" stroke-width="1"></line>
+                  <line x1="56" y1="130" x2="1110" y2="130" stroke="#F4F4F0" stroke-width="1"></line>
+                  <line x1="56" y1="230" x2="1110" y2="230" stroke="#E7E5E0" stroke-width="1"></line>
+                  <text x="46" y="34" text-anchor="end" font-size="12" fill="#8E8B84" font-family="Inter, sans-serif">{{ yTop }}</text>
+                  <text x="46" y="134" text-anchor="end" font-size="12" fill="#8E8B84" font-family="Inter, sans-serif">{{ yMid }}</text>
+                  <text x="46" y="234" text-anchor="end" font-size="12" fill="#8E8B84" font-family="Inter, sans-serif">0</text>
+                  <path d="{{ areaD }}" fill="url(#k3-amberfill)"></path>
+                  <polyline points="{{ linePts }}" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                  <line x1="1080" y1="{{ lastY }}" x2="1080" y2="230" stroke="#D6D3CD" stroke-width="1" stroke-dasharray="3 3"></line>
+                  {{ chartDots }}
+                  <text x="80" y="256" text-anchor="middle" font-size="12" fill="#8E8B84" font-family="Inter, sans-serif">Nov 2025</text>
+                  <text x="330" y="256" text-anchor="middle" font-size="12" fill="#8E8B84" font-family="Inter, sans-serif">Dec</text>
+                  <text x="580" y="256" text-anchor="middle" font-size="12" fill="#8E8B84" font-family="Inter, sans-serif">Jan 2026</text>
+                  <text x="830" y="256" text-anchor="middle" font-size="12" fill="#8E8B84" font-family="Inter, sans-serif">Feb</text>
+                  <text x="1080" y="256" text-anchor="middle" font-size="12" fill="#8E8B84" font-family="Inter, sans-serif">Mar</text>
+                </svg>
+                <div style="position: absolute; top: 0; right: 2%; background: #18181B; border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 8px 24px rgba(24,24,27,0.25)">
+                  <span style="font-size: 11px; font-weight: 600; color: #A8A8A3">March 2026</span>
+                  <span style="font-size: 14px; font-weight: 700; color: #FFFFFF; font-variant-numeric: tabular-nums">{{ selMetric }} <span style="color: #FBBF24">{{ lastVal }}</span> <span style="font-size: 11.5px; font-weight: 600; color: #4ADE80">▲ {{ lastDelta }}</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Table + competitors -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start">
+              <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04)">
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 22px 28px 14px">
+                  <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 20px; letter-spacing: -0.01em">Month by month</span>
+                  <span style="font-size: 12px; color: #8E8B84">Newest first · ▲▼ vs prior month</span>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13.5px">
+                  <thead>
+                    <tr>
+                      <th style="text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 10px 28px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Month</th>
+                      <th style="text-align: right; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 10px 16px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Leads</th>
+                      <th style="text-align: right; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 10px 16px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Phone calls</th>
+                      <th style="text-align: right; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 10px 16px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">GBP views</th>
+                      <th style="text-align: right; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 10px 16px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">New citations</th>
+                      <th style="text-align: right; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 10px 28px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Avg rating</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style="background: #FFFBEB">
+                      <td style="padding: 12px 28px; border-bottom: 1px solid #F4F4F0; font-weight: 600">March 2026</td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600">140 <span style="color: #166534; font-size: 12px">▲20</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600">96 <span style="color: #166534; font-size: 12px">▲9</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600">2,310 <span style="color: #166534; font-size: 12px">▲312</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600">18 <span style="color: #166534; font-size: 12px">▲6</span></td>
+                      <td style="padding: 12px 28px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600">4.8 <span style="color: #991B1B; font-size: 12px">▼0.1</span></td>
+                    </tr>
+                    <tr style="transition: background 120ms ease-out" style-hover="background: #FAFAF8">
+                      <td style="padding: 12px 28px; border-bottom: 1px solid #F4F4F0; font-weight: 600">February 2026</td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">120 <span style="color: #166534; font-size: 12px">▲22</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">87 <span style="color: #166534; font-size: 12px">▲23</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">1,998 <span style="color: #166534; font-size: 12px">▲473</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">12 <span style="color: #166534; font-size: 12px">▲1</span></td>
+                      <td style="padding: 12px 28px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">4.9 <span style="color: #166534; font-size: 12px">▲0.1</span></td>
+                    </tr>
+                    <tr style="transition: background 120ms ease-out" style-hover="background: #FAFAF8">
+                      <td style="padding: 12px 28px; border-bottom: 1px solid #F4F4F0; font-weight: 600">January 2026</td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">98 <span style="color: #991B1B; font-size: 12px">▼17</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">64 <span style="color: #991B1B; font-size: 12px">▼14</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">1,525 <span style="color: #991B1B; font-size: 12px">▼85</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">11 <span style="color: #166534; font-size: 12px">▲2</span></td>
+                      <td style="padding: 12px 28px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">4.8 <span style="color: #8E8B84; font-size: 12px">—</span></td>
+                    </tr>
+                    <tr style="transition: background 120ms ease-out" style-hover="background: #FAFAF8">
+                      <td style="padding: 12px 28px; border-bottom: 1px solid #F4F4F0; font-weight: 600">December 2025</td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">115 <span style="color: #166534; font-size: 12px">▲13</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">78 <span style="color: #166534; font-size: 12px">▲7</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">1,610 <span style="color: #166534; font-size: 12px">▲130</span></td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">9 <span style="color: #166534; font-size: 12px">▲3</span></td>
+                      <td style="padding: 12px 28px; border-bottom: 1px solid #F4F4F0; text-align: right; font-variant-numeric: tabular-nums">4.8 <span style="color: #166534; font-size: 12px">▲0.1</span></td>
+                    </tr>
+                    <tr style="transition: background 120ms ease-out" style-hover="background: #FAFAF8">
+                      <td style="padding: 12px 28px; font-weight: 600">November 2025 <span style="font-size: 11px; color: #8E8B84; font-weight: 500">· first full month</span></td>
+                      <td style="padding: 12px 16px; text-align: right; font-variant-numeric: tabular-nums">102</td>
+                      <td style="padding: 12px 16px; text-align: right; font-variant-numeric: tabular-nums">71</td>
+                      <td style="padding: 12px 16px; text-align: right; font-variant-numeric: tabular-nums">1,480</td>
+                      <td style="padding: 12px 16px; text-align: right; font-variant-numeric: tabular-nums">6</td>
+                      <td style="padding: 12px 28px; text-align: right; font-variant-numeric: tabular-nums">4.7</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Competitors -->
+              <div style="display: flex; flex-direction: column; gap: 16px">
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 2px">
+                  <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 20px; letter-spacing: -0.01em">Competitors</span>
+                  <span style="font-size: 12px; color: #8E8B84">Intel · updated monthly</span>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04)">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+                    <div style="display: flex; align-items: center; gap: 10px">
+                      <span style="width: 34px; height: 34px; border-radius: 10px; background: #F4F4F0; color: #57534E; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">CP</span>
+                      <div style="display: flex; flex-direction: column"><span style="font-size: 14.5px; font-weight: 600">ColorPro Painters</span><span style="font-size: 11.5px; color: #8E8B84">Residential painting · same metro</span></div>
+                    </div>
+                    <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: #9A3412; background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 999px; padding: 4px 10px; flex-shrink: 0"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>High</span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+                    <div style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #8E8B84">Top format</span><span style="font-size: 12.5px; font-weight: 600">Weekly GBP offers</span></div>
+                    <div style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #8E8B84">Hook style</span><span style="font-size: 12.5px; font-weight: 600">Price-anchored deals</span></div>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 10px">
+                    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #8E8B84">What's working for them</span><span style="font-size: 12.5px; line-height: 1.55; color: #57534E">Weekly Google offers with hard price anchors — the "$199 room special" keeps pulling clicks.</span></div>
+                    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #8E8B84">The gap</span><span style="font-size: 12.5px; line-height: 1.55; color: #57534E">No suburb service pages — they rank nowhere outside their home zip.</span></div>
+                    <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #B45309">Our play</span><span style="font-size: 12.5px; line-height: 1.55; color: #18181B">Out-page them — your five suburb pages launch in April.</span></div>
+                  </div>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04)">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+                    <div style="display: flex; align-items: center; gap: 10px">
+                      <span style="width: 34px; height: 34px; border-radius: 10px; background: #F4F4F0; color: #57534E; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">FC</span>
+                      <div style="display: flex; flex-direction: column"><span style="font-size: 14.5px; font-weight: 600">FreshCoat Co. <span style="font-weight: 500; color: #8E8B84">@freshcoatco</span></span><span style="font-size: 11.5px; color: #8E8B84">Painting &amp; decor content</span></div>
+                    </div>
+                    <span style="display: inline-flex; align-items: center; font-size: 11.5px; font-weight: 600; color: #92400E; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 999px; padding: 4px 10px; flex-shrink: 0">Medium</span>
+                  </div>
+                  <div style="display: flex; gap: 18px">
+                    <div style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums">12.4k</span><span style="font-size: 11px; color: #8E8B84">Followers</span></div>
+                    <div style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums">38k</span><span style="font-size: 11px; color: #8E8B84">Avg views</span></div>
+                    <div style="display: flex; flex-direction: column; gap: 1px; flex: 1"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #8E8B84">Top format · hook</span><span style="font-size: 12.5px; font-weight: 600">Before/after Reels · time-lapse</span></div>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 10px">
+                    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #8E8B84">What's working for them</span><span style="font-size: 12.5px; line-height: 1.55; color: #57534E">Time-lapse before/after Reels — strong top-of-funnel reach.</span></div>
+                    <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #8E8B84">The gap</span><span style="font-size: 12.5px; line-height: 1.55; color: #57534E">All reach, no capture — no booking link or lead form anywhere.</span></div>
+                    <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #B45309">Our play</span><span style="font-size: 12.5px; line-height: 1.55; color: #18181B">Pair your before/after shots with the booking link — reach <em>and</em> capture.</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reports -->
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; align-items: start">
+              <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04)">
+                <div style="padding: 22px 24px 12px"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 20px; letter-spacing: -0.01em">Reports</span></div>
+                <div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid #F4F4F0; background: #FFFBEB; border-left: 3px solid #D97706; cursor: pointer">
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600">March 2026</span><span style="font-size: 12px; color: #8E8B84">Published Apr 1</span></div>
+                  <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: #166534; background: #DCFCE7; border-radius: 999px; padding: 3px 10px"><span style="width: 5px; height: 5px; border-radius: 50%; background: #15803D"></span>Published</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid #F4F4F0; cursor: pointer; transition: background 150ms ease-out" style-hover="background: #FAFAF8">
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600">February 2026</span><span style="font-size: 12px; color: #8E8B84">Published Mar 1</span></div>
+                  <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: #166534; background: #DCFCE7; border-radius: 999px; padding: 3px 10px"><span style="width: 5px; height: 5px; border-radius: 50%; background: #15803D"></span>Published</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid #F4F4F0; cursor: pointer; transition: background 150ms ease-out" style-hover="background: #FAFAF8">
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600">January 2026</span><span style="font-size: 12px; color: #8E8B84">Published Feb 1</span></div>
+                  <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: #166534; background: #DCFCE7; border-radius: 999px; padding: 3px 10px"><span style="width: 5px; height: 5px; border-radius: 50%; background: #15803D"></span>Published</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid #F4F4F0; cursor: pointer; transition: background 150ms ease-out" style-hover="background: #FAFAF8">
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600">December 2025</span><span style="font-size: 12px; color: #8E8B84">Published Jan 2</span></div>
+                  <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: #166534; background: #DCFCE7; border-radius: 999px; padding: 3px 10px"><span style="width: 5px; height: 5px; border-radius: 50%; background: #15803D"></span>Published</span>
+                </div>
+              </div>
+
+              <!-- Report viewer -->
+              <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 30px 36px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04)">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+                  <div style="display: flex; flex-direction: column; gap: 2px">
+                    <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">Monthly report · March 2026</span>
+                    <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.015em">March in three numbers</span>
+                  </div>
+                  <button style="display: inline-flex; align-items: center; gap: 8px; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; color: #FFFFFF; background: #18181B; border: none; border-radius: 999px; padding: 0 18px; height: 42px; cursor: pointer; flex-shrink: 0; transition: background 160ms ease-out" style-hover="background: #2C2C30"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Download PDF</button>
+                </div>
+                <p style="margin: 0; font-size: 14.5px; line-height: 1.65; text-wrap: pretty">Leads hit <strong>140</strong> — up 17% on February and your best month yet. The two new service pages are doing the heavy lifting: <a href="#" style="color: #B45309; font-weight: 600; text-decoration: underline; text-underline-offset: 2px">Interior Painting</a> alone brought 31 inquiries.</p>
+                <ul style="margin: 0; padding-left: 20px; font-size: 14.5px; line-height: 1.8">
+                  <li><strong>18 new citations</strong> went live across local directories — directory cleanup is ahead of schedule</li>
+                  <li>Review velocity held at <code style="font-family: ui-monospace, monospace; font-size: 13px; background: #F4F4F0; border-radius: 6px; padding: 2px 6px">12/mo</code> — keep handing out the QR card</li>
+                  <li>Map-pack position improved to <strong>#2</strong> for "painters near me"</li>
+                </ul>
+                <blockquote style="margin: 0; border-left: 3px solid #D97706; padding: 4px 0 4px 16px; font-size: 14.5px; line-height: 1.65; color: #57534E; font-style: italic">"April's focus: exterior season prep. Two more pages, one promo push." — Riley</blockquote>
+                <div style="font-size: 12px; color: #8E8B84; border-top: 1px solid #F4F4F0; padding-top: 14px">PDF · 1.2 MB · also in your Documents</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MOBILE 390 ============ -->
+    <section style="display: flex; flex-direction: column; gap: 14px" data-screen-label="K3 Mobile 390">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">Mobile · 390</span>
+        <span style="font-size: 12px; color: #8E8B84">Scroll the frame · segmented metric switch · monthly cards replace the table</span>
+      </div>
+      <div style="display: flex; gap: 32px; align-items: flex-start">
+        <div style="width: 390px; flex-shrink: 0; height: 844px; background: #FAFAF8; border-radius: 28px; border: 1px solid #E7E5E0; overflow: hidden; position: relative; box-shadow: 0 2px 8px rgba(24,24,27,0.10); display: flex; flex-direction: column">
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 24px 6px">
+              <span style="font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums">9:41</span>
+              <span style="width: 16px; height: 9px; border-radius: 2px; border: 1px solid #57534E; position: relative"><span style="position: absolute; inset: 1px; right: 4px; background: #18181B; border-radius: 1px"></span></span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 20px 0">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span style="width: 36px; height: 36px; border-radius: 50%; background: #FEF3C7; color: #92400E; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">PM</span>
+                <span style="font-size: 13.5px; color: #57534E">Hello <span style="font-weight: 600; color: #18181B">Pat</span></span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; padding: 18px 20px 0">
+              <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 500; font-size: 30px; line-height: 1.12; letter-spacing: -0.02em">Your <span style="font-weight: 700">numbers</span>, live</span>
+              <span style="font-size: 12.5px; color: #8E8B84">Data through March 2026</span>
+            </div>
+            <div style="padding: 16px 20px 0">
+              <div style="display: inline-flex; background: #F4F4F0; border-radius: 999px; padding: 3px">
+                <span style="font-size: 12.5px; font-weight: 600; color: #FFFFFF; background: #18181B; border-radius: 999px; padding: 8px 16px">Leads</span>
+                <span style="font-size: 12.5px; font-weight: 600; color: #57534E; border-radius: 999px; padding: 8px 16px">Calls</span>
+                <span style="font-size: 12.5px; font-weight: 600; color: #57534E; border-radius: 999px; padding: 8px 16px">GBP views</span>
+              </div>
+            </div>
+            <div style="padding: 14px 20px 0">
+              <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+                <div style="display: flex; align-items: baseline; justify-content: space-between">
+                  <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 30px; font-variant-numeric: tabular-nums">140</span><span style="font-size: 12px; font-weight: 600; color: #166534">▲ 20 vs Feb</span></div>
+                  <span style="font-size: 11px; color: #8E8B84">Nov – Mar</span>
+                </div>
+                <svg viewBox="0 0 340 130" style="width: 100%; height: auto; display: block">
+                  <defs>
+                    <linearGradient id="k3m-fill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#D97706" stop-opacity="0.22"></stop>
+                      <stop offset="100%" stop-color="#D97706" stop-opacity="0"></stop>
+                    </linearGradient>
+                  </defs>
+                  <line x1="8" y1="104" x2="332" y2="104" stroke="#E7E5E0" stroke-width="1"></line>
+                  <path d="M 20 36 L 98 27 L 176 47 L 254 31 L 320 13 L 320 104 L 20 104 Z" fill="url(#k3m-fill)"></path>
+                  <polyline points="20,36 98,27 176,47 254,31 320,13" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                  <circle cx="320" cy="13" r="4.5" fill="#D97706" stroke="#FFFFFF" stroke-width="2"></circle>
+                  <text x="20" y="122" text-anchor="middle" font-size="10" fill="#8E8B84" font-family="Inter, sans-serif">Nov</text>
+                  <text x="98" y="122" text-anchor="middle" font-size="10" fill="#8E8B84" font-family="Inter, sans-serif">Dec</text>
+                  <text x="176" y="122" text-anchor="middle" font-size="10" fill="#8E8B84" font-family="Inter, sans-serif">Jan</text>
+                  <text x="254" y="122" text-anchor="middle" font-size="10" fill="#8E8B84" font-family="Inter, sans-serif">Feb</text>
+                  <text x="320" y="122" text-anchor="middle" font-size="10" fill="#8E8B84" font-family="Inter, sans-serif">Mar</text>
+                </svg>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px 20px 0">
+              <span style="font-size: 13px; font-weight: 600; color: #57534E">Month by month</span>
+              <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+                <div style="display: flex; align-items: center; justify-content: space-between"><span style="font-size: 13.5px; font-weight: 600">March 2026</span><span style="font-size: 11px; font-weight: 600; color: #92400E; background: #FEF3C7; border-radius: 999px; padding: 2px 8px">Latest</span></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px">
+                  <div style="display: flex; flex-direction: column"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84">Leads</span><span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums">140 <span style="font-size: 10.5px; color: #166534">▲20</span></span></div>
+                  <div style="display: flex; flex-direction: column"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84">Calls</span><span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums">96 <span style="font-size: 10.5px; color: #166534">▲9</span></span></div>
+                  <div style="display: flex; flex-direction: column"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84">Rating</span><span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums">4.8 <span style="font-size: 10.5px; color: #991B1B">▼0.1</span></span></div>
+                </div>
+              </div>
+              <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+                <span style="font-size: 13.5px; font-weight: 600">February 2026</span>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px">
+                  <div style="display: flex; flex-direction: column"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84">Leads</span><span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums">120 <span style="font-size: 10.5px; color: #166534">▲22</span></span></div>
+                  <div style="display: flex; flex-direction: column"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84">Calls</span><span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums">87 <span style="font-size: 10.5px; color: #166534">▲23</span></span></div>
+                  <div style="display: flex; flex-direction: column"><span style="font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84">Rating</span><span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums">4.9 <span style="font-size: 10.5px; color: #166534">▲0.1</span></span></div>
+                </div>
+              </div>
+              <button style="font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; height: 44px; cursor: pointer">Show 3 more months</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 0">
+              <span style="font-size: 13px; font-weight: 600; color: #57534E">Competitors</span>
+              <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+                <div style="display: flex; align-items: center; justify-content: space-between">
+                  <div style="display: flex; align-items: center; gap: 9px">
+                    <span style="width: 28px; height: 28px; border-radius: 8px; background: #F4F4F0; color: #57534E; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">CP</span>
+                    <div style="display: flex; flex-direction: column"><span style="font-size: 13.5px; font-weight: 600">ColorPro Painters</span><span style="font-size: 11px; color: #8E8B84">Residential painting · same metro</span></div>
+                  </div>
+                  <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: #9A3412; background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 999px; padding: 3px 9px; flex-shrink: 0">High</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px">
+                  <div style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #8E8B84">What's working for them</span><span style="font-size: 12px; line-height: 1.5; color: #57534E">Weekly Google offers with hard price anchors.</span></div>
+                  <div style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #8E8B84">The gap</span><span style="font-size: 12px; line-height: 1.5; color: #57534E">No suburb service pages — invisible outside their home zip.</span></div>
+                  <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #B45309">Our play</span><span style="font-size: 12px; line-height: 1.5; color: #18181B">Out-page them — your five suburb pages launch in April.</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 24px">
+              <span style="font-size: 13px; font-weight: 600; color: #57534E">Latest report</span>
+              <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+                <div style="display: flex; align-items: center; justify-content: space-between">
+                  <span style="font-size: 14.5px; font-weight: 600">March in three numbers</span>
+                  <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #166534; background: #DCFCE7; border-radius: 999px; padding: 3px 9px">Published</span>
+                </div>
+                <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #57534E">Leads hit <strong style="color: #18181B">140</strong> — up 17% on February and your best month yet.</p>
+                <button style="display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; color: #FFFFFF; background: #18181B; border: none; border-radius: 999px; height: 44px; cursor: pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Download PDF</button>
+              </div>
+              <div style="height: 76px"></div>
+            </div>
+          </div>
+          <!-- bottom tab bar -->
+          <div style="position: absolute; left: 14px; right: 14px; bottom: 14px; background: #FFFFFF; border-radius: 999px; box-shadow: 0 12px 32px rgba(24,24,27,0.14), 0 2px 6px rgba(24,24,27,0.06); padding: 8px 14px; display: flex; align-items: center; justify-content: space-between">
+            <span style="width: 48px; height: 48px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #57534E"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></span>
+            <span style="width: 48px; height: 48px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #57534E"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg></span>
+            <span style="width: 48px; height: 48px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #57534E"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+            <span style="width: 48px; height: 48px; border-radius: 50%; background: #18181B; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg></span>
+            <span style="width: 48px; height: 48px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #57534E"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></span>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 8px; max-width: 420px">
+          <div style="font-size: 13px; font-weight: 600">Notes</div>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.8; color: #57534E">
+            <li>Metric selector becomes the pill segmented control on mobile; the table collapses to per-month cards (3 key metrics + "show more").</li>
+            <li>Competitor cards lead with qualitative intel — what's working, the gap, our play. Nullable social stats hide gracefully (ColorPro has none; FreshCoat shows followers + avg views).</li>
+            <li>Rating dip (▼0.1) is shown honestly — trust is the retention play.</li>
+            <li>Tab bar: Numbers active (circular charcoal state).</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer style="border-top: 1px solid #E7E5E0; padding-top: 24px; display: flex; justify-content: space-between; align-items: baseline; gap: 24px">
+      <div style="font-size: 13px; color: #57534E; max-width: 680px; line-height: 1.6; text-wrap: pretty"><span style="font-weight: 600; color: #18181B">Next:</span> on approval, K4 Staff Client Overview — sidebar shell, client header with status chips, tab bar, overview cards.</div>
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8E8B84; white-space: nowrap">4Pie Labs · K3 Client Performance</div>
+    </footer>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { metric: 'Leads', selOpen: false, scale: 0.6 };
+
+  METRICS = {
+    'Leads':       { vals: [102, 115, 98, 120, 140], yMax: 150 },
+    'Phone calls': { vals: [71, 78, 64, 87, 96],     yMax: 100 },
+    'GBP views':   { vals: [1480, 1610, 1525, 1998, 2310], yMax: 2500 }
+  };
+  XS = [80, 330, 580, 830, 1080];
+
+  applyWidth(w) {
+    if (w > 0) {
+      const s = Math.min(w / 1440, 1);
+      if (Math.abs(s - this.state.scale) > 0.001) this.setState({ scale: s });
+    }
+  }
+
+  frameRef = (el) => {
+    if (el && el !== this._frameEl) {
+      this._frameEl = el;
+      if (!this._ro) {
+        this._ro = new ResizeObserver((entries) => this.applyWidth(entries[0].contentRect.width));
+      }
+      this._ro.observe(el);
+      this.applyWidth(el.getBoundingClientRect().width);
+    }
+  };
+
+  componentWillUnmount() {
+    if (this._ro) this._ro.disconnect();
+  }
+
+  check() {
+    return React.createElement('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: '#B45309', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round' },
+      React.createElement('polyline', { points: '20 6 9 17 4 12' }));
+  }
+
+  renderVals() {
+    const { metric, selOpen, scale } = this.state;
+    const m = this.METRICS[metric];
+    const toY = (v) => 230 - (v / m.yMax) * 200;
+    const pts = m.vals.map((v, i) => this.XS[i] + ',' + toY(v).toFixed(1));
+    const areaD = 'M ' + pts.map(p => p.replace(',', ' ')).join(' L ') + ' L 1080 230 L 80 230 Z';
+    const dots = m.vals.map((v, i) => React.createElement('circle', {
+      key: metric + i,
+      cx: this.XS[i], cy: toY(v).toFixed(1),
+      r: i === 4 ? 5 : 4,
+      fill: i === 4 ? '#D97706' : '#FFFFFF',
+      stroke: i === 4 ? '#FFFFFF' : '#D97706',
+      strokeWidth: 2
+    }));
+    const last = m.vals[4], prev = m.vals[3];
+    return {
+      frameRef: this.frameRef,
+      frameScale: scale,
+      frameH: Math.round(1790 * scale),
+      selMetric: metric,
+      selOpen,
+      toggleSel: () => this.setState(s => ({ selOpen: !s.selOpen })),
+      pickLeads: () => this.setState({ metric: 'Leads', selOpen: false }),
+      pickCalls: () => this.setState({ metric: 'Phone calls', selOpen: false }),
+      pickViews: () => this.setState({ metric: 'GBP views', selOpen: false }),
+      checkLeads: metric === 'Leads' ? this.check() : null,
+      checkCalls: metric === 'Phone calls' ? this.check() : null,
+      checkViews: metric === 'GBP views' ? this.check() : null,
+      yTop: m.yMax.toLocaleString('en-US'),
+      yMid: (m.yMax / 2).toLocaleString('en-US'),
+      linePts: pts.join(' '),
+      areaD,
+      chartDots: React.createElement('g', null, dots),
+      lastY: toY(last).toFixed(1),
+      lastVal: last.toLocaleString('en-US'),
+      lastDelta: (last - prev).toLocaleString('en-US')
+    };
+  }
+}
+</script>
+</body>
+</html>

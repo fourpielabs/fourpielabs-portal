@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #FAFAF8; }
+    * { box-sizing: border-box; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</helmet>
+
+<div style="min-height: 100vh; background: #FAFAF8; font-family: Inter, system-ui, sans-serif; color: #18181B; padding: 56px 40px 120px">
+  <div style="max-width: 1220px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px">
+
+    <!-- ============ HEADER ============ -->
+    <header style="display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -0.01em; white-space: nowrap">4Pie Labs<span style="color: #D97706">.</span></div>
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8E8B84">Keystone 1 of 6 · For approval</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em">K1 · Login</h1>
+        <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #57534E; max-width: 680px; text-wrap: pretty">Dark split-screen auth shell (ref-1, adapted to charcoal + amber glow). The desktop frame is live — <span style="font-weight: 600; color: #18181B">click "Sign in" to trigger the error state</span>; typing clears it. Mobile collapses the brand panel to a compact header.</p>
+      </div>
+    </header>
+
+    <!-- ============ DESKTOP 1440 ============ -->
+    <section style="display: flex; flex-direction: column; gap: 14px" data-screen-label="K1 Desktop 1440">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">Desktop · 1440</span>
+        <span style="font-size: 12px; color: #8E8B84">Interactive — try the form</span>
+      </div>
+      <div ref="{{ frameRef }}" style="width: 100%; position: relative; overflow: hidden; border-radius: 16px; border: 1px solid #E7E5E0; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04); height: {{ frameH }}px">
+        <div style="width: 1440px; height: 900px; transform-origin: top left; background: #101012; position: relative; display: flex; align-items: center; justify-content: center; transform: scale({{ frameScale }})">
+          <div style="position: absolute; top: -200px; right: -100px; width: 700px; height: 700px; border-radius: 50%; background: radial-gradient(circle, rgba(217,119,6,0.16), transparent 65%)"></div>
+          <div style="position: absolute; bottom: -260px; left: 12%; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.035), transparent 65%)"></div>
+
+          <div style="position: relative; width: 1160px; display: grid; grid-template-columns: 480px 1fr; border-radius: 24px; overflow: hidden; border: 1px solid #2C2C30; background: #1A1A1D; box-shadow: 0 24px 64px rgba(0,0,0,0.45)">
+
+            <!-- Form panel -->
+            <div style="padding: 48px; display: flex; flex-direction: column; gap: 40px; min-height: 660px">
+              <div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px; letter-spacing: -0.01em; color: #F5F5F3">4Pie Labs<span style="color: #FBBF24">.</span></div>
+              <div style="display: flex; flex-direction: column; gap: 24px; flex: 1; justify-content: center">
+                <div style="display: flex; flex-direction: column; gap: 8px">
+                  <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 29px; letter-spacing: -0.015em; color: #F5F5F3">Sign in to your portal</h2>
+                  <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #A8A8A3">Your email and password — that's it.</p>
+                </div>
+                <sc-if value="{{ err }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(220,38,38,0.14); border: 1px solid rgba(248,113,113,0.35); border-radius: 12px; padding: 12px 14px">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FCA5A5" stroke-width="2" stroke-linecap="round" style="flex-shrink: 0; margin-top: 1px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span style="font-size: 13px; line-height: 1.5; color: #FCA5A5">That email and password don't match. Try again, or reset your password.</span>
+                  </div>
+                </sc-if>
+                <div style="display: flex; flex-direction: column; gap: 16px">
+                  <div style="display: flex; flex-direction: column; gap: 7px">
+                    <label style="font-size: 13px; font-weight: 600; color: #F5F5F3">Email address</label>
+                    <input type="email" placeholder="you@premierpainting.com" value="{{ email }}" onChange="{{ onEmail }}" style="font-family: Inter, sans-serif; font-size: 14px; color: #F5F5F3; background: rgba(255,255,255,0.045); border-radius: 12px; padding: 0 16px; height: 48px; outline: none; transition: border-color 160ms ease-out; border: 1px solid {{ fieldBorder }}" style-focus="border-color: #D97706; box-shadow: 0 0 0 3px rgba(217,119,6,0.22)" />
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 7px">
+                    <div style="display: flex; align-items: baseline; justify-content: space-between">
+                      <label style="font-size: 13px; font-weight: 600; color: #F5F5F3">Password</label>
+                      <a href="#" style="font-size: 12.5px; font-weight: 600; color: #FBBF24; text-decoration: none; transition: color 150ms ease-out" style-hover="color: #FDE68A">Forgot password?</a>
+                    </div>
+                    <input type="password" placeholder="••••••••" value="{{ pw }}" onChange="{{ onPw }}" style="font-family: Inter, sans-serif; font-size: 14px; color: #F5F5F3; background: rgba(255,255,255,0.045); border-radius: 12px; padding: 0 16px; height: 48px; outline: none; transition: border-color 160ms ease-out; border: 1px solid {{ fieldBorder }}" style-focus="border-color: #D97706; box-shadow: 0 0 0 3px rgba(217,119,6,0.22)" />
+                  </div>
+                  <button onClick="{{ submit }}" style="font-family: Inter, sans-serif; font-size: 14.5px; font-weight: 600; color: #FFFFFF; background: #B45309; border: none; border-radius: 999px; height: 48px; cursor: pointer; margin-top: 6px; transition: background 160ms ease-out" style-hover="background: #92400E">Sign in</button>
+                </div>
+              </div>
+              <div style="font-size: 12.5px; color: #8E8B84">Need help? <a href="#" style="color: #A8A8A3; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; transition: color 150ms ease-out" style-hover="color: #F5F5F3"><span>team@</span><span>fourpielabs.com</span></a></div>
+            </div>
+
+            <!-- Brand panel -->
+            <div style="position: relative; background: radial-gradient(110% 90% at 78% 8%, rgba(217,119,6,0.30), rgba(217,119,6,0.06) 48%, transparent 72%), #101012; padding: 56px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden">
+              <div style="position: absolute; top: 14%; right: -120px; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.05), transparent 60%); border: 1px solid rgba(255,255,255,0.05)"></div>
+              <div style="position: absolute; bottom: -80px; right: 22%; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(217,119,6,0.10), transparent 65%); border: 1px solid rgba(255,255,255,0.04)"></div>
+              <div style="position: relative; display: flex; flex-direction: column; gap: 18px; max-width: 480px">
+                <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #FBBF24">Client portal</span>
+                <div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 42px; line-height: 1.1; letter-spacing: -0.015em; color: #F5F5F3; text-wrap: pretty">Every number, deliverable, and win — in one place.</div>
+                <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #A8A8A3; text-wrap: pretty">Your roadmap, your deliverables, your numbers — live. Proof, not promises.</p>
+                <span style="display: inline-flex; align-items: center; gap: 8px; width: fit-content; font-size: 12.5px; font-weight: 600; color: #FBBF24; background: rgba(217,119,6,0.12); border: 1px solid rgba(217,119,6,0.35); border-radius: 999px; padding: 7px 14px; margin-top: 6px"><span style="width: 6px; height: 6px; border-radius: 50%; background: #FBBF24"></span>Live · +18 citations this week</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MOBILE 390 ============ -->
+    <section style="display: flex; flex-direction: column; gap: 14px" data-screen-label="K1 Mobile 390">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">Mobile · 390</span>
+        <span style="font-size: 12px; color: #8E8B84">Brand panel collapses to a compact header · 48px tap targets</span>
+      </div>
+      <div style="display: flex; gap: 32px; align-items: flex-start">
+        <div style="width: 390px; flex-shrink: 0; background: #101012; border-radius: 28px; border: 1px solid #2C2C30; overflow: hidden; box-shadow: 0 2px 8px rgba(24,24,27,0.10)">
+          <div style="position: relative; padding: 28px 24px 24px; background: radial-gradient(140% 100% at 85% 0%, rgba(217,119,6,0.26), rgba(217,119,6,0.05) 55%, transparent 80%), #101012; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+            <div style="position: absolute; top: -60px; right: -60px; width: 190px; height: 190px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.06); background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.04), transparent 60%)"></div>
+            <div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; color: #F5F5F3">4Pie Labs<span style="color: #FBBF24">.</span></div>
+            <div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 24px; line-height: 1.15; letter-spacing: -0.015em; color: #F5F5F3; text-wrap: pretty; max-width: 300px">Every number, deliverable, and win — in one place.</div>
+          </div>
+          <div style="padding: 28px 24px 32px; background: #1A1A1D; border-top: 1px solid #2C2C30; display: flex; flex-direction: column; gap: 20px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <h3 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 22px; letter-spacing: -0.01em; color: #F5F5F3">Sign in to your portal</h3>
+              <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: #A8A8A3">Your email and password — that's it.</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; flex-direction: column; gap: 7px">
+                <label style="font-size: 13px; font-weight: 600; color: #F5F5F3">Email address</label>
+                <input type="email" placeholder="you@premierpainting.com" style="font-family: Inter, sans-serif; font-size: 15px; color: #F5F5F3; background: rgba(255,255,255,0.045); border: 1px solid #2C2C30; border-radius: 12px; padding: 0 16px; height: 48px; outline: none" style-focus="border-color: #D97706; box-shadow: 0 0 0 3px rgba(217,119,6,0.22)" />
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 7px">
+                <div style="display: flex; align-items: baseline; justify-content: space-between">
+                  <label style="font-size: 13px; font-weight: 600; color: #F5F5F3">Password</label>
+                  <a href="#" style="font-size: 12.5px; font-weight: 600; color: #FBBF24; text-decoration: none">Forgot password?</a>
+                </div>
+                <input type="password" placeholder="••••••••" style="font-family: Inter, sans-serif; font-size: 15px; color: #F5F5F3; background: rgba(255,255,255,0.045); border: 1px solid #2C2C30; border-radius: 12px; padding: 0 16px; height: 48px; outline: none" style-focus="border-color: #D97706; box-shadow: 0 0 0 3px rgba(217,119,6,0.22)" />
+              </div>
+              <button style="font-family: Inter, sans-serif; font-size: 15px; font-weight: 600; color: #FFFFFF; background: #B45309; border: none; border-radius: 999px; height: 48px; cursor: pointer; margin-top: 4px; transition: background 160ms ease-out" style-hover="background: #92400E">Sign in</button>
+            </div>
+            <div style="font-size: 12px; color: #8E8B84; text-align: center">Need help? <a href="#" style="color: #A8A8A3; font-weight: 600; text-decoration: underline; text-underline-offset: 2px"><span>team@</span><span>fourpielabs.com</span></a></div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 8px; max-width: 420px">
+          <div style="font-size: 13px; font-weight: 600">Notes</div>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.8; color: #57534E">
+            <li>Amber CTA is white-on-700 (locked rule); links on dark use amber-400 for contrast.</li>
+            <li>Error state (desktop demo) uses the dark-surface red treatment; field borders go red together since the system can't tell which credential failed.</li>
+            <li>Forgot-password &amp; accept-invite screens reuse this shell as a single centered card.</li>
+            <li>Tablet 768–1024: same split, brand panel narrows to 40%.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer style="border-top: 1px solid #E7E5E0; padding-top: 24px; display: flex; justify-content: space-between; align-items: baseline; gap: 24px">
+      <div style="font-size: 13px; color: #57534E; max-width: 680px; line-height: 1.6; text-wrap: pretty"><span style="font-weight: 600; color: #18181B">Next:</span> on approval, K2 Client Dashboard — greeting block, KPI cards, Start Here checklist, roadmap, deliverables, updates, partner card, mobile bottom tab bar.</div>
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8E8B84; white-space: nowrap">4Pie Labs · K1 Login</div>
+    </footer>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { email: '', pw: '', err: false, scale: 0.6 };
+
+  applyWidth(w) {
+    if (w > 0) {
+      const s = Math.min(w / 1440, 1);
+      if (Math.abs(s - this.state.scale) > 0.001) this.setState({ scale: s });
+    }
+  }
+
+  // Callback ref: observe the wrapper the moment it attaches (the logic class
+  // can mount before the template DOM, so createRef + componentDidMount misses it).
+  frameRef = (el) => {
+    if (el && el !== this._frameEl) {
+      this._frameEl = el;
+      if (!this._ro) {
+        this._ro = new ResizeObserver((entries) => this.applyWidth(entries[0].contentRect.width));
+      }
+      this._ro.observe(el);
+      this.applyWidth(el.getBoundingClientRect().width);
+    }
+  };
+
+  componentWillUnmount() {
+    if (this._ro) this._ro.disconnect();
+  }
+
+  renderVals() {
+    const { email, pw, err, scale } = this.state;
+    return {
+      email, pw, err,
+      frameRef: this.frameRef, // callback ref
+      frameScale: scale,
+      frameH: Math.round(900 * scale),
+      fieldBorder: err ? 'rgba(248,113,113,0.55)' : '#2C2C30',
+      onEmail: (e) => this.setState({ email: e.target.value, err: false }),
+      onPw: (e) => this.setState({ pw: e.target.value, err: false }),
+      submit: () => this.setState({ err: true })
+    };
+  }
+}
+</script>
+</body>
+</html>
