@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #FAFAF8; }
+    * { box-sizing: border-box; }
+    @media print { body { background: #FFFFFF; } }
+  </style>
+</helmet>
+
+<div style="min-height: 100vh; background: #FAFAF8; font-family: Inter, system-ui, sans-serif; color: #18181B; padding: 56px 40px 120px">
+  <div style="max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 52px">
+
+    <!-- ============ HEADER ============ -->
+    <header style="display: flex; flex-direction: column; gap: 20px" data-screen-label="Handoff header">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -0.01em; white-space: nowrap">4Pie Labs<span style="color: #D97706">.</span></div>
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8E8B84">Deliverable 4 of 4 · Engineering handoff</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em">Handoff sheet</h1>
+        <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #57534E; max-width: 700px; text-wrap: pretty">Everything the implementing engineer needs: the token sheet, type system, status map, chart theme, per-keystone notes, and the guardrails logged during review. Target stack: <strong>Next.js · Tailwind CSS v4 · shadcn/ui · Lucide · Recharts</strong>. Approved mockups: D1 style tile, D2 component sheet, keystones K1–K6 (each desktop 1440 + mobile 390).</p>
+      </div>
+    </header>
+
+    <!-- ============ GUARDRAILS ============ -->
+    <section style="display: flex; flex-direction: column; gap: 16px" data-screen-label="Guardrails">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">00 · Guardrails — read first</div>
+        <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.01em">Flags logged during design review</h2>
+      </div>
+      <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 16px; padding: 22px 26px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; gap: 10px; font-size: 13.5px; line-height: 1.6"><span style="font-weight: 700; color: #B45309; flex-shrink: 0">1.</span><span><strong>Emails are split across two <code style="font-family: ui-monospace, monospace; font-size: 12px; background: rgba(217,119,6,0.1); border-radius: 5px; padding: 1px 5px">&lt;span&gt;</code>s in the mockups</strong> (e.g. <code style="font-family: ui-monospace, monospace; font-size: 12px; background: rgba(217,119,6,0.1); border-radius: 5px; padding: 1px 5px">&lt;span&gt;pat@&lt;/span&gt;&lt;span&gt;premierpainting.com&lt;/span&gt;</code>). This is a <strong>mockup-environment workaround only</strong> — the preview host rewrites literal email text. In React, render email addresses as plain text. Do not replicate the hack.</span></div>
+        <div style="display: flex; gap: 10px; font-size: 13.5px; line-height: 1.6"><span style="font-weight: 700; color: #B45309; flex-shrink: 0">2.</span><span><strong>No notification UI anywhere.</strong> No bells, no badges, no unread dots, in any shell, at any breakpoint. The product has no notification feature.</span></div>
+        <div style="display: flex; gap: 10px; font-size: 13.5px; line-height: 1.6"><span style="font-weight: 700; color: #B45309; flex-shrink: 0">3.</span><span><strong>Every button maps to a named server action.</strong> If a screen needs a new control, it must correspond to an action the system actually performs. The full v1 action set per surface is listed in the keystone notes (§6).</span></div>
+        <div style="display: flex; gap: 10px; font-size: 13.5px; line-height: 1.6"><span style="font-weight: 700; color: #B45309; flex-shrink: 0">4.</span><span><strong>v2 wishlist — not in v1, do not build UI for:</strong> metric visibility flag ("internal only" metrics — clients see every active metric), view-as-client / "open client portal", client reminder emails, chat, meeting scheduler, global search.</span></div>
+        <div style="display: flex; gap: 10px; font-size: 13.5px; line-height: 1.6"><span style="font-weight: 700; color: #B45309; flex-shrink: 0">5.</span><span><strong>Amber contrast rule (locked):</strong> white text only on amber-700+. Amber primary buttons = white on <code style="font-family: ui-monospace, monospace; font-size: 12px; background: rgba(217,119,6,0.1); border-radius: 5px; padding: 1px 5px">#B45309</code>, hover <code style="font-family: ui-monospace, monospace; font-size: 12px; background: rgba(217,119,6,0.1); border-radius: 5px; padding: 1px 5px">#92400E</code>. Amber-600 <code style="font-family: ui-monospace, monospace; font-size: 12px; background: rgba(217,119,6,0.1); border-radius: 5px; padding: 1px 5px">#D97706</code> is reserved for fills, progress, ticks, active states and focus rings — never under white text. Amber text on light backgrounds uses 700/800.</span></div>
+        <div style="display: flex; gap: 10px; font-size: 13.5px; line-height: 1.6"><span style="font-weight: 700; color: #B45309; flex-shrink: 0">6.</span><span><strong>Competitor data is schema-only:</strong> name/handle, niche, priority, follower count <em>(nullable)</em>, avg views <em>(nullable)</em>, top format, hook style, what's-working, the-gap, our-play. Nullable fields hide. No citations counts, ratings, map-pack data, deltas, or "You" comparison rows.</span></div>
+      </div>
+    </section>
+
+    <!-- ============ FONTS ============ -->
+    <section style="display: flex; flex-direction: column; gap: 16px" data-screen-label="Fonts">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">01 · Fonts</div>
+        <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.01em">Imports</h2>
+      </div>
+      <pre style="margin: 0; background: #1A1A1D; color: #F5F5F3; border-radius: 12px; padding: 20px 24px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; line-height: 1.7; overflow-x: auto">&lt;link rel="preconnect" href="https://fonts.googleapis.com"&gt;
+&lt;link rel="preconnect" href="https://fonts.gstatic.com" crossorigin&gt;
+&lt;link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"&gt;
+
+/* Next.js: prefer next/font/google — Bricolage_Grotesque + Inter */
+/* Display = Bricolage Grotesque (greetings, page titles, big numerals, card titles ≥20px) */
+/* UI/body = Inter. ALL metric numerals get font-variant-numeric: tabular-nums */</pre>
+    </section>
+
+    <!-- ============ TOKENS ============ -->
+    <section style="display: flex; flex-direction: column; gap: 16px" data-screen-label="Token sheet">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">02 · Tokens</div>
+        <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.01em">Complete CSS custom-property sheet</h2>
+        <p style="margin: 6px 0 0; font-size: 13.5px; line-height: 1.6; color: #57534E">In Tailwind v4, declare these inside <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">@theme</code> (as <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">--color-*</code>, <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">--radius-*</code>, etc.) so utilities are generated; map <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">--radius</code> for shadcn/ui to 12px (md).</p>
+      </div>
+      <pre style="margin: 0; background: #1A1A1D; color: #F5F5F3; border-radius: 12px; padding: 20px 24px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; line-height: 1.7; overflow-x: auto">:root {
+  /* ---- Neutrals (warm-tinted) ---- */
+  --bg:            #FAFAF8;  /* app background */
+  --surface:       #FFFFFF;  /* cards, tables, nav */
+  --surface-2:     #F4F4F0;  /* wells, segmented track, hover fills, skeleton base */
+  --border:        #E7E5E0;  /* hairlines, card borders */
+  --border-strong: #D6D3CD;  /* input + secondary-button borders */
+  --row-divider:   #F4F4F0;  /* table/list row hairlines */
+  --ink:           #18181B;  /* primary text, charcoal fills */
+  --ink-2:         #57534E;  /* secondary text */
+  --ink-3:         #8E8B84;  /* muted text, captions, axis labels */
+  --ink-faint:     #C7C4BD;  /* disabled glyphs, drag handles */
+  --charcoal-hover:#2C2C30;  /* primary button hover */
+
+  /* ---- Dark set (auth shell + hero/report cards) ---- */
+  --dark-bg:      #101012;
+  --dark-surface: #1A1A1D;   /* also toast background */
+  --dark-border:  #2C2C30;
+  --dark-ink:     #F5F5F3;
+  --dark-ink-2:   #A8A8A3;
+  --dark-field:   rgba(255,255,255,0.045);  /* input fill on dark */
+  --dark-glow:    radial-gradient(110% 90% at 78% 8%,
+                    rgba(217,119,6,0.30), rgba(217,119,6,0.06) 48%, transparent 72%);
+
+  /* ---- Amber ramp (brand accent #d97706) ---- */
+  --amber-50:  #FFFBEB;   --amber-100: #FEF3C7;
+  --amber-200: #FDE68A;   --amber-300: #FCD34D;
+  --amber-400: #FBBF24;   /* links + accents on dark; dashed pending borders */
+  --amber-500: #F59E0B;
+  --amber-600: #D97706;   /* fills, progress, ticks, active, focus — never under white text */
+  --amber-700: #B45309;   /* amber buttons (white text), amber text on light */
+  --amber-800: #92400E;   /* amber button hover, chip text on amber-100 */
+  --amber-900: #78350F;
+  --unsaved-bg: #FFFBEB;  /* dirty-row tint (entry grid, pending table rows: #FFFDF5) */
+
+  /* ---- Semantic: success / green ---- */
+  --success-bg: #DCFCE7;  --success-border: #BBF7D0;
+  --success-text: #166534; --success-dot: #15803D;
+  --success-dark-text: #4ADE80;  /* on dark toasts */
+
+  /* ---- Semantic: danger / red ---- */
+  --danger-solid: #DC2626; --danger-hover: #B91C1C;
+  --danger-bg: #FEF2F2;    --danger-bg-2: #FEE2E2;
+  --danger-border: #FECACA; --danger-text: #B91C1C; --danger-text-2: #991B1B;
+  --danger-dark-text: #F87171; /* on dark toasts; #FCA5A5 for body copy on dark */
+
+  /* ---- Semantic: info / blue (Needs review, In review) ---- */
+  --info-bg: #DBEAFE; --info-border: #BFDBFE;
+  --info-text: #1D4ED8; --info-dot: #2563EB;
+
+  /* ---- Semantic: teal (Approved) ---- */
+  --teal-bg: #CCFBF1; --teal-border: #99F6E4;
+  --teal-text: #115E59; --teal-dot: #0D9488;
+
+  /* ---- Semantic: indigo (Scheduled) ---- */
+  --indigo-bg: #E0E7FF; --indigo-border: #C7D2FE;
+  --indigo-text: #4338CA; --indigo-dot: #4F46E5;
+
+  /* ---- Semantic: orange (Competitor priority High) ---- */
+  --priority-bg: #FFF7ED; --priority-border: #FED7AA;
+  --priority-text: #9A3412; --priority-icon: #C2410C;
+
+  /* ---- Shape ---- */
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+  --radius-xl: 24px; --radius-pill: 999px;
+
+  /* ---- Elevation (soft + warm; never harsh) ---- */
+  --shadow-e1: 0 1px 2px rgba(24,24,27,0.05);
+  --shadow-e2: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04);
+  --shadow-e3: 0 12px 32px rgba(24,24,27,0.10), 0 2px 6px rgba(24,24,27,0.05);
+  --shadow-toast: 0 12px 32px rgba(24,24,27,0.25);
+
+  /* ---- Focus (visible on EVERY interactive element) ---- */
+  --focus-field: 0 0 0 3px rgba(217,119,6,0.18);          /* + border #D97706 */
+  --focus-solid: 0 0 0 2px #FFFFFF, 0 0 0 4.5px #D97706;  /* double ring on solid controls */
+
+  /* ---- Motion ---- */
+  --duration-fast: 160ms;   /* hovers, menus — ease-out */
+  --duration-med:  250ms;   /* progress bars, checklist collapse — ease-out */
+  --duration-slow: 300ms;   /* sheets, dialogs — ease-out */
+  --spring-tick: cubic-bezier(0.34, 1.56, 0.64, 1);  /* 300ms — checklist tick pop */
+  /* honor prefers-reduced-motion: kill all animation + transitions */
+
+  /* ---- Spacing (4px base) ---- */
+  /* Client rhythm (spacious): card pad 24–28 · section gap 24–32 · row pad 14 */
+  /* Staff rhythm (compact):  card pad 20–22 · section gap 20    · row pad 10–12 */
+  /* Tap targets: 44px minimum on mobile (48px tab-bar circles) */
+}</pre>
+    </section>
+
+    <!-- ============ TYPE SCALE ============ -->
+    <section style="display: flex; flex-direction: column; gap: 16px" data-screen-label="Type scale">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">03 · Type scale</div>
+        <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.01em">Sizes as used in the keystones</h2>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04)">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px">
+          <thead><tr>
+            <th style="text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 11px 22px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Token</th>
+            <th style="text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 11px 16px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Spec</th>
+            <th style="text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 11px 22px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Used for</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; font-family: ui-monospace, monospace; font-size: 12px">display-xl</td><td style="padding: 9px 16px; border-bottom: 1px solid #F4F4F0">Bricolage 50–56 / 1.05 / −0.02em · wt 500 + 700 mixed</td><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; color: #57534E">Dashboard greeting (bold the key word)</td></tr>
+            <tr><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; font-family: ui-monospace, monospace; font-size: 12px">display-lg</td><td style="padding: 9px 16px; border-bottom: 1px solid #F4F4F0">Bricolage 40–42 / 1.1 / −0.015em · wt 600</td><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; color: #57534E">Auth brand statement</td></tr>
+            <tr><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; font-family: ui-monospace, monospace; font-size: 12px">h1</td><td style="padding: 9px 16px; border-bottom: 1px solid #F4F4F0">Bricolage 28–38 / 1.1–1.2 / −0.015em · wt 600</td><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; color: #57534E">Page titles ("Your numbers, live", "Users")</td></tr>
+            <tr><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; font-family: ui-monospace, monospace; font-size: 12px">h2</td><td style="padding: 9px 16px; border-bottom: 1px solid #F4F4F0">Bricolage 20–24 / 1.25 / −0.01em · wt 600</td><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; color: #57534E">Card titles (client surfaces), client name header</td></tr>
+            <tr><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; font-family: ui-monospace, monospace; font-size: 12px">h3</td><td style="padding: 9px 16px; border-bottom: 1px solid #F4F4F0">Inter 14.5–18 / 1.3 · wt 600</td><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; color: #57534E">Compact card titles (staff), row titles</td></tr>
+            <tr><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; font-family: ui-monospace, monospace; font-size: 12px">body</td><td style="padding: 9px 16px; border-bottom: 1px solid #F4F4F0">Inter 14.5–15 / 1.6</td><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; color: #57534E">Prose, report summaries</td></tr>
+            <tr><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; font-family: ui-monospace, monospace; font-size: 12px">body-sm</td><td style="padding: 9px 16px; border-bottom: 1px solid #F4F4F0">Inter 13–13.5 / 1.5</td><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; color: #57534E">Table cells, form labels (wt 600), descriptions</td></tr>
+            <tr><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; font-family: ui-monospace, monospace; font-size: 12px">caption</td><td style="padding: 9px 16px; border-bottom: 1px solid #F4F4F0">Inter 11.5–12.5 / 1.4 · color --ink-3</td><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; color: #57534E">Meta lines, helper text, timestamps</td></tr>
+            <tr><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; font-family: ui-monospace, monospace; font-size: 12px">overline</td><td style="padding: 9px 16px; border-bottom: 1px solid #F4F4F0">Inter 10–11 / 0.06–0.1em tracking · wt 700 · uppercase</td><td style="padding: 9px 22px; border-bottom: 1px solid #F4F4F0; color: #57534E">Eyebrows, KPI labels, table headers, field labels in intel cards</td></tr>
+            <tr><td style="padding: 9px 22px; font-family: ui-monospace, monospace; font-size: 12px">metric</td><td style="padding: 9px 16px">Bricolage 28–48 / 1.0 / −0.01em · wt 700 · tabular-nums</td><td style="padding: 9px 22px; color: #57534E">KPI numerals; deltas pair ▲▼ glyph + color, never color alone</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin: 0; font-size: 13px; color: #57534E; line-height: 1.6">Floors: 1920-class slides n/a here; <strong>minimum UI text 11px (overlines only)</strong>, body never below 13px, mobile tap targets ≥44px. <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">text-wrap: pretty</code> on display headings and long paragraphs.</p>
+    </section>
+
+    <!-- ============ STATUS MAP ============ -->
+    <section style="display: flex; flex-direction: column; gap: 16px" data-screen-label="Status map">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">04 · Status map (§7)</div>
+        <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.01em">One chip recipe per status — applied everywhere</h2>
+        <p style="margin: 6px 0 0; font-size: 13.5px; line-height: 1.6; color: #57534E">Chip anatomy: pill radius, 1px border, 5–6px status dot (or icon), 11–12px wt-600 text, humanized labels ("In progress", never <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">in_progress</code>). Recipe order: <strong>text / background / border / dot</strong>.</p>
+      </div>
+      <pre style="margin: 0; background: #1A1A1D; color: #F5F5F3; border-radius: 12px; padding: 20px 24px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; line-height: 1.7; overflow-x: auto">/* DELIVERABLES */
+Pending        #57534E / #F4F4F0 / #E7E5E0 / #8E8B84
+In progress    #92400E / #FEF3C7 / #FDE68A / #D97706
+Needs review   #1D4ED8 / #DBEAFE / #BFDBFE / #2563EB
+Delivered      #166534 / #DCFCE7 / #BBF7D0 / #15803D
+
+/* CONTENT WORKFLOW */
+Idea           #57534E / #F4F4F0 / #E7E5E0 / #8E8B84
+Drafting       #92400E / #FFFBEB / #FDE68A / #F59E0B   (amber-soft)
+In review      #1D4ED8 / #DBEAFE / #BFDBFE / #2563EB
+Approved       #115E59 / #CCFBF1 / #99F6E4 / #0D9488
+Scheduled      #4338CA / #E0E7FF / #C7D2FE / #4F46E5
+Published      #166534 / #DCFCE7 / #BBF7D0 / #15803D
+
+/* MILESTONES (timeline stays one hue; green = outcomes only) */
+Upcoming       #57534E / #FFFFFF / #D6D3CD / —          (outline)
+In progress    #92400E / #FEF3C7 / #FDE68A / #D97706
+Done           #FFFFFF / #B45309 / #B45309 / ✓ icon     (solid amber-700)
+
+/* CLIENTS */
+Onboarding     #92400E / #FEF3C7 / #FDE68A / #D97706
+Active         #166534 / #DCFCE7 / #BBF7D0 / #15803D
+Paused         #57534E / #F4F4F0 / #E7E5E0 / #8E8B84
+Churned        #991B1B / #FEF2F2 / #FECACA / #B91C1C    (red-muted)
+
+/* USERS */
+Active         #166534 / #DCFCE7 / #BBF7D0 / #15803D
+Pending invite #92400E / #FFFFFF / 1.5px DASHED #FBBF24 / clock icon
+               (+ row tint #FFFDF5, dashed avatar ring)
+Inactive       #A8A5A0 / #FAFAF8 / #E7E5E0 / —
+               (+ name line-through #C7C4BD, row content opacity 0.6)
+
+/* COMPETITOR PRIORITY */
+High           #9A3412 / #FFF7ED / #FED7AA / ▲ icon #C2410C
+Medium         #92400E / #FFFBEB / #FDE68A / —
+Low            #57534E / #F4F4F0 / #E7E5E0 / —
+
+/* REPORTS */
+Draft          #57534E / #F4F4F0 / #E7E5E0 / eye-off icon
+               label: "Draft — hidden from client"
+Published      #166534 / #DCFCE7 / #BBF7D0 / #15803D</pre>
+    </section>
+
+    <!-- ============ CHART THEME ============ -->
+    <section style="display: flex; flex-direction: column; gap: 16px" data-screen-label="Chart theme">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">05 · Data-viz theme</div>
+        <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.01em">Recharts values</h2>
+      </div>
+      <pre style="margin: 0; background: #1A1A1D; color: #F5F5F3; border-radius: 12px; padding: 20px 24px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; line-height: 1.7; overflow-x: auto">Line / Area     stroke #D97706 · strokeWidth 2.5 · round caps/joins
+Area fill       linearGradient vertical: #D97706 @ 22% opacity → 0%
+Dots            r=4 fill #FFFFFF stroke #D97706 2px;
+                latest point r=5 fill #D97706 stroke #FFFFFF 2px
+                + dashed drop line to axis (#D6D3CD, 3 3)
+Grid            horizontal hairlines only · #F4F4F0 (baseline #E7E5E0)
+Axis labels     Inter 11–12px · #8E8B84 · no axis lines, no ticks
+Tooltip         bg #18181B · radius 10 · white text · value in #FBBF24
+                · delta in #4ADE80 (up) / #F87171 (down) · shadow-toast
+Deltas          ALWAYS glyph + color: ▲ #166534/#4ADE80 · ▼ #991B1B/#F87171
+                (colorblind-safe; never color alone)
+Windowing       domain = months with data only (no leading empty months);
+                first month shows no delta ("first full month")
+Numerals        tabular-nums everywhere
+Empty state     dashed 2px #E7E5E0 frame, radius 12 · bar-chart icon #C7C4BD
+                · "No data yet" + "Your first numbers land on the first
+                of next month."</pre>
+    </section>
+
+    <!-- ============ KEYSTONE NOTES ============ -->
+    <section style="display: flex; flex-direction: column; gap: 16px" data-screen-label="Keystone notes">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">06 · Per-keystone engineering notes</div>
+        <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.01em">Behaviors that aren't visible in a screenshot</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 22px 26px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+          <span style="font-size: 15px; font-weight: 600">K1 · Login <span style="font-weight: 400; color: #8E8B84">— auth shell</span></span>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.75; color: #57534E">
+            <li>Dark split card on <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">--dark-bg</code> with <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">--dark-glow</code>; form panel 480px, brand panel fills. Mobile: brand panel collapses to a compact glowing header above the form.</li>
+            <li>Auth error: generic message ("That email and password don't match. Try again, or reset your password."), <strong>both</strong> fields flag red — the system can't say which credential failed. Typing clears the error.</li>
+            <li>Links on dark use amber-400 <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">#FBBF24</code>; CTA is white on amber-700.</li>
+            <li>Forgot-password, accept-invite (with password-strength hint), and the confirm/expired-link interstitials reuse this shell as a single centered card.</li>
+            <li>Support contact: team@fourpielabs.com (plain text in production — see guardrail 1).</li>
+          </ul>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 22px 26px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+          <span style="font-size: 15px; font-weight: 600">K2 · Client Dashboard <span style="font-weight: 400; color: #8E8B84">— client shell, spacious</span></span>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.75; color: #57534E">
+            <li>Shell: top nav (logo · 7 items · avatar). Active item = <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">--surface-2</code> pill. Mobile: bottom tab bar — 5 slots (Home, Program, Content, Numbers, More-sheet), active = 48px charcoal circle, white pill bar floats 14px from edges.</li>
+            <li>KPI card: overline label + month · Bricolage numeral · delta pill (▲▼ + value) · "vs N last month". Honest down-deltas stay red — never hide them.</li>
+            <li>Checklist: client rows tick with the 300ms spring pop (amber-600 fill); team rows show "We'll take care of this." and count as done; link rows get a charcoal pill button. When all complete → collapses to the single-line green "Onboarding complete — you're all set." with a Review affordance to reopen.</li>
+            <li>Roadmap: 4 milestone columns, top border = status color (Done amber-700 / current amber-400 / upcoming border), "Day N of 90" chip, 6px progress bar.</li>
+            <li>Report card uses the dark surface + glow treatment — the one dark card on the page.</li>
+          </ul>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 22px 26px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+          <span style="font-size: 15px; font-weight: 600">K3 · Client Performance</span>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.75; color: #57534E">
+            <li>Chart card: metric selector (select on desktop, pill segmented control on mobile) swaps the series; axis re-scales; window = months with data only.</li>
+            <li>Monthly table: newest first, current month row tinted <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">#FFFBEB</code>, per-cell ▲▼ vs prior, first month gets a "first full month" note and no deltas. Mobile: collapses to per-month cards (3 key metrics + load more).</li>
+            <li>Competitor cards: schema fields only (guardrail 6); qualitative intel leads; "Our play" gets the amber-50 block. Nullable follower/views hide the stat row entirely.</li>
+            <li>Reports: list (selected row = amber-50 tint + 3px amber-600 left border) + viewer (markdown prose style, Download PDF). Clients never see drafts — staff-only state.</li>
+          </ul>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 22px 26px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+          <span style="font-size: 15px; font-weight: 600">K4 · Staff Client Overview <span style="font-weight: 400; color: #8E8B84">— staff shell, compact</span></span>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.75; color: #57534E">
+            <li>Shell: 264px sidebar (logo, client switcher, nav w/ charcoal active pill, user row). Tablet 768–1024: icon rail. Mobile: drawer + client-switcher chip in the top bar; tab strip scrolls horizontally; <strong>no bottom tab bar on staff</strong>.</li>
+            <li>Client header: initials tile (amber-100/amber-800, real logo when provided), name + program chip + status chip, partner/day meta, ⋯ actions.</li>
+            <li>Tab bar: underline style; beyond ~8 tabs overflow into "More" (holds Notes · Reports · Updates · Files · <strong>Settings</strong>).</li>
+            <li>"Waiting on client" banner derives from deliverables in needs_review; its action is <strong>Open deliverable</strong> (navigation, not email).</li>
+            <li>Overview cards: checklist ring (79%) + per-phase counts; latest-metrics 2×2 with "Entered [date] by [user]" + Enter-month CTA; activity feed = read view of the audit trail.</li>
+          </ul>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 22px 26px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+          <span style="font-size: 15px; font-weight: 600">K5 · Staff Metrics</span>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.75; color: #57534E">
+            <li>Entry grid: native inputs, DOM order = visual column order so <strong>Tab flows straight down</strong>; right-aligned tabular numerals; dirty rows tint <code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">--unsaved-bg</code> + amber-400 input border; validation is per-field and inline (e.g. "Must be between 0 and 5") and blocks Save for that field only.</li>
+            <li>Sticky save bar lives <em>inside</em> the scroll container: "[n] unsaved · [n] error" + Discard + Save [Month]. Save = bulk upsert for the selected month.</li>
+            <li>Definitions: name + unit only (no visibility flag — guardrail 4); drag to reorder; Add/Edit are the only mutations.</li>
+            <li>CSV import: dropzone → preview with per-row OK/error and specific messages → "Import N rows" commits clean rows only. Framed as pre-portal history backfill.</li>
+            <li>Client preview chart = the same Recharts component the client sees; entry-status card lists recent months In progress/Complete.</li>
+          </ul>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 22px 26px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+          <span style="font-size: 15px; font-weight: 600">K6 · Admin Users</span>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.75; color: #57534E">
+            <li>Action set (1:1 with server actions): <strong>invite · resend · revoke · deactivate · reactivate · assign client</strong>. Nothing else.</li>
+            <li>Invite form: email + role select; client select appears and is required only when role = Client.</li>
+            <li>Pending rows: warm tint + dashed avatar + dashed chip, Resend + Revoke inline. Revoke and Deactivate both get confirm dialogs ("They'll be signed out and blocked at next request. You can reactivate anytime.").</li>
+            <li><strong>Self-lockout protection:</strong> the signed-in admin's row shows a "You" marker and no deactivate control.</li>
+            <li>Rate-limit toast copy is config-agnostic: "Rate limit reached — try again in a few minutes." Error toasts name the cause (e.g. "SMTP authentication failed") and offer Retry only when retrying can work.</li>
+            <li>Inactive = strikethrough-feel + 0.6 opacity, never red; Reactivate is the row action.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ A11Y + BREAKPOINTS + FILES ============ -->
+    <section style="display: flex; flex-direction: column; gap: 16px" data-screen-label="Quality bar">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">07 · Quality bar &amp; file inventory</div>
+        <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.01em">Ship checks</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start">
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 22px 26px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+          <span style="font-size: 14.5px; font-weight: 600">Accessibility (WCAG AA)</span>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.75; color: #57534E">
+            <li>Amber focus ring on <strong>every</strong> interactive element (field ring vs double ring — §02).</li>
+            <li>44px minimum tap targets on mobile; 48px tab-bar circles.</li>
+            <li>Deltas/statuses never rely on color alone (▲▼ glyphs, icons, dashed borders).</li>
+            <li>Keyboard-reachable menus + dialogs (Radix gives this — don't break it).</li>
+            <li><code style="font-family: ui-monospace, monospace; font-size: 12px; background: #F4F4F0; border-radius: 5px; padding: 1px 5px">prefers-reduced-motion</code>: disable all animation/transitions.</li>
+            <li>Breakpoints: 360 min · 768 · 1024 · 1440. Intentional at 360.</li>
+          </ul>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 22px 26px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+          <span style="font-size: 14.5px; font-weight: 600">Approved artifacts</span>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.75; color: #57534E">
+            <li>D1 Style Tile</li>
+            <li>D2 Component Sheet (all §6 components, all states)</li>
+            <li>K1 Login · K2 Client Dashboard · K3 Client Performance</li>
+            <li>K4 Staff Client Overview (+ competitor card addendum)</li>
+            <li>K5 Staff Metrics · K6 Admin Users</li>
+            <li>Each keystone: desktop 1440 + mobile 390 in one artifact, with side notes covering tablet behavior.</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 13px; color: #57534E; line-height: 1.6; text-wrap: pretty">Voice reminder for any new copy: short, warm, confident, zero fluff — "Your numbers, live", "We'll take care of this.", "Your first report lands after month 1." No lorem ipsum, ever.</p>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer style="border-top: 1px solid #E7E5E0; padding-top: 24px; display: flex; justify-content: space-between; align-items: baseline; gap: 24px">
+      <div style="font-size: 13px; color: #57534E; line-height: 1.6">End of engagement deliverables — D1, D2, K1–K6, D4. All gates approved.</div>
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8E8B84; white-space: nowrap">4Pie Labs · Portal design system</div>
+    </footer>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
