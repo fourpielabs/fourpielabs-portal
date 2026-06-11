@@ -119,7 +119,7 @@ function SidebarInner({
               href={i.href}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] transition-colors",
+                "flex items-center gap-[11px] rounded-[10px] px-3 py-2.5 text-[13.5px] transition-colors",
                 active
                   ? "bg-ink font-semibold text-white"
                   : "font-medium text-ink-2 hover:bg-surface-2 hover:text-ink",
@@ -128,12 +128,7 @@ function SidebarInner({
               <Icon className="size-4" strokeWidth={1.6} />
               {i.label}
               {i.admin && (
-                <span
-                  className={cn(
-                    "ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wide uppercase",
-                    active ? "bg-white/15 text-amber-200" : "bg-amber-100 text-amber-800",
-                  )}
-                >
+                <span className="ml-auto rounded-full bg-amber-100 px-[7px] py-0.5 text-[10px] font-bold tracking-wide text-amber-800 uppercase">
                   Admin
                 </span>
               )}

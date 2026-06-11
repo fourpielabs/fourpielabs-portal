@@ -76,7 +76,7 @@ export default async function ClientsPage() {
       ) : (
         <>
           {/* desktop: designed table */}
-          <div className="hidden overflow-hidden rounded-2xl border border-border shadow-e1 sm:block">
+          <div className="hidden overflow-hidden rounded-2xl border border-border shadow-e2 sm:block">
             <Table>
               <TableHeader>
                 <TableRow>

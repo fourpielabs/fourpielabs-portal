@@ -16,10 +16,10 @@ export default async function ClientContentPage() {
     .order("publish_date", { ascending: true, nullsFirst: false });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Content calendar</h1>
-        <p className="text-muted-foreground">What we&apos;re planning and publishing.</p>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Content calendar</h1>
+        <p className="text-sm text-ink-2">What we&apos;re planning and publishing.</p>
       </div>
       <ClientContent items={(items ?? []) as ClientContentItem[]} />
     </div>

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 
 import { CONTENT_PLATFORMS, labelOf } from "@/lib/constants";
-import { StatusChip } from "@/components/ui/status-chip";
+import { StatusChip, STATUS_MAP } from "@/components/ui/status-chip";
 import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented";
@@ -131,28 +131,21 @@ export function ClientContent({ items }: { items: ClientContentItem[] }) {
                 <div key={idx} className="min-h-20 bg-surface p-1">
                   {day && <div className="mb-1 text-ink-3">{day}</div>}
                   <div className="space-y-1">
-                    {dayItems.map((i) =>
-                      i.asset_url && i.status === "published" ? (
-                        <a
-                          key={i.id}
-                          href={i.asset_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block truncate rounded bg-amber-50 px-1 py-0.5 font-medium text-amber-800 hover:bg-amber-100"
-                          title={i.title}
-                        >
+                    {dayItems.map((i) => {
+                      const r = STATUS_MAP.content[i.status];
+                      const style = r ? { background: r.bg, color: r.text } : undefined;
+                      const cls =
+                        "block truncate rounded-md px-1 py-0.5 text-[10.5px] font-semibold";
+                      return i.asset_url && i.status === "published" ? (
+                        <a key={i.id} href={i.asset_url} target="_blank" rel="noreferrer" className={cls} style={style} title={i.title}>
                           {i.title}
                         </a>
                       ) : (
-                        <div
-                          key={i.id}
-                          className="truncate rounded bg-surface-2 px-1 py-0.5 text-ink-2"
-                          title={i.title}
-                        >
+                        <div key={i.id} className={cls} style={style} title={i.title}>
                           {i.title}
                         </div>
-                      ),
-                    )}
+                      );
+                    })}
                   </div>
                 </div>
               );

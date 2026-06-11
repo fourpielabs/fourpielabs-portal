@@ -53,7 +53,12 @@ export function PendingInviteActions({
       </Button>
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="ghost" size="sm" disabled={pending}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={pending}
+            className="border-danger-border text-danger-text hover:border-danger-border hover:bg-danger-bg"
+          >
             Revoke
           </Button>
         </AlertDialogTrigger>

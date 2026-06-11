@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/guards";
 import { labelOf, ROLES } from "@/lib/constants";
+import { initials, formatDate } from "@/lib/format";
 import { InviteForm } from "@/components/admin/invite-form";
 import { UserActiveToggle } from "@/components/admin/user-active-toggle";
 import { PendingInviteActions } from "@/components/admin/pending-invite-actions";
@@ -46,6 +47,18 @@ export default async function AdminUsersPage() {
   const isPending = (p: { id: string; is_active: boolean }) =>
     p.is_active && confirmed.get(p.id) === false;
 
+  const lastActive = new Map(
+    (authList.data?.users ?? []).map((u) => [u.id, u.last_sign_in_at ?? null]),
+  );
+  const pendingCount = (profiles ?? []).filter(isPending).length;
+
+  const rolePill = (role: string) =>
+    role === "admin"
+      ? "bg-ink text-white"
+      : role === "team"
+        ? "bg-surface-2 text-ink-2"
+        : "border border-border-strong bg-surface text-ink-2";
+
   const clientName = new Map((clients ?? []).map((c) => [c.id, c.name]));
   const assignedByUser = new Map<string, string[]>();
   for (const a of assignments ?? []) {
@@ -67,9 +80,10 @@ export default async function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Users</h1>
-        <p className="text-sm text-ink-2">
-          Invite users, manage roles &amp; access, and deactivate accounts.
+        <h1 className="font-display text-[28px] font-semibold tracking-[-0.015em]">Users</h1>
+        <p className="text-[13px] text-ink-2 tabular-nums">
+          {(profiles ?? []).length} users · {pendingCount} pending invite
+          {pendingCount === 1 ? "" : "s"}
         </p>
       </div>
 
@@ -87,14 +101,15 @@ export default async function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-2xl border border-border shadow-e2">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead>User</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Access</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Last active</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -111,24 +126,44 @@ export default async function AdminUsersPage() {
                   }
                 >
                   <TableCell className="font-medium">
-                    <span className="flex items-center gap-2">
-                      <span className={!p.is_active ? "text-ink-faint line-through" : ""}>
-                        {p.full_name ?? "—"}
+                    <span className="flex items-center gap-[11px]">
+                      <span
+                        className={`inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                          pending
+                            ? "border border-dashed border-amber-400 bg-surface text-amber-800"
+                            : "bg-amber-100 text-amber-800"
+                        } ${!p.is_active ? "opacity-70" : ""}`}
+                      >
+                        {initials(p.full_name, p.email)}
                       </span>
-                      {self && (
-                        <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold text-ink-2">
-                          You
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-2">
+                          <span className={!p.is_active ? "text-ink-faint line-through" : ""}>
+                            {p.full_name ?? "—"}
+                          </span>
+                          {self && (
+                            <span className="rounded-full bg-amber-100 px-[7px] py-[1.5px] text-[9.5px] font-bold tracking-[0.05em] text-amber-800 uppercase">
+                              You
+                            </span>
+                          )}
                         </span>
-                      )}
+                        <span className="block text-xs text-ink-3">{p.email}</span>
+                      </span>
                     </span>
-                    <div className="text-xs text-ink-3">{p.email}</div>
                   </TableCell>
-                  <TableCell>{labelOf(ROLES, p.role)}</TableCell>
-                  <TableCell className="max-w-[16rem] text-sm text-ink-3">
+                  <TableCell>
+                    <span className={`inline-flex rounded-full px-2.5 py-[3px] text-[11px] font-semibold ${rolePill(p.role)}`}>
+                      {labelOf(ROLES, p.role)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="max-w-[16rem] text-[13px] text-ink-3">
                     {scopeFor(p)}
                   </TableCell>
                   <TableCell>
                     <StatusChip kind="user" value={statusValue} />
+                  </TableCell>
+                  <TableCell className="text-[13px] text-ink-3 tabular-nums">
+                    {lastActive.get(p.id) ? formatDate(lastActive.get(p.id)!) : "—"}
                   </TableCell>
                   <TableCell className="text-right">
                     {pending ? (

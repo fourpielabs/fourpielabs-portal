@@ -61,10 +61,10 @@ export function ClientShell({
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* desktop top nav */}
-      <header className="sticky top-0 z-30 hidden px-4 pt-4 sm:block">
-        <div className="mx-auto flex max-w-6xl items-center gap-5 rounded-2xl border border-border bg-surface px-5 py-3 shadow-e2">
-          <Link href="/dashboard" className="font-display text-base font-bold tracking-tight">
+      {/* desktop top nav — full-bleed white bar */}
+      <header className="sticky top-0 z-30 hidden border-b border-border bg-surface sm:block">
+        <div className="mx-auto flex h-[72px] max-w-[1280px] items-center gap-7 px-8">
+          <Link href="/dashboard" className="font-display text-lg font-bold tracking-tight">
             4Pie Labs<span className="text-amber-600">.</span>
           </Link>
           <nav className="flex flex-1 items-center gap-1">
@@ -75,7 +75,7 @@ export function ClientShell({
                   key={i.href}
                   href={i.href}
                   className={cn(
-                    "rounded-full px-3 py-1.5 text-[13px] transition-colors",
+                    "rounded-full px-3 py-1.5 text-[13.5px] transition-colors",
                     active
                       ? "bg-surface-2 font-semibold text-ink"
                       : "font-medium text-ink-2 hover:bg-bg hover:text-ink",
@@ -90,7 +90,7 @@ export function ClientShell({
             <button
               title={name ?? email ?? "Account"}
               type="submit"
-              className="inline-flex size-9 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-800"
+              className="inline-flex size-[38px] items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-800"
             >
               {initials(name, email)}
             </button>
@@ -113,7 +113,7 @@ export function ClientShell({
         </form>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 sm:px-6 sm:pb-10">
+      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pt-6 pb-28 sm:px-8 sm:pt-11 sm:pb-10">
         {children}
       </main>
 

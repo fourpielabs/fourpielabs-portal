@@ -160,7 +160,7 @@ export default async function DashboardPage() {
                 <Link
                   key={c.id}
                   href={`/clients/${c.id}`}
-                  className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-e1 transition-shadow hover:shadow-e2"
+                  className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-e2 transition-shadow hover:shadow-e3"
                 >
                   <div className="flex items-start gap-3">
                     <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-sm font-bold text-amber-800">

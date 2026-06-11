@@ -73,7 +73,7 @@ export default async function AuditPage({
       {!logs || logs.length === 0 ? (
         <EmptyState title="No audit entries match" description="Try clearing the filters." />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border shadow-e1">
+        <div className="overflow-hidden rounded-2xl border border-border shadow-e2">
           <Table>
             <TableHeader>
               <TableRow>
@@ -94,7 +94,7 @@ export default async function AuditPage({
                     {l.actor_id ? (actorName.get(l.actor_id) ?? "—") : "system"}
                   </TableCell>
                   <TableCell>
-                    <span className="inline-block rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-ink-2">
+                    <span className="inline-block rounded-full border border-border bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-ink-2">
                       {l.action}
                     </span>
                   </TableCell>

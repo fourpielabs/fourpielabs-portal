@@ -13,7 +13,7 @@ export function Markdown({
   className?: string;
 }) {
   return (
-    <div className={cn("text-[15px] leading-[1.6] text-ink-2", className)}>
+    <div className={cn("text-[15px] leading-[1.6] text-ink", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { labelOf, PROGRAMS } from "@/lib/constants";
+import { labelOf, PROGRAMS, DELIVERABLE_TYPES } from "@/lib/constants";
 import { formatMetricValue, formatMonthYear, initials } from "@/lib/format";
 import {
   ClientChecklist,
@@ -9,6 +9,7 @@ import {
 } from "@/components/client/client-checklist";
 import { Greeting } from "@/components/client/greeting";
 import { StatusChip } from "@/components/ui/status-chip";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 type MetricRow = {
@@ -61,7 +62,7 @@ export async function ClientDashboard({
       .limit(60),
     supabase
       .from("deliverables")
-      .select("id, title, status")
+      .select("id, title, status, type")
       .order("created_at", { ascending: false })
       .limit(4),
     supabase
@@ -82,7 +83,6 @@ export async function ClientDashboard({
   const periods = [...new Set(rows.map((r) => r.period))].sort().reverse();
   const latest = periods[0];
   const prev = periods[1];
-  const periodsAsc = [...periods].reverse();
   const monthLabel = latest ? formatMonthYear(latest) : "";
   const kpis = rows
     .filter((r) => r.period === latest && r.definition && r.definition.unit !== "text")
@@ -95,10 +95,7 @@ export async function ClientDashboard({
       )?.value_numeric ?? null;
       const cur = r.value_numeric ?? null;
       const delta = cur !== null && before !== null ? cur - before : null;
-      const series = periodsAsc
-        .slice(-6)
-        .map((p) => rows.find((x) => x.period === p && x.definition?.label === label)?.value_numeric ?? 0);
-      return { label, unit: r.definition!.unit, cur, before, delta, series };
+      return { label, unit: r.definition!.unit, cur, before, delta };
     });
 
   // roadmap
@@ -114,36 +111,40 @@ export async function ClientDashboard({
 
   const pinned = (updates ?? []).filter((u) => u.pinned);
   const recent = (updates ?? []).filter((u) => !u.pinned);
+  const updateFeed = [...pinned, ...recent].slice(0, 4);
   // Greeting uses the signed-in PERSON's first name (not the company name).
   const firstName = (userName ?? "there").split(" ")[0];
 
+  // Honest "Live" pill — derive +N citations this month from the real metric
+  // when present (the mockup's "this week" granularity isn't in our schema).
+  const citations =
+    rows.find((r) => r.period === latest && /citation/i.test(r.definition?.label ?? ""))
+      ?.value_numeric ?? null;
+  const livePill =
+    citations != null
+      ? `Live · +${citations.toLocaleString()} citations this month`
+      : "Live · updated monthly";
+
   return (
     <div className="flex flex-col gap-8">
-      {/* greeting + partner */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      {/* greeting + CTA row */}
+      <div className="flex flex-col gap-4">
         <div>
           <Greeting name={firstName} monthLabel={monthLabel} />
-          <p className="mt-1 text-sm text-ink-2">
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-2">
             <span className="font-semibold">{labelOf(PROGRAMS, client?.program)}</span>
-            {dayLabel ? ` · ${dayLabel}` : ""}
+            {dayLabel && <span className="text-ink-3">· {dayLabel}</span>}
           </p>
         </div>
-        {partner && (
-          <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-e1">
-            <span className="inline-flex size-10 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-800">
-              {initials(partner.full_name, partner.email)}
-            </span>
-            <div className="text-sm">
-              <div className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">
-                Your partner
-              </div>
-              <div className="font-semibold">{partner.full_name ?? partner.email}</div>
-              {client?.comms_channel && (
-                <div className="text-xs text-ink-3">{client.comms_channel}</div>
-              )}
-            </div>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button asChild>
+            <Link href="/calls-notes">Book a call</Link>
+          </Button>
+          <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800">
+            <span className="size-1.5 rounded-full bg-amber-600" />
+            {livePill}
+          </span>
+        </div>
       </div>
 
       {/* KPIs */}
@@ -152,20 +153,21 @@ export async function ClientDashboard({
           {kpis.map((k) => {
             const up = (k.delta ?? 0) > 0;
             return (
-              <Card key={k.label} className="gap-3">
-                <CardContent className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
+              <Card key={k.label}>
+                <CardContent className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">
                       {k.label}
                     </span>
+                    <span className="shrink-0 text-[11px] font-semibold text-ink-3">{monthLabel}</span>
                   </div>
                   <div className="flex items-baseline gap-2.5">
-                    <span className="font-display text-4xl leading-none font-bold tracking-[-0.01em] tabular-nums">
+                    <span className="font-display text-[40px] leading-none font-bold tracking-[-0.01em] tabular-nums">
                       {formatMetricValue(k.unit, k.cur, null)}
                     </span>
                     {k.delta !== null && k.delta !== 0 && (
                       <span
-                        className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${up ? "bg-success-bg text-success-text" : "bg-danger-bg text-danger-text"}`}
+                        className={`inline-flex items-center gap-0.5 rounded-full px-[9px] py-[3px] text-[12.5px] font-semibold tabular-nums ${up ? "bg-success-bg text-success-text" : "bg-danger-bg text-[#991B1B]"}`}
                       >
                         {up ? "▲" : "▼"} {Math.abs(k.delta).toLocaleString()}
                       </span>
@@ -174,23 +176,6 @@ export async function ClientDashboard({
                   <div className="text-xs text-ink-3 tabular-nums">
                     {k.before !== null ? `vs ${k.before.toLocaleString()} last month` : monthLabel}
                   </div>
-                  {k.series.filter((v) => v > 0).length > 1 && (
-                    <div className="flex h-8 items-end gap-1" aria-hidden>
-                      {(() => {
-                        const max = Math.max(...k.series, 1);
-                        return k.series.map((v, i) => (
-                          <div
-                            key={i}
-                            className="flex-1 rounded-sm"
-                            style={{
-                              height: `${Math.max(8, (v / max) * 100)}%`,
-                              background: i === k.series.length - 1 ? "#D97706" : "#FDE68A",
-                            }}
-                          />
-                        ));
-                      })()}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             );
@@ -198,136 +183,179 @@ export async function ClientDashboard({
         </div>
       )}
 
-      {/* Start Here + report */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardContent className="flex flex-col gap-4">
-            <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">Start here</h2>
-            <ClientChecklist items={(checklist ?? []) as ClientChecklistItem[]} />
-          </CardContent>
-        </Card>
+      {/* main: 2fr left / 1fr right rail */}
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        {/* LEFT */}
+        <div className="flex flex-col gap-6">
+          <Card>
+            <CardContent className="flex flex-col gap-4">
+              <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">Start here</h2>
+              <ClientChecklist items={(checklist ?? []) as ClientChecklistItem[]} />
+            </CardContent>
+          </Card>
 
-        {/* dark report card */}
-        <div
-          className="flex flex-col gap-4 self-start rounded-2xl border border-dark-border p-6 text-dark-ink"
-          style={{ background: "var(--dark-glow), #101012" }}
-        >
-          <div>
-            <div className="text-[11px] font-bold tracking-wider text-amber-400 uppercase">
-              Latest report
-            </div>
-            <p className="mt-2 font-display text-lg font-semibold">
-              {report ? report.title : "Your first report lands after month 1."}
-            </p>
-            {report?.summary && (
-              <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-dark-ink-2">
-                {report.summary}
-              </p>
-            )}
-          </div>
-          {report && (
-            <Link
-              href="/performance"
-              className="inline-flex w-fit items-center gap-1.5 rounded-full bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800"
-            >
-              View report <ArrowUpRight className="size-4" />
-            </Link>
-          )}
-        </div>
-      </div>
-
-      {/* roadmap */}
-      {ms.length > 0 && (
-        <Card>
-          <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">Your roadmap</h2>
-              <div className="flex items-center gap-3">
-                {dayLabel && (
-                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800">
-                    {dayLabel}
-                  </span>
-                )}
-                <span className="text-xs font-semibold text-ink-3 tabular-nums">
-                  {msDone}/{ms.length}
-                </span>
-              </div>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
-              <div className="h-full rounded-full bg-amber-600" style={{ width: `${msPct}%` }} />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {ms.slice(0, 8).map((m) => (
-                <div
-                  key={m.id}
-                  className="rounded-xl border border-border bg-surface p-3"
-                  style={{ borderTop: `3px solid ${MS_BORDER[m.status] ?? "#E7E5E0"}` }}
-                >
-                  {m.phase_label && (
-                    <div className="text-[11px] font-semibold text-ink-3">{m.phase_label}</div>
-                  )}
-                  <div className="mt-0.5 text-sm font-semibold">{m.title}</div>
-                  <div className="mt-2">
-                    <StatusChip kind="milestone" value={m.status} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* deliverables + updates */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardContent className="flex flex-col gap-3">
-            <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">
-              Latest deliverables
-            </h2>
-            {(deliverables ?? []).length === 0 ? (
-              <p className="text-sm text-ink-3">
-                Your deliverables show up here as we ship them.
-              </p>
-            ) : (
-              <ul className="flex flex-col">
-                {(deliverables ?? []).map((d) => (
-                  <li
-                    key={d.id}
-                    className="flex items-center justify-between gap-2 border-b border-row-divider py-2.5 last:border-0"
-                  >
-                    <span className="text-sm font-medium">{d.title}</span>
-                    <StatusChip kind="deliverable" value={d.status} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex flex-col gap-3">
-            <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">Updates</h2>
-            {pinned.length === 0 && recent.length === 0 ? (
-              <p className="text-sm text-ink-3">No updates yet.</p>
-            ) : (
-              [...pinned, ...recent].slice(0, 4).map((u) => (
-                <div key={u.id} className="rounded-xl border border-border p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{u.title}</span>
-                    {u.pinned && (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                        Pinned
-                      </span>
+          {ms.length > 0 && (
+            <Card>
+              <CardContent className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">
+                      Your 90-day program
+                    </h2>
+                    {client?.start_date && (
+                      <p className="text-xs text-ink-3">
+                        {labelOf(PROGRAMS, client?.program)} · started {formatMonthYear(client.start_date)}
+                      </p>
                     )}
                   </div>
-                  {u.body && (
-                    <p className="line-clamp-2 pt-1 text-xs text-ink-3">{u.body}</p>
+                  {dayLabel && (
+                    <span className="rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800">
+                      {dayLabel}
+                    </span>
                   )}
                 </div>
-              ))
+                <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+                  <div className="h-full rounded-full bg-amber-600" style={{ width: `${msPct}%` }} />
+                </div>
+                <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {ms.slice(0, 8).map((m) => (
+                    <div
+                      key={m.id}
+                      className="pt-3"
+                      style={{ borderTop: `3px solid ${MS_BORDER[m.status] ?? "#E7E5E0"}` }}
+                    >
+                      {m.phase_label && (
+                        <div className="text-[11px] font-semibold text-ink-3">{m.phase_label}</div>
+                      )}
+                      <div className="mt-0.5 text-sm font-semibold">{m.title}</div>
+                      <div className="mt-2">
+                        <StatusChip kind="milestone" value={m.status} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardContent className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">
+                  Latest deliverables
+                </h2>
+                <Link href="/deliverables" className="text-xs font-semibold text-amber-700 hover:text-amber-800">
+                  View all →
+                </Link>
+              </div>
+              {(deliverables ?? []).length === 0 ? (
+                <p className="text-sm text-ink-3">Your deliverables show up here as we ship them.</p>
+              ) : (
+                <ul className="flex flex-col">
+                  {(deliverables ?? []).map((d) => (
+                    <li
+                      key={d.id}
+                      className="-mx-2 flex items-center justify-between gap-2 rounded-lg border-b border-row-divider px-2 py-3 transition-colors last:border-0 hover:bg-bg"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium">{d.title}</span>
+                        <span className="block text-xs text-ink-3">
+                          {labelOf(DELIVERABLE_TYPES, d.type)}
+                        </span>
+                      </span>
+                      <StatusChip kind="deliverable" value={d.status} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* RIGHT rail */}
+        <div className="flex flex-col gap-6">
+          {/* dark report card */}
+          <div
+            className="flex flex-col gap-4 rounded-2xl border border-dark-border p-6 text-dark-ink"
+            style={{ background: "var(--dark-glow), #101012" }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[11px] font-bold tracking-wider text-amber-400 uppercase">
+                Latest report
+              </div>
+              {report && <StatusChip kind="report" value="published" label="Published" />}
+            </div>
+            <div>
+              <p className="font-display text-[21px] leading-tight font-semibold">
+                {report ? report.title : "Your first report lands after month 1."}
+              </p>
+              {report?.summary && (
+                <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-dark-ink-2">
+                  {report.summary}
+                </p>
+              )}
+            </div>
+            {report && (
+              <Link
+                href="/performance"
+                className="inline-flex w-fit items-center gap-1.5 rounded-full bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800"
+              >
+                Read report <ArrowUpRight className="size-4" />
+              </Link>
             )}
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* updates */}
+          <Card>
+            <CardContent className="flex flex-col gap-3">
+              <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">Updates</h2>
+              {updateFeed.length === 0 ? (
+                <p className="text-sm text-ink-3">No updates yet.</p>
+              ) : (
+                <ul className="flex flex-col">
+                  {updateFeed.map((u) => (
+                    <li key={u.id} className="border-b border-row-divider py-3 last:border-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold">{u.title}</span>
+                        {u.pinned && (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                            Pinned
+                          </span>
+                        )}
+                      </div>
+                      {u.body && <p className="line-clamp-2 pt-1 text-xs text-ink-3">{u.body}</p>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* partner card */}
+          {partner && (
+            <Card>
+              <CardContent className="flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-800">
+                    {initials(partner.full_name, partner.email)}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">
+                      Your partner
+                    </div>
+                    <div className="truncate font-semibold">{partner.full_name ?? partner.email}</div>
+                    {client?.comms_channel && (
+                      <div className="truncate text-xs text-ink-3">{client.comms_channel}</div>
+                    )}
+                  </div>
+                </div>
+                <Button asChild variant="amber" className="w-full">
+                  <Link href="/calls-notes">Book a call</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );

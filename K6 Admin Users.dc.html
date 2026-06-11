@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #FAFAF8; }
+    * { box-sizing: border-box; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</helmet>
+
+<div style="min-height: 100vh; background: #FAFAF8; font-family: Inter, system-ui, sans-serif; color: #18181B; padding: 56px 40px 120px">
+  <div style="max-width: 1220px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px">
+
+    <!-- ============ HEADER ============ -->
+    <header style="display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -0.01em; white-space: nowrap">4Pie Labs<span style="color: #D97706">.</span></div>
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8E8B84">Keystone 6 of 6 · For approval</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em">K6 · Admin Users</h1>
+        <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #57534E; max-width: 720px; text-wrap: pretty">Invite, manage, revoke. The desktop frame is live: <span style="font-weight: 600; color: #18181B">click "Revoke" on a pending user</span> for the confirm dialog, <span style="font-weight: 600; color: #18181B">"Resend"</span> for the rate-limit error toast. Actions present: invite · resend · revoke · deactivate · reactivate · assign client. Nothing else.</p>
+      </div>
+    </header>
+
+    <!-- ============ DESKTOP 1440 ============ -->
+    <section style="display: flex; flex-direction: column; gap: 14px" data-screen-label="K6 Desktop 1440">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">Desktop · 1440</span>
+        <span style="font-size: 12px; color: #8E8B84">Interactive — Revoke and Resend are wired</span>
+      </div>
+      <div id="k6frame" ref="{{ frameRef }}" style="width: 100%; position: relative; overflow: hidden; border-radius: 16px; border: 1px solid #E7E5E0; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04); height: {{ frameH }}px">
+        <div style="width: 1440px; height: 980px; transform-origin: top left; background: #FAFAF8; position: relative; display: flex; transform: scale({{ frameScale }})">
+
+          <!-- Sidebar (admin) -->
+          <div style="width: 264px; flex-shrink: 0; background: #FFFFFF; border-right: 1px solid #E7E5E0; display: flex; flex-direction: column; padding: 24px 16px 20px; gap: 22px">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 8px">
+              <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; white-space: nowrap">4Pie Labs<span style="color: #D97706">.</span></span>
+              <button aria-label="Collapse sidebar" style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #8E8B84; transition: all 150ms ease-out" style-hover="background: #F4F4F0; color: #18181B"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg></button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 3px">
+              <div style="display: flex; align-items: center; gap: 11px; font-size: 13.5px; font-weight: 500; color: #57534E; border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #F4F4F0; color: #18181B"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>Dashboard</div>
+              <div style="display: flex; align-items: center; gap: 11px; font-size: 13.5px; font-weight: 500; color: #57534E; border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #F4F4F0; color: #18181B"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Clients</div>
+              <div style="display: flex; align-items: center; gap: 11px; font-size: 13.5px; font-weight: 600; color: #FFFFFF; background: #18181B; border-radius: 10px; padding: 10px 12px; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Users</div>
+              <div style="display: flex; align-items: center; gap: 11px; font-size: 13.5px; font-weight: 500; color: #57534E; border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #F4F4F0; color: #18181B"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>Audit log</div>
+            </div>
+            <div style="flex: 1"></div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid #F4F4F0">
+              <span style="width: 32px; height: 32px; border-radius: 50%; background: #18181B; color: #FFFFFF; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">RP</span>
+              <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 13px; font-weight: 600">Riley Partner</span><span style="font-size: 11px; color: #8E8B84">Admin</span></span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E8B84" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div style="flex: 1; display: flex; flex-direction: column; min-width: 0; padding: 36px 40px; gap: 24px">
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 28px; letter-spacing: -0.015em">Users</h2>
+              <span style="font-size: 13px; color: #57534E">6 users · 2 pending invites</span>
+            </div>
+
+            <!-- Invite form -->
+            <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04)">
+              <span style="font-size: 14.5px; font-weight: 600">Invite someone</span>
+              <div style="display: grid; grid-template-columns: 1.6fr 1fr 1.3fr auto; gap: 12px; align-items: end">
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <label style="font-size: 12.5px; font-weight: 600">Email address</label>
+                  <input type="email" placeholder="casey@premierpainting.com" style="font-family: Inter, sans-serif; font-size: 13.5px; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 12px; padding: 0 14px; height: 42px; outline: none; transition: border-color 150ms ease-out" style-focus="border-color: #D97706; box-shadow: 0 0 0 3px rgba(217,119,6,0.18)" />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <label style="font-size: 12.5px; font-weight: 600">Role</label>
+                  <button style="display: flex; align-items: center; justify-content: space-between; font-family: Inter, sans-serif; font-size: 13.5px; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 12px; padding: 0 14px; height: 42px; cursor: pointer; transition: border-color 150ms ease-out" style-hover="border-color: #18181B">Client<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E8B84" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <label style="font-size: 12.5px; font-weight: 600">Client <span style="font-weight: 400; color: #8E8B84">· required for client role</span></label>
+                  <button style="display: flex; align-items: center; justify-content: space-between; font-family: Inter, sans-serif; font-size: 13.5px; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 12px; padding: 0 14px; height: 42px; cursor: pointer; transition: border-color 150ms ease-out" style-hover="border-color: #18181B">Premier Painting Co.<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E8B84" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                </div>
+                <button style="font-family: Inter, sans-serif; font-size: 13.5px; font-weight: 600; color: #FFFFFF; background: #B45309; border: none; border-radius: 999px; padding: 0 20px; height: 42px; cursor: pointer; transition: background 160ms ease-out" style-hover="background: #92400E">Send invite</button>
+              </div>
+              <span style="font-size: 12px; color: #8E8B84">They'll get a sign-in link by email. Invites expire after 7 days.</span>
+            </div>
+
+            <!-- Users table -->
+            <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 16px; box-shadow: 0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04); overflow: hidden">
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px">
+                <thead>
+                  <tr>
+                    <th style="text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 11px 24px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">User</th>
+                    <th style="text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 11px 16px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Role</th>
+                    <th style="text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 11px 16px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Client</th>
+                    <th style="text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 11px 16px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Status</th>
+                    <th style="text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 11px 16px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Last active</th>
+                    <th style="text-align: right; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8E8B84; padding: 11px 24px; border-bottom: 1px solid #E7E5E0; background: #FAFAF8">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="transition: background 120ms ease-out" style-hover="background: #FAFAF8">
+                    <td style="padding: 11px 24px; border-bottom: 1px solid #F4F4F0">
+                      <div style="display: flex; align-items: center; gap: 11px">
+                        <span style="width: 32px; height: 32px; border-radius: 50%; background: #FEF3C7; color: #92400E; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">PM</span>
+                        <span style="display: flex; flex-direction: column"><span style="font-weight: 600">Pat Miller</span><span style="font-size: 11.5px; color: #8E8B84"><span>pat@</span><span>premierpainting.com</span></span></span>
+                      </div>
+                    </td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0"><span style="display: inline-flex; font-size: 11px; font-weight: 600; color: #57534E; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; padding: 3px 10px">Client</span></td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0; color: #57534E">Premier Painting Co.</td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0"><span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #166534; background: #DCFCE7; border: 1px solid #BBF7D0; border-radius: 999px; padding: 3px 10px"><span style="width: 5px; height: 5px; border-radius: 50%; background: #15803D"></span>Active</span></td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0; color: #8E8B84">2 hours ago</td>
+                    <td style="padding: 11px 24px; border-bottom: 1px solid #F4F4F0; text-align: right"><div style="display: inline-flex; align-items: center; gap: 6px"><button onClick="{{ openDeact }}" style="font-family: Inter, sans-serif; font-size: 11.5px; font-weight: 600; color: #57534E; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; padding: 0 12px; height: 30px; cursor: pointer; transition: all 150ms ease-out" style-hover="border-color: #18181B; color: #18181B">Deactivate</button><button aria-label="User actions" style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #8E8B84; transition: all 150ms ease-out" style-hover="background: #F4F4F0; color: #18181B"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button></div></td>
+                  </tr>
+                  <tr style="background: #FFFDF5">
+                    <td style="padding: 11px 24px; border-bottom: 1px solid #F4F4F0">
+                      <div style="display: flex; align-items: center; gap: 11px">
+                        <span style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px dashed #FBBF24; background: #FFFBEB; color: #92400E; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">JL</span>
+                        <span style="display: flex; flex-direction: column"><span style="font-weight: 600">Jordan Lee</span><span style="font-size: 11.5px; color: #8E8B84"><span>jordan@</span><span>coastaltours.com</span></span></span>
+                      </div>
+                    </td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0"><span style="display: inline-flex; font-size: 11px; font-weight: 600; color: #57534E; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; padding: 3px 10px">Client</span></td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0; color: #57534E">Coastal Tours Co.</td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0"><span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #92400E; background: #FFFFFF; border: 1.5px dashed #FBBF24; border-radius: 999px; padding: 3px 10px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Pending invite</span></td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0; color: #8E8B84">Sent 6 days ago</td>
+                    <td style="padding: 11px 24px; border-bottom: 1px solid #F4F4F0; text-align: right">
+                      <div style="display: inline-flex; align-items: center; gap: 6px">
+                        <button onClick="{{ showRate }}" style="font-family: Inter, sans-serif; font-size: 11.5px; font-weight: 600; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; padding: 0 12px; height: 30px; cursor: pointer; transition: all 150ms ease-out" style-hover="border-color: #18181B">Resend</button>
+                        <button onClick="{{ openDlg }}" style="font-family: Inter, sans-serif; font-size: 11.5px; font-weight: 600; color: #B91C1C; background: #FFFFFF; border: 1px solid #FECACA; border-radius: 999px; padding: 0 12px; height: 30px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #FEF2F2; border-color: #FCA5A5">Revoke</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr style="transition: background 120ms ease-out" style-hover="background: #FAFAF8">
+                    <td style="padding: 11px 24px; border-bottom: 1px solid #F4F4F0">
+                      <div style="display: flex; align-items: center; gap: 11px">
+                        <span style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px dashed #FBBF24; background: #FFFBEB; color: #92400E; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">CB</span>
+                        <span style="display: flex; flex-direction: column"><span style="font-weight: 600">Casey Bloom</span><span style="font-size: 11.5px; color: #8E8B84"><span>casey@</span><span>premierpainting.com</span></span></span>
+                      </div>
+                    </td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0"><span style="display: inline-flex; font-size: 11px; font-weight: 600; color: #57534E; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; padding: 3px 10px">Client</span></td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0; color: #57534E">Premier Painting Co.</td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0"><span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #92400E; background: #FFFFFF; border: 1.5px dashed #FBBF24; border-radius: 999px; padding: 3px 10px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Pending invite</span></td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0; color: #8E8B84">Sent yesterday</td>
+                    <td style="padding: 11px 24px; border-bottom: 1px solid #F4F4F0; text-align: right">
+                      <div style="display: inline-flex; align-items: center; gap: 6px">
+                        <button onClick="{{ showRate }}" style="font-family: Inter, sans-serif; font-size: 11.5px; font-weight: 600; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; padding: 0 12px; height: 30px; cursor: pointer; transition: all 150ms ease-out" style-hover="border-color: #18181B">Resend</button>
+                        <button onClick="{{ openDlg }}" style="font-family: Inter, sans-serif; font-size: 11.5px; font-weight: 600; color: #B91C1C; background: #FFFFFF; border: 1px solid #FECACA; border-radius: 999px; padding: 0 12px; height: 30px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #FEF2F2; border-color: #FCA5A5">Revoke</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr style="transition: background 120ms ease-out" style-hover="background: #FAFAF8">
+                    <td style="padding: 11px 24px; border-bottom: 1px solid #F4F4F0">
+                      <div style="display: flex; align-items: center; gap: 11px">
+                        <span style="width: 32px; height: 32px; border-radius: 50%; background: #18181B; color: #FFFFFF; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">RP</span>
+                        <span style="display: flex; flex-direction: column"><span style="display: flex; align-items: center; gap: 6px; font-weight: 600">Riley Partner<span style="display: inline-flex; font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #92400E; background: #FEF3C7; border-radius: 999px; padding: 1.5px 7px">You</span></span><span style="font-size: 11.5px; color: #8E8B84"><span>riley@</span><span>fourpielabs.com</span></span></span>
+                      </div>
+                    </td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0"><span style="display: inline-flex; font-size: 11px; font-weight: 600; color: #FFFFFF; background: #18181B; border: 1px solid #18181B; border-radius: 999px; padding: 3px 10px">Admin</span></td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0; color: #8E8B84">—</td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0"><span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #166534; background: #DCFCE7; border: 1px solid #BBF7D0; border-radius: 999px; padding: 3px 10px"><span style="width: 5px; height: 5px; border-radius: 50%; background: #15803D"></span>Active</span></td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0; color: #8E8B84">Now</td>
+                    <td style="padding: 11px 24px; border-bottom: 1px solid #F4F4F0; text-align: right"><span style="font-size: 12px; color: #C7C4BD" title="You can't deactivate your own account">—</span></td>
+                  </tr>
+                  <tr style="transition: background 120ms ease-out" style-hover="background: #FAFAF8">
+                    <td style="padding: 11px 24px; border-bottom: 1px solid #F4F4F0">
+                      <div style="display: flex; align-items: center; gap: 11px">
+                        <span style="width: 32px; height: 32px; border-radius: 50%; background: #F4F4F0; color: #57534E; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">MA</span>
+                        <span style="display: flex; flex-direction: column"><span style="font-weight: 600">Morgan Avery</span><span style="font-size: 11.5px; color: #8E8B84"><span>morgan@</span><span>fourpielabs.com</span></span></span>
+                      </div>
+                    </td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0"><span style="display: inline-flex; font-size: 11px; font-weight: 600; color: #57534E; background: #F4F4F0; border: 1px solid #E7E5E0; border-radius: 999px; padding: 3px 10px">Team</span></td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0; color: #8E8B84">—</td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0"><span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #166534; background: #DCFCE7; border: 1px solid #BBF7D0; border-radius: 999px; padding: 3px 10px"><span style="width: 5px; height: 5px; border-radius: 50%; background: #15803D"></span>Active</span></td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid #F4F4F0; color: #8E8B84">Yesterday</td>
+                    <td style="padding: 11px 24px; border-bottom: 1px solid #F4F4F0; text-align: right"><div style="display: inline-flex; align-items: center; gap: 6px"><button onClick="{{ openDeact }}" style="font-family: Inter, sans-serif; font-size: 11.5px; font-weight: 600; color: #57534E; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; padding: 0 12px; height: 30px; cursor: pointer; transition: all 150ms ease-out" style-hover="border-color: #18181B; color: #18181B">Deactivate</button><button aria-label="User actions" style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #8E8B84; transition: all 150ms ease-out" style-hover="background: #F4F4F0; color: #18181B"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></button></div></td>
+                  </tr>
+                  <tr style="transition: background 120ms ease-out" style-hover="background: #FAFAF8">
+                    <td style="padding: 11px 24px">
+                      <div style="display: flex; align-items: center; gap: 11px; opacity: 0.6">
+                        <span style="width: 32px; height: 32px; border-radius: 50%; background: #F4F4F0; color: #8E8B84; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">SO</span>
+                        <span style="display: flex; flex-direction: column"><span style="font-weight: 600; text-decoration: line-through; text-decoration-color: #C7C4BD">Sam Okafor</span><span style="font-size: 11.5px; color: #8E8B84"><span>sam@</span><span>fourpielabs.com</span></span></span>
+                      </div>
+                    </td>
+                    <td style="padding: 11px 16px"><span style="display: inline-flex; font-size: 11px; font-weight: 600; color: #57534E; background: #F4F4F0; border: 1px solid #E7E5E0; border-radius: 999px; padding: 3px 10px; opacity: 0.6">Team</span></td>
+                    <td style="padding: 11px 16px; color: #8E8B84">—</td>
+                    <td style="padding: 11px 16px"><span style="display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; color: #A8A5A0; background: #FAFAF8; border: 1px solid #E7E5E0; border-radius: 999px; padding: 3px 10px">Inactive</span></td>
+                    <td style="padding: 11px 16px; color: #8E8B84">Mar 2</td>
+                    <td style="padding: 11px 24px; text-align: right"><button style="font-family: Inter, sans-serif; font-size: 11.5px; font-weight: 600; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; padding: 0 12px; height: 30px; cursor: pointer; transition: all 150ms ease-out" style-hover="border-color: #18181B">Reactivate</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Confirm dialog overlay (live) -->
+          <sc-if value="{{ dlgOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; inset: 0; background: rgba(16,16,18,0.5); display: flex; align-items: center; justify-content: center; z-index: 20">
+              <div style="background: #FFFFFF; border-radius: 16px; box-shadow: 0 12px 32px rgba(24,24,27,0.18); width: 380px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+                <span style="width: 40px; height: 40px; border-radius: 50%; background: #FEE2E2; display: inline-flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span>
+                <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 18px">Revoke this invite?</span>
+                <span style="font-size: 13.5px; line-height: 1.55; color: #57534E">The invite link stops working immediately. You can re-invite them anytime.</span>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px">
+                  <button onClick="{{ closeDlg }}" style="font-family: Inter, sans-serif; font-size: 13.5px; font-weight: 600; color: #57534E; background: transparent; border: none; border-radius: 999px; padding: 0 16px; height: 42px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #F4F4F0; color: #18181B">Keep invite</button>
+                  <button onClick="{{ confirmRevoke }}" style="font-family: Inter, sans-serif; font-size: 13.5px; font-weight: 600; color: #FFFFFF; background: #DC2626; border: none; border-radius: 999px; padding: 0 18px; height: 42px; cursor: pointer; transition: background 160ms ease-out" style-hover="background: #B91C1C">Revoke</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- Deactivate confirm dialog (live) -->
+          <sc-if value="{{ deactOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; inset: 0; background: rgba(16,16,18,0.5); display: flex; align-items: center; justify-content: center; z-index: 20">
+              <div style="background: #FFFFFF; border-radius: 16px; box-shadow: 0 12px 32px rgba(24,24,27,0.18); width: 380px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+                <span style="width: 40px; height: 40px; border-radius: 50%; background: #FEE2E2; display: inline-flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span>
+                <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 18px">Deactivate this user?</span>
+                <span style="font-size: 13.5px; line-height: 1.55; color: #57534E">They'll be signed out and blocked at next request. You can reactivate anytime.</span>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px">
+                  <button onClick="{{ closeDeact }}" style="font-family: Inter, sans-serif; font-size: 13.5px; font-weight: 600; color: #57534E; background: transparent; border: none; border-radius: 999px; padding: 0 16px; height: 42px; cursor: pointer; transition: all 150ms ease-out" style-hover="background: #F4F4F0; color: #18181B">Keep active</button>
+                  <button onClick="{{ confirmDeact }}" style="font-family: Inter, sans-serif; font-size: 13.5px; font-weight: 600; color: #FFFFFF; background: #DC2626; border: none; border-radius: 999px; padding: 0 18px; height: 42px; cursor: pointer; transition: background 160ms ease-out" style-hover="background: #B91C1C">Deactivate</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- Toasts (live) -->
+          <sc-if value="{{ rateToast }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; right: 24px; bottom: 24px; z-index: 30; display: flex; align-items: flex-start; gap: 12px; background: #1A1A1D; border: 1px solid #2C2C30; border-radius: 12px; padding: 14px 16px; width: 380px; box-shadow: 0 12px 32px rgba(24,24,27,0.25)">
+              <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(220,38,38,0.25); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></span>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13.5px; font-weight: 600; color: #F5F5F3">Invite not sent</span><span style="font-size: 12.5px; line-height: 1.5; color: #A8A8A3">Rate limit reached — try again in a few minutes.</span></div>
+              <button onClick="{{ dismissToast }}" aria-label="Dismiss" style="background: transparent; border: none; color: #A8A8A3; cursor: pointer; padding: 2px; transition: color 150ms ease-out" style-hover="color: #F5F5F3"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ revokedToast }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; right: 24px; bottom: 24px; z-index: 30; display: flex; align-items: flex-start; gap: 12px; background: #1A1A1D; border: 1px solid #2C2C30; border-radius: 12px; padding: 14px 16px; width: 380px; box-shadow: 0 12px 32px rgba(24,24,27,0.25)">
+              <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(21,128,61,0.25); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13.5px; font-weight: 600; color: #F5F5F3">Invite revoked</span><span style="font-size: 12.5px; line-height: 1.5; color: #A8A8A3">The link no longer works. Re-invite anytime from this page.</span></div>
+              <button onClick="{{ dismissToast }}" aria-label="Dismiss" style="background: transparent; border: none; color: #A8A8A3; cursor: pointer; padding: 2px; transition: color 150ms ease-out" style-hover="color: #F5F5F3"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MOBILE 390 ============ -->
+    <section style="display: flex; flex-direction: column; gap: 14px" data-screen-label="K6 Mobile 390">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #B45309">Mobile · 390</span>
+        <span style="font-size: 12px; color: #8E8B84">Table collapses to user cards · invite form stacks</span>
+      </div>
+      <div style="display: flex; gap: 32px; align-items: flex-start">
+        <div style="width: 390px; flex-shrink: 0; height: 844px; background: #FAFAF8; border-radius: 28px; border: 1px solid #E7E5E0; overflow: hidden; position: relative; box-shadow: 0 2px 8px rgba(24,24,27,0.10); display: flex; flex-direction: column">
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 24px 6px">
+              <span style="font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums">9:41</span>
+              <span style="width: 16px; height: 9px; border-radius: 2px; border: 1px solid #57534E; position: relative"><span style="position: absolute; inset: 1px; right: 4px; background: #18181B; border-radius: 1px"></span></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 16px 12px">
+              <button aria-label="Menu" style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 12px; cursor: pointer; color: #18181B"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+              <span style="flex: 1; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600; font-size: 19px; letter-spacing: -0.01em">Users</span>
+              <span style="width: 40px; height: 40px; border-radius: 50%; background: #18181B; color: #FFFFFF; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">RP</span>
+            </div>
+            <div style="padding: 4px 16px 0">
+              <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+                <span style="font-size: 13.5px; font-weight: 600">Invite someone</span>
+                <input type="email" placeholder="casey@premierpainting.com" style="font-family: Inter, sans-serif; font-size: 14px; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 12px; padding: 0 14px; height: 44px; outline: none" style-focus="border-color: #D97706; box-shadow: 0 0 0 3px rgba(217,119,6,0.18)" />
+                <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px">
+                  <button style="display: flex; align-items: center; justify-content: space-between; font-family: Inter, sans-serif; font-size: 13.5px; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 12px; padding: 0 12px; height: 44px; cursor: pointer">Client<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8E8B84" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                  <button style="display: flex; align-items: center; justify-content: space-between; font-family: Inter, sans-serif; font-size: 13.5px; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 12px; padding: 0 12px; height: 44px; cursor: pointer"><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Premier Painting Co.</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8E8B84" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                </div>
+                <button style="font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #FFFFFF; background: #B45309; border: none; border-radius: 999px; height: 46px; cursor: pointer">Send invite</button>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; padding: 18px 16px 24px">
+              <span style="font-size: 12.5px; font-weight: 600; color: #57534E">6 users · 2 pending</span>
+              <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+                <div style="display: flex; align-items: center; gap: 11px">
+                  <span style="width: 36px; height: 36px; border-radius: 50%; background: #FEF3C7; color: #92400E; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">PM</span>
+                  <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 13.5px; font-weight: 600">Pat Miller</span><span style="font-size: 11.5px; color: #8E8B84"><span>pat@</span><span>premierpainting.com</span></span></span>
+                  <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; color: #166534; background: #DCFCE7; border-radius: 999px; padding: 3px 8px">Active</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #8E8B84">
+                  <span style="display: inline-flex; font-size: 10.5px; font-weight: 600; color: #57534E; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; padding: 2px 8px">Client</span>
+                  Premier Painting Co. · active 2h ago
+                </div>
+                <button style="font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 600; color: #57534E; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; height: 44px; cursor: pointer">Deactivate</button>
+              </div>
+              <div style="background: #FFFDF5; border: 1px solid #FDE68A; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+                <div style="display: flex; align-items: center; gap: 11px">
+                  <span style="width: 36px; height: 36px; border-radius: 50%; border: 1.5px dashed #FBBF24; background: #FFFBEB; color: #92400E; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">JL</span>
+                  <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 13.5px; font-weight: 600">Jordan Lee</span><span style="font-size: 11.5px; color: #8E8B84"><span>jordan@</span><span>coastaltours.com</span></span></span>
+                  <span style="display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 600; color: #92400E; background: #FFFFFF; border: 1.5px dashed #FBBF24; border-radius: 999px; padding: 3px 8px">Pending</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #8E8B84">
+                  <span style="display: inline-flex; font-size: 10.5px; font-weight: 600; color: #57534E; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; padding: 2px 8px">Client</span>
+                  Coastal Tours Co. · sent 6 days ago
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+                  <button style="font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 600; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; height: 44px; cursor: pointer">Resend</button>
+                  <button style="font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 600; color: #B91C1C; background: #FFFFFF; border: 1px solid #FECACA; border-radius: 999px; height: 44px; cursor: pointer">Revoke</button>
+                </div>
+              </div>
+              <div style="background: #FFFFFF; border: 1px solid #E7E5E0; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 2px rgba(24,24,27,0.05)">
+                <div style="display: flex; align-items: center; gap: 11px; opacity: 0.65">
+                  <span style="width: 36px; height: 36px; border-radius: 50%; background: #F4F4F0; color: #8E8B84; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">SO</span>
+                  <span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 13.5px; font-weight: 600; text-decoration: line-through; text-decoration-color: #C7C4BD">Sam Okafor</span><span style="font-size: 11.5px; color: #8E8B84"><span>sam@</span><span>fourpielabs.com</span></span></span>
+                  <span style="display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 600; color: #A8A5A0; background: #FAFAF8; border: 1px solid #E7E5E0; border-radius: 999px; padding: 3px 8px">Inactive</span>
+                </div>
+                <button style="font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 600; color: #18181B; background: #FFFFFF; border: 1px solid #D6D3CD; border-radius: 999px; height: 44px; cursor: pointer">Reactivate</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 8px; max-width: 420px">
+          <div style="font-size: 13px; font-weight: 600">Notes</div>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.8; color: #57534E">
+            <li>Actions map 1:1 to server calls: invite · resend · revoke · deactivate (visible on active rows, with confirm) · reactivate · assign client. No reminder emails, no view-as-client.</li>
+            <li>Self-lockout protection: the signed-in admin's own row carries a "You" marker and no deactivate control.</li>
+            <li>Pending rows tint warm and use the dashed-avatar treatment; Inactive uses the strikethrough-feel, never red.</li>
+            <li>Client select is required only when role = Client; staff roles hide it.</li>
+            <li>Emails are split-span here as a mockup-environment hack only — production renders plain text (flagged in the handoff sheet).</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer style="border-top: 1px solid #E7E5E0; padding-top: 24px; display: flex; justify-content: space-between; align-items: baseline; gap: 24px">
+      <div style="font-size: 13px; color: #57534E; max-width: 680px; line-height: 1.6; text-wrap: pretty"><span style="font-weight: 600; color: #18181B">Next:</span> on approval, the handoff sheet — full token CSS, font imports, status map, and per-keystone engineering notes.</div>
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #8E8B84; white-space: nowrap">4Pie Labs · K6 Admin Users</div>
+    </footer>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { scale: 0.6, dlgOpen: false, deactOpen: false, toast: null };
+
+  applyWidth(w) {
+    if (w > 0) {
+      const s = Math.min(w / 1440, 1);
+      if (Math.abs(s - this.state.scale) > 0.001) this.setState({ scale: s });
+    }
+  }
+
+  frameRef = (el) => {
+    if (el && el !== this._frameEl) {
+      this._frameEl = el;
+      if (!this._ro) {
+        this._ro = new ResizeObserver((entries) => this.applyWidth(entries[0].contentRect.width));
+      }
+      this._ro.observe(el);
+      this.applyWidth(el.getBoundingClientRect().width);
+    }
+  };
+
+  componentDidMount() {
+    this._tries = 0;
+    const tryAttach = () => {
+      const el = this._frameEl || document.getElementById('k6frame');
+      if (el) {
+        this.frameRef(el);
+        this.applyWidth(el.getBoundingClientRect().width);
+      } else if (this._tries++ < 50) {
+        setTimeout(tryAttach, 100);
+      }
+    };
+    tryAttach();
+  }
+
+  componentWillUnmount() {
+    if (this._ro) this._ro.disconnect();
+  }
+
+  renderVals() {
+    const { scale, dlgOpen, deactOpen, toast } = this.state;
+    return {
+      frameRef: this.frameRef,
+      frameScale: scale,
+      frameH: Math.round(980 * scale),
+      dlgOpen,
+      deactOpen,
+      openDeact: () => this.setState({ deactOpen: true, dlgOpen: false, toast: null }),
+      closeDeact: () => this.setState({ deactOpen: false }),
+      confirmDeact: () => this.setState({ deactOpen: false }),
+      rateToast: toast === 'rate',
+      revokedToast: toast === 'revoked',
+      openDlg: () => this.setState({ dlgOpen: true, deactOpen: false, toast: null }),
+      closeDlg: () => this.setState({ dlgOpen: false }),
+      confirmRevoke: () => this.setState({ dlgOpen: false, toast: 'revoked' }),
+      showRate: () => this.setState({ toast: 'rate', dlgOpen: false }),
+      dismissToast: () => this.setState({ toast: null })
+    };
+  }
+}
+</script>
+</body>
+</html>
