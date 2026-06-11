@@ -1,137 +1,190 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-brand: var(--brand);
-  --color-brand-foreground: var(--brand-foreground);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+/* =============================================================================
+   4Pie Labs design system — tokens from the approved handoff (D1/D4).
+   Warm light neutrals · charcoal structure · amber #d97706 single accent.
+   ============================================================================= */
+@theme {
+  /* fonts (wired to next/font variables in layout.tsx) */
+  --font-sans: var(--font-inter), Inter, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), "Bricolage Grotesque", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* warm neutrals */
+  --color-bg: #fafaf8;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f4f0;
+  --color-border: #e7e5e0;
+  --color-border-strong: #d6d3cd;
+  --color-ink: #18181b;
+  --color-ink-2: #57534e;
+  --color-ink-3: #8e8b84;
+  --color-ink-faint: #c7c4bd;
+  --color-charcoal-hover: #2c2c30;
+
+  /* dark set */
+  --color-dark-bg: #101012;
+  --color-dark-surface: #1a1a1d;
+  --color-dark-border: #2c2c30;
+  --color-dark-ink: #f5f5f3;
+  --color-dark-ink-2: #a8a8a3;
+
+  /* amber ramp (brand accent) */
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+
+  /* semantics */
+  --color-success-bg: #dcfce7;
+  --color-success-border: #bbf7d0;
+  --color-success-text: #166534;
+  --color-success-dot: #15803d;
+  --color-danger-solid: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-bg: #fef2f2;
+  --color-danger-border: #fecaca;
+  --color-danger-text: #b91c1c;
+  --color-info-bg: #dbeafe;
+  --color-info-border: #bfdbfe;
+  --color-info-text: #1d4ed8;
+  --color-info-dot: #2563eb;
+  --color-teal-bg: #ccfbf1;
+  --color-teal-border: #99f6e4;
+  --color-teal-text: #115e59;
+  --color-teal-dot: #0d9488;
+  --color-indigo-bg: #e0e7ff;
+  --color-indigo-border: #c7d2fe;
+  --color-indigo-text: #4338ca;
+  --color-indigo-dot: #4f46e5;
+  --color-priority-bg: #fff7ed;
+  --color-priority-border: #fed7aa;
+  --color-priority-text: #9a3412;
+  --color-priority-icon: #c2410c;
+
+  /* --- shadcn/ui semantic mapping --- */
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-ink);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-ink); /* default button = charcoal */
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--color-surface-2);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted: var(--color-surface-2);
+  --color-muted-foreground: var(--color-ink-3);
+  --color-accent: var(--color-surface-2);
+  --color-accent-foreground: var(--color-ink);
+  --color-destructive: var(--color-danger-solid);
+  --color-destructive-foreground: #ffffff;
+  --color-input: var(--color-border-strong);
+  --color-ring: var(--color-amber-600);
+  /* brand alias used by older code */
+  --color-brand: var(--color-amber-600);
+  --color-brand-foreground: #ffffff;
+
+  /* radii — md=12 maps to shadcn --radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* elevation */
+  --shadow-e1: 0 1px 2px rgba(24, 24, 27, 0.05);
+  --shadow-e2: 0 2px 8px rgba(24, 24, 27, 0.06), 0 1px 2px rgba(24, 24, 27, 0.04);
+  --shadow-e3: 0 12px 32px rgba(24, 24, 27, 0.1), 0 2px 6px rgba(24, 24, 27, 0.05);
+  --shadow-toast: 0 12px 32px rgba(24, 24, 27, 0.25);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* 4Pie Labs brand: amber-600 (~#d97706) accent */
-  --primary: oklch(0.666 0.179 58.318);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.962 0.059 95.617); /* amber-100 wash */
-  --accent-foreground: oklch(0.473 0.137 46.201); /* amber-800 */
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.666 0.179 58.318);
-  --brand: oklch(0.666 0.179 58.318);
-  --brand-foreground: oklch(0.985 0 0);
-  --chart-1: oklch(0.769 0.188 70.08);  /* amber-500 */
-  --chart-2: oklch(0.666 0.179 58.318); /* amber-600 */
-  --chart-3: oklch(0.555 0.163 48.998); /* amber-700 */
-  --chart-4: oklch(0.828 0.189 84.429); /* amber-400 */
-  --chart-5: oklch(0.473 0.137 46.201); /* amber-800 */
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.769 0.188 70.08); /* amber-500 for dark surfaces */
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.769 0.188 70.08);
-  --brand: oklch(0.769 0.188 70.08);
-  --brand-foreground: oklch(0.205 0 0);
-  --chart-1: oklch(0.769 0.188 70.08);
-  --chart-2: oklch(0.666 0.179 58.318);
-  --chart-3: oklch(0.555 0.163 48.998);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.473 0.137 46.201);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --radius: 12px;
+  /* non-utility design vars */
+  --dark-field: rgba(255, 255, 255, 0.045);
+  --dark-glow: radial-gradient(
+    110% 90% at 78% 8%,
+    rgba(217, 119, 6, 0.3),
+    rgba(217, 119, 6, 0.06) 48%,
+    transparent 72%
+  );
+  --unsaved-bg: #fffbeb;
+  --pending-row: #fffdf5;
+  --focus-field: 0 0 0 3px rgba(217, 119, 6, 0.18);
+  --focus-solid: 0 0 0 2px #ffffff, 0 0 0 4.5px #d97706;
+  --duration-fast: 160ms;
+  --duration-med: 250ms;
+  --duration-slow: 300ms;
+  --spring-tick: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
   }
-  html {
-    @apply font-sans;
+  h1, h2, h3, h4 {
+    text-wrap: pretty;
+  }
+  /* visible amber focus on every interactive element */
+  :where(a, button, [role="button"], input, select, textarea, [tabindex]):focus-visible {
+    outline: none;
+    box-shadow: var(--focus-solid);
+    border-radius: var(--radius-sm);
+  }
+  /* fields use the soft halo instead of the double ring */
+  :where(input, select, textarea):focus-visible {
+    box-shadow: var(--focus-field);
+    border-color: var(--color-amber-600);
+  }
+}
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* checklist tick spring pop */
+@keyframes tickPop {
+  0% {
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* honor reduced motion globally */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
