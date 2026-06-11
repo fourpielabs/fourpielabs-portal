@@ -23,7 +23,7 @@ import {
 
 const schema = z
   .object({
-    password: z.string().min(8, "Use at least 8 characters"),
+    password: z.string().min(12, "Use at least 12 characters"),
     confirm: z.string(),
   })
   .refine((v) => v.password === v.confirm, {
@@ -100,9 +100,14 @@ export default function AcceptInvitePage() {
                 autoComplete="new-password"
                 {...register("password")}
               />
-              {errors.password && (
+              {errors.password ? (
                 <p className="text-sm text-destructive">
                   {errors.password.message}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  At least 12 characters. A longer passphrase with a mix of
+                  words, numbers, and symbols is strongest.
                 </p>
               )}
             </div>

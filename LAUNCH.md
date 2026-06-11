@@ -201,6 +201,22 @@ subdomain of the verified domain).
 
 ---
 
+## Security advisors (run regularly — after any schema/auth change)
+Programmatic, no dashboard needed. Requires `SUPABASE_ACCESS_TOKEN` in your shell:
+
+```bash
+curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  "https://api.supabase.com/v1/projects/frmukrgjkhlpxplhzeqj/advisors/security" \
+  | jq -r '.lints[] | "[\(.level)] \(.name): \(.title)"'
+```
+(PowerShell: `$tok = [Environment]::GetEnvironmentVariable('SUPABASE_ACCESS_TOKEN','User')`
+then `curl.exe -s -H "Authorization: Bearer $tok" <url>`. Or use the Supabase MCP
+`get_advisors` tool.) Swap `security` → `performance` for perf lints. Triage every
+finding (fix or justify) and record it in **SECURITY.md**. Current accepted/fixed
+findings are documented there.
+
+---
+
 ## Performance note (from P6 Lighthouse, mobile)
 - Login page: **Accessibility 96 · Best-practices 100 · SEO 91 · Performance ~28 (mobile, lab)**.
 - Mobile performance is dominated by client JS (the Supabase auth client bundled into the
