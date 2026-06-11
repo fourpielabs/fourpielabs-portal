@@ -13,7 +13,7 @@ import {
 import { CONTENT_PLATFORMS, CONTENT_STATUSES, labelOf } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SegmentedControl } from "@/components/ui/segmented";
 import {
   Select,
   SelectContent,
@@ -67,6 +67,7 @@ export function ContentCalendar({
   const [pending, setPending] = useState(false);
   const [platform, setPlatform] = useState("");
   const [status, setStatus] = useState("");
+  const [view, setView] = useState<"table" | "month">("table");
   const [cursor, setCursor] = useState(() => {
     const d = new Date();
     return { y: d.getFullYear(), m: d.getMonth() };
@@ -121,12 +122,16 @@ export function ContentCalendar({
   const unscheduled = items.filter((i) => !i.publish_date).length;
 
   return (
-    <Tabs defaultValue="table">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <TabsList>
-          <TabsTrigger value="table">Table</TabsTrigger>
-          <TabsTrigger value="month">Month</TabsTrigger>
-        </TabsList>
+        <SegmentedControl
+          options={[
+            { value: "table", label: "Table" },
+            { value: "month", label: "Month" },
+          ]}
+          value={view}
+          onValueChange={setView}
+        />
         <ContentDialog
           clientId={clientId}
           trigger={
@@ -137,7 +142,8 @@ export function ContentCalendar({
         />
       </div>
 
-      <TabsContent value="table" className="space-y-3 pt-4">
+      {view === "table" && (
+        <div className="space-y-3 pt-1">
         <div className="flex flex-wrap items-center gap-2">
           <select
             className={selectClass}
@@ -307,9 +313,11 @@ export function ContentCalendar({
             </Table>
           </div>
         )}
-      </TabsContent>
+        </div>
+      )}
 
-      <TabsContent value="month" className="space-y-3 pt-4">
+      {view === "month" && (
+        <div className="space-y-3 pt-1">
         <div className="flex items-center justify-between">
           <div className="font-medium">
             {MONTHS[cursor.m]} {cursor.y}
@@ -366,7 +374,8 @@ export function ContentCalendar({
             (see the Table view).
           </p>
         )}
-      </TabsContent>
-    </Tabs>
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
-import { Button } from "@/components/ui/button";
+import { formatDate } from "@/lib/format";
+import { AuditFilters } from "@/components/admin/audit-filters";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -25,9 +27,6 @@ const ACTIONS = [
   "password_reset.requested",
   "password_reset.failed",
 ];
-
-const selectClass =
-  "h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs";
 
 export default async function AuditPage({
   searchParams,
@@ -61,68 +60,20 @@ export default async function AuditPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Audit log</h1>
-        <p className="text-muted-foreground">
-          Every mutation, newest first (latest 200).
-        </p>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Audit log</h1>
+        <p className="text-sm text-ink-2">Every mutation, newest first (latest 200).</p>
       </div>
 
-      <form
-        method="get"
-        className="flex flex-wrap items-end gap-3 rounded-lg border p-4"
-      >
-        <div className="flex flex-col gap-1">
-          <label htmlFor="client" className="text-xs text-muted-foreground">
-            Client
-          </label>
-          <select
-            id="client"
-            name="client"
-            defaultValue={clientFilter ?? ""}
-            className={selectClass}
-          >
-            <option value="">All clients</option>
-            {(clients ?? []).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="action" className="text-xs text-muted-foreground">
-            Action
-          </label>
-          <select
-            id="action"
-            name="action"
-            defaultValue={actionFilter ?? ""}
-            className={selectClass}
-          >
-            <option value="">All actions</option>
-            {ACTIONS.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Button type="submit" size="sm">
-          Filter
-        </Button>
-        {(clientFilter || actionFilter) && (
-          <Button asChild variant="ghost" size="sm">
-            <a href="/admin/audit">Clear</a>
-          </Button>
-        )}
-      </form>
+      <AuditFilters
+        clients={clients ?? []}
+        actions={ACTIONS}
+        current={{ client: clientFilter, action: actionFilter }}
+      />
 
       {!logs || logs.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-          No audit entries match.
-        </div>
+        <EmptyState title="No audit entries match" description="Try clearing the filters." />
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="overflow-hidden rounded-2xl border border-border shadow-e1">
           <Table>
             <TableHeader>
               <TableRow>
@@ -136,17 +87,28 @@ export default async function AuditPage({
             <TableBody>
               {logs.map((l) => (
                 <TableRow key={l.id}>
-                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                    {new Date(l.created_at).toLocaleString()}
+                  <TableCell className="whitespace-nowrap text-xs text-ink-3">
+                    {formatDate(l.created_at)}
                   </TableCell>
-                  <TableCell className="text-sm">
+                  <TableCell className="text-[13px]">
                     {l.actor_id ? (actorName.get(l.actor_id) ?? "—") : "system"}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{l.action}</TableCell>
-                  <TableCell className="text-sm">
+                  <TableCell>
+                    <span className="inline-block rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-ink-2">
+                      {l.action}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-[13px]">
                     {l.client_id ? (clientName.get(l.client_id) ?? "—") : "—"}
                   </TableCell>
-                  <TableCell className="max-w-[18rem] truncate font-mono text-xs text-muted-foreground">
+                  <TableCell
+                    className="max-w-[18rem] truncate font-mono text-xs text-ink-3"
+                    title={
+                      l.metadata && Object.keys(l.metadata).length
+                        ? JSON.stringify(l.metadata)
+                        : undefined
+                    }
+                  >
                     {l.metadata && Object.keys(l.metadata).length
                       ? JSON.stringify(l.metadata)
                       : "—"}

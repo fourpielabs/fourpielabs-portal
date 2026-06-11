@@ -24,7 +24,13 @@ const MS_BORDER: Record<string, string> = {
   upcoming: "#E7E5E0",
 };
 
-export async function ClientDashboard({ clientId }: { clientId: string }) {
+export async function ClientDashboard({
+  clientId,
+  userName,
+}: {
+  clientId: string;
+  userName: string | null;
+}) {
   const supabase = await createClient();
 
   const [
@@ -60,7 +66,7 @@ export async function ClientDashboard({ clientId }: { clientId: string }) {
       .limit(4),
     supabase
       .from("reports")
-      .select("id, title")
+      .select("id, title, summary")
       .order("period_end", { ascending: false })
       .limit(1)
       .maybeSingle(),
@@ -108,7 +114,8 @@ export async function ClientDashboard({ clientId }: { clientId: string }) {
 
   const pinned = (updates ?? []).filter((u) => u.pinned);
   const recent = (updates ?? []).filter((u) => !u.pinned);
-  const firstName = (client?.name ?? "there").split(" ")[0];
+  // Greeting uses the signed-in PERSON's first name (not the company name).
+  const firstName = (userName ?? "there").split(" ")[0];
 
   return (
     <div className="flex flex-col gap-8">
@@ -202,7 +209,7 @@ export async function ClientDashboard({ clientId }: { clientId: string }) {
 
         {/* dark report card */}
         <div
-          className="flex flex-col justify-between gap-6 rounded-2xl border border-dark-border p-6 text-dark-ink"
+          className="flex flex-col gap-4 self-start rounded-2xl border border-dark-border p-6 text-dark-ink"
           style={{ background: "var(--dark-glow), #101012" }}
         >
           <div>
@@ -212,6 +219,11 @@ export async function ClientDashboard({ clientId }: { clientId: string }) {
             <p className="mt-2 font-display text-lg font-semibold">
               {report ? report.title : "Your first report lands after month 1."}
             </p>
+            {report?.summary && (
+              <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-dark-ink-2">
+                {report.summary}
+              </p>
+            )}
           </div>
           {report && (
             <Link

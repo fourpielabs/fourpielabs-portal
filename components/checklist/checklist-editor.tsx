@@ -149,14 +149,11 @@ function KindPanel({
                       </Badge>
                     )}
                     {it.link_url && (
-                      <a
-                        href={it.link_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                      >
-                        <ExternalLink className="size-3" /> Link
-                      </a>
+                      <Button asChild variant="ghost" size="sm">
+                        <a href={it.link_url} target="_blank" rel="noreferrer">
+                          <ExternalLink className="size-3" /> Link
+                        </a>
+                      </Button>
                     )}
                   </div>
                 </div>

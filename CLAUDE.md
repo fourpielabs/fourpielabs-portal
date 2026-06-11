@@ -91,6 +91,12 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
   widen RLS to match a mockup. Example: the staff client-overview "activity feed" is a
   derived read of deliverables/updates/reports (works for team), **not** a raw
   `audit_log` read (admin-only).
+- **Post-launch polish candidate (named, from UI-5 audit):** seven per-client staff
+  editor tabs — **Program (milestones), Competitors, Notes, Reports, Updates, Files,
+  client Settings** — ship at accepted **B** fidelity: on-system (border-border rows,
+  StatusChip, real Buttons/Selects, humanized labels) but using `rounded-lg border`
+  **list rows** rather than full Card-row treatment. Functionally complete; a later
+  pass can lift them to Card rows. Tracked so we don't lose it.
 
 ## Build phases (complete + verify each before the next)
 

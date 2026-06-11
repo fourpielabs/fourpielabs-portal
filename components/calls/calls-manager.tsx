@@ -329,14 +329,11 @@ export function CallsManager({
                       {c.duration_label && <span>{c.duration_label}</span>}
                       {c.frequency_label && <span>· {c.frequency_label}</span>}
                       {c.booking_url && (
-                        <a
-                          href={c.booking_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-primary hover:underline"
-                        >
-                          <ExternalLink className="size-3" /> Book
-                        </a>
+                        <Button asChild variant="ghost" size="sm">
+                          <a href={c.booking_url} target="_blank" rel="noreferrer">
+                            <ExternalLink className="size-3" /> Book
+                          </a>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -400,14 +397,11 @@ export function CallsManager({
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       {r.key_topic && <span>{r.key_topic}</span>}
                       {r.recording_url && (
-                        <a
-                          href={r.recording_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-primary hover:underline"
-                        >
-                          <ExternalLink className="size-3" /> Watch
-                        </a>
+                        <Button asChild variant="ghost" size="sm">
+                          <a href={r.recording_url} target="_blank" rel="noreferrer">
+                            <ExternalLink className="size-3" /> Watch
+                          </a>
+                        </Button>
                       )}
                     </div>
                   </div>

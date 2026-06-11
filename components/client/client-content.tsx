@@ -7,7 +7,8 @@ import { CONTENT_PLATFORMS, labelOf } from "@/lib/constants";
 import { StatusChip } from "@/components/ui/status-chip";
 import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SegmentedControl } from "@/components/ui/segmented";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export type ClientContentItem = {
   id: string;
@@ -25,8 +26,8 @@ const MONTHS = [
 ];
 const pad = (n: number) => String(n).padStart(2, "0");
 
-
 export function ClientContent({ items }: { items: ClientContentItem[] }) {
+  const [view, setView] = useState<"list" | "month">("list");
   const [cursor, setCursor] = useState(() => {
     const d = new Date();
     return { y: d.getFullYear(), m: d.getMonth() };
@@ -61,26 +62,31 @@ export function ClientContent({ items }: { items: ClientContentItem[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-        Your content plan will show up here as we build it.
-      </div>
+      <EmptyState
+        title="No content planned yet"
+        description="Your content plan will show up here as we build it."
+      />
     );
   }
 
   return (
-    <Tabs defaultValue="list">
-      <TabsList>
-        <TabsTrigger value="list">List</TabsTrigger>
-        <TabsTrigger value="month">Month</TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      <SegmentedControl
+        options={[
+          { value: "list", label: "List" },
+          { value: "month", label: "Month" },
+        ]}
+        value={view}
+        onValueChange={setView}
+      />
 
-      <TabsContent value="list" className="pt-4">
-        <ul className="divide-y rounded-lg border">
+      {view === "list" ? (
+        <ul className="divide-y divide-row-divider rounded-2xl border border-border">
           {items.map((i) => (
             <li key={i.id} className="flex flex-wrap items-center gap-2 p-3">
               <div className="min-w-0 flex-1">
                 <div className="font-medium">{i.title}</div>
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-ink-3">
                   <span>{labelOf(CONTENT_PLATFORMS, i.platform)}</span>
                   {i.content_type && <span>· {i.content_type}</span>}
                   {i.publish_date && <span>· {formatDate(i.publish_date)}</span>}
@@ -97,63 +103,63 @@ export function ClientContent({ items }: { items: ClientContentItem[] }) {
             </li>
           ))}
         </ul>
-      </TabsContent>
-
-      <TabsContent value="month" className="space-y-3 pt-4">
-        <div className="flex items-center justify-between">
-          <div className="font-medium">
-            {MONTHS[cursor.m]} {cursor.y}
-          </div>
-          <div className="flex gap-1">
-            <Button variant="outline" size="icon" onClick={() => shift(-1)} aria-label="Previous month">
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => shift(1)} aria-label="Next month">
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border bg-border text-xs">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-            <div key={d} className="bg-muted px-1 py-1 text-center font-medium text-muted-foreground">
-              {d}
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="font-semibold">
+              {MONTHS[cursor.m]} {cursor.y}
             </div>
-          ))}
-          {cells.map((day, idx) => {
-            const dateStr = day ? `${monthPrefix}-${pad(day)}` : "";
-            const dayItems = day ? (byDate.get(dateStr) ?? []) : [];
-            return (
-              <div key={idx} className="min-h-20 bg-card p-1">
-                {day && <div className="mb-1 text-muted-foreground">{day}</div>}
-                <div className="space-y-1">
-                  {dayItems.map((i) =>
-                    i.asset_url && i.status === "published" ? (
-                      <a
-                        key={i.id}
-                        href={i.asset_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block truncate rounded bg-primary/10 px-1 py-0.5 text-primary hover:bg-primary/20"
-                        title={i.title}
-                      >
-                        {i.title}
-                      </a>
-                    ) : (
-                      <div
-                        key={i.id}
-                        className="truncate rounded bg-muted px-1 py-0.5"
-                        title={i.title}
-                      >
-                        {i.title}
-                      </div>
-                    ),
-                  )}
-                </div>
+            <div className="flex gap-1">
+              <Button variant="outline" size="icon" onClick={() => shift(-1)} aria-label="Previous month">
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => shift(1)} aria-label="Next month">
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-border bg-border text-xs">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+              <div key={d} className="bg-bg px-1 py-1.5 text-center font-semibold text-ink-3">
+                {d}
               </div>
-            );
-          })}
+            ))}
+            {cells.map((day, idx) => {
+              const dateStr = day ? `${monthPrefix}-${pad(day)}` : "";
+              const dayItems = day ? (byDate.get(dateStr) ?? []) : [];
+              return (
+                <div key={idx} className="min-h-20 bg-surface p-1">
+                  {day && <div className="mb-1 text-ink-3">{day}</div>}
+                  <div className="space-y-1">
+                    {dayItems.map((i) =>
+                      i.asset_url && i.status === "published" ? (
+                        <a
+                          key={i.id}
+                          href={i.asset_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block truncate rounded bg-amber-50 px-1 py-0.5 font-medium text-amber-800 hover:bg-amber-100"
+                          title={i.title}
+                        >
+                          {i.title}
+                        </a>
+                      ) : (
+                        <div
+                          key={i.id}
+                          className="truncate rounded bg-surface-2 px-1 py-0.5 text-ink-2"
+                          title={i.title}
+                        >
+                          {i.title}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </TabsContent>
-    </Tabs>
+      )}
+    </div>
   );
 }

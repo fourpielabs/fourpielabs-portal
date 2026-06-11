@@ -9,18 +9,17 @@ export default function Home() {
   return (
     <main className="flex flex-1 items-center justify-center p-6">
       <div className="mx-auto max-w-md text-center">
-        <div className="mb-6 inline-flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <span className="inline-block size-3 rounded-full bg-primary" />
-          4Pie Labs
+        <div className="mb-6 font-display text-2xl font-bold tracking-tight">
+          4Pie Labs<span className="text-amber-600">.</span>
         </div>
-        <h1 className="text-balance text-3xl font-semibold tracking-tight">
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em] text-balance">
           Your client portal
         </h1>
-        <p className="mt-3 text-muted-foreground">
+        <p className="mt-3 text-sm text-ink-2">
           Onboarding, deliverables, performance, and reports — all in one place.
         </p>
         <div className="mt-8">
-          <Button asChild size="lg">
+          <Button asChild variant="amber" size="lg">
             <Link href="/login">Sign in</Link>
           </Button>
         </div>

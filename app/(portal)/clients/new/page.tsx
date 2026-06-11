@@ -7,7 +7,7 @@ export default async function NewClientPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">New client</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">New client</h1>
         <p className="text-muted-foreground">
           Creating a client automatically seeds its onboarding checklist, 90-day
           roadmap, and program metric definitions.

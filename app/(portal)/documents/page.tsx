@@ -1,7 +1,9 @@
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
+import { FileText } from "lucide-react";
 import { FILE_CATEGORIES, labelOf } from "@/lib/constants";
 import { DownloadButton } from "@/components/files/download-button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function fmtSize(bytes: number | null) {
   if (!bytes) return "";
@@ -33,16 +35,18 @@ export default async function ClientDocumentsPage() {
       </div>
 
       {list.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-          Shared documents will appear here.
-        </div>
+        <EmptyState
+          icon={<FileText />}
+          title="No documents yet"
+          description="Your agreements, forms, and shared files will appear here."
+        />
       ) : (
         categories.map((cat) => (
           <div key={cat} className="space-y-2">
-            <h2 className="text-sm font-medium text-muted-foreground">
+            <h2 className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">
               {labelOf(FILE_CATEGORIES, cat)}
             </h2>
-            <ul className="divide-y rounded-lg border">
+            <ul className="divide-y divide-row-divider rounded-2xl border border-border">
               {list
                 .filter((f) => f.category === cat)
                 .map((f) => (

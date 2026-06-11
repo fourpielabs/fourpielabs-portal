@@ -108,14 +108,11 @@ export function DeliverablesList({
                 )}
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   {d.preview_url && (
-                    <a
-                      href={d.preview_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                    >
-                      <ExternalLink className="size-3" /> Preview
-                    </a>
+                    <Button asChild variant="ghost" size="sm">
+                      <a href={d.preview_url} target="_blank" rel="noreferrer">
+                        <ExternalLink className="size-3" /> Preview
+                      </a>
+                    </Button>
                   )}
                   {d.file_path && (
                     <DownloadButton

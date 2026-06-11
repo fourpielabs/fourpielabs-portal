@@ -21,7 +21,7 @@ export default async function ClientDeliverablesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Deliverables</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Deliverables</h1>
         <p className="text-muted-foreground">Everything we&apos;re creating for you.</p>
       </div>
 
