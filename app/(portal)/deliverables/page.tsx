@@ -5,13 +5,8 @@ import { formatDate } from "@/lib/format";
 import { DownloadButton } from "@/components/files/download-button";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import { ExternalLink } from "lucide-react";
-
-function statusVariant(s: string): "default" | "secondary" | "outline" {
-  if (s === "delivered") return "default";
-  if (s === "pending") return "outline";
-  return "secondary";
-}
 
 export default async function ClientDeliverablesPage() {
   const profile = await requireRole(["client"]);
@@ -30,11 +25,9 @@ export default async function ClientDeliverablesPage() {
         <p className="text-muted-foreground">Everything we&apos;re creating for you.</p>
       </div>
 
-      <div className="flex flex-wrap gap-2 text-xs">
+      <div className="flex flex-wrap gap-2">
         {DELIVERABLE_STATUSES.map((s) => (
-          <Badge key={s.value} variant={statusVariant(s.value)}>
-            {s.label}
-          </Badge>
+          <StatusChip key={s.value} kind="deliverable" value={s.value} />
         ))}
       </div>
 
@@ -67,9 +60,7 @@ export default async function ClientDeliverablesPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={statusVariant(d.status)}>
-                    {labelOf(DELIVERABLE_STATUSES, d.status)}
-                  </Badge>
+                  <StatusChip kind="deliverable" value={d.status} />
                   {d.preview_url && (
                     <Button asChild variant="outline" size="sm">
                       <a href={d.preview_url} target="_blank" rel="noreferrer">

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CircleCheck, Circle, ExternalLink } from "lucide-react";
+import { Check, Users } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -35,30 +35,28 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null);
 
-  const done = items.filter((i) => i.is_done).length;
+  // team rows always count as done (the agency handles them) — design spec
+  const isRowDone = (i: ClientChecklistItem) =>
+    i.assignee === "team" ? true : i.is_done;
+  const done = items.filter(isRowDone).length;
   const total = items.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
-  const groups = groupByPhase(items);
   const complete = total > 0 && done === total;
   const [expanded, setExpanded] = useState(!complete);
+  const groups = groupByPhase(items);
 
   async function toggle(id: string) {
     setPending(id);
     const supabase = createClient();
-    const { error } = await supabase.rpc("toggle_checklist_item", {
-      item_id: id,
-    });
+    const { error } = await supabase.rpc("toggle_checklist_item", { item_id: id });
     setPending(null);
-    if (error) {
-      toast.error("Couldn't update", { description: error.message });
-      return;
-    }
+    if (error) return toast.error("Couldn't update", { description: error.message });
     router.refresh();
   }
 
   if (total === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-ink-3">
         Your onboarding steps will appear here shortly.
       </p>
     );
@@ -66,88 +64,106 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
 
   if (complete && !expanded) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
-        <span className="flex items-center gap-2 text-sm font-medium">
-          <CircleCheck className="size-5 text-primary" />
-          Onboarding complete — you&apos;re all set!
+      <div className="flex items-center justify-between gap-3 rounded-xl bg-success-bg px-4 py-3.5">
+        <span className="flex items-center gap-2 text-[13px] font-semibold text-success-text">
+          <Check className="size-4" strokeWidth={2.5} />
+          Onboarding complete — you&apos;re all set.
         </span>
-        <Button variant="ghost" size="sm" onClick={() => setExpanded(true)}>
-          View steps
-        </Button>
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="text-xs font-semibold text-success-text underline underline-offset-2"
+        >
+          Review
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] font-semibold text-ink-2">
+            {done} of {total} done
+          </span>
+          {complete && (
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              className="text-xs font-semibold text-ink-3 hover:text-ink"
+            >
+              Hide
+            </button>
+          )}
         </div>
-        <span className="text-sm font-medium">
-          {done}/{total}
-        </span>
-        {complete && (
-          <Button variant="ghost" size="sm" onClick={() => setExpanded(false)}>
-            Hide
-          </Button>
-        )}
+        <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+          <div
+            className="h-full rounded-full bg-amber-600 transition-[width] duration-[250ms] ease-out"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
       </div>
 
       {groups.map((g) => (
-        <div key={g.phase} className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground">{g.phase}</h3>
-          <ul className="divide-y rounded-lg border">
-            {g.items.map((it) => {
-              const tickable = it.assignee === "client";
-              return (
-                <li key={it.id} className="flex items-center gap-3 p-3">
+        <div key={g.phase} className="flex flex-col gap-1">
+          <h3 className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">
+            {g.phase}
+          </h3>
+          {g.items.map((it) => {
+            const team = it.assignee === "team";
+            const checked = isRowDone(it);
+            const busy = pending === it.id;
+            return (
+              <div
+                key={it.id}
+                className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2.5"
+              >
+                {team ? (
+                  <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-dashed border-border-strong bg-bg text-ink-3">
+                    <Users className="size-3" />
+                  </span>
+                ) : (
                   <button
                     type="button"
-                    disabled={!tickable || pending === it.id}
-                    onClick={() => tickable && toggle(it.id)}
-                    className={
-                      tickable
-                        ? "flex size-9 shrink-0 items-center justify-center rounded-full text-primary hover:bg-primary/10 disabled:opacity-50"
-                        : "flex size-9 shrink-0 cursor-default items-center justify-center"
-                    }
-                    aria-label={
-                      tickable
-                        ? it.is_done
-                          ? "Mark not done"
-                          : "Mark done"
-                        : "Handled by your team"
-                    }
+                    disabled={busy}
+                    onClick={() => toggle(it.id)}
+                    aria-label={checked ? "Mark not done" : "Mark done"}
+                    className="inline-flex size-6 shrink-0 items-center justify-center rounded-full disabled:opacity-60"
                   >
-                    {it.is_done ? (
-                      <CircleCheck className="size-5" />
+                    {checked ? (
+                      <span
+                        className="inline-flex size-6 items-center justify-center rounded-full bg-amber-600 text-white"
+                        style={{ animation: "tickPop 300ms var(--spring-tick)" }}
+                      >
+                        <Check className="size-3.5" strokeWidth={3} />
+                      </span>
                     ) : (
-                      <Circle className="size-5 text-muted-foreground" />
+                      <span className="size-6 rounded-full border-[1.5px] border-border-strong bg-surface" />
                     )}
                   </button>
+                )}
 
-                  <div className="min-w-0 flex-1">
-                    <div className={it.is_done ? "text-muted-foreground line-through" : ""}>
-                      {it.title}
-                    </div>
-                    {!tickable && (
-                      <span className="text-xs text-muted-foreground">
-                        We&apos;ll take care of this
-                      </span>
-                    )}
-                  </div>
+                <span
+                  className={`flex-1 text-sm font-medium ${checked && !team ? "text-ink-3 line-through" : team ? "text-ink-2" : "text-ink"}`}
+                >
+                  {it.title}
+                </span>
 
-                  {it.link_url && (
-                    <Button asChild variant="outline" size="sm">
-                      <a href={it.link_url} target="_blank" rel="noreferrer">
-                        Open <ExternalLink className="size-3" />
-                      </a>
-                    </Button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                {team ? (
+                  <span className="text-xs text-ink-3 italic">
+                    We&apos;ll take care of this.
+                  </span>
+                ) : it.link_url ? (
+                  <Button asChild size="sm">
+                    <a href={it.link_url} target="_blank" rel="noreferrer">
+                      Open
+                    </a>
+                  </Button>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       ))}
     </div>

@@ -105,16 +105,38 @@ export function MetricsCharts({
           <div className="h-72 w-full rounded-lg border p-3">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="period" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
+                <CartesianGrid vertical={false} stroke="#F4F4F0" />
+                <XAxis
+                  dataKey="period"
+                  tick={{ fontSize: 11, fill: "#8E8B84" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "#8E8B84" }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={36}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "#18181B",
+                    border: "none",
+                    borderRadius: 10,
+                    color: "#fff",
+                    fontSize: 12,
+                  }}
+                  labelStyle={{ color: "#A8A8A3" }}
+                  itemStyle={{ color: "#FBBF24" }}
+                />
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke="var(--chart-2)"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
+                  stroke="#D97706"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  dot={{ r: 4, fill: "#fff", stroke: "#D97706", strokeWidth: 2 }}
+                  activeDot={{ r: 5, fill: "#D97706", stroke: "#fff", strokeWidth: 2 }}
                   connectNulls
                 />
               </LineChart>

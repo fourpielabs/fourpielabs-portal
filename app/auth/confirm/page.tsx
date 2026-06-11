@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { verifyEmailOtpAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
+import { AuthFrame } from "@/components/auth/auth-frame";
 
 /**
  * Interstitial for email links (invite / recovery / email-change). The token is
- * verified ONLY when the human clicks "Continue" (a POST to verifyEmailOtpAction)
- * — not on the bare GET that loads this page. This prevents email-prefetch
- * scanners (e.g. Gmail) from consuming the one-time token before the user clicks
- * (which previously showed up as "expired link").
+ * verified ONLY on a human click (POST to verifyEmailOtpAction) — not on the
+ * bare GET — so email-scanner prefetch can't burn the one-time token. Uses the
+ * dark auth shell as a single centered card (K1).
  */
 export default async function ConfirmPage({
   searchParams,
@@ -18,38 +18,45 @@ export default async function ConfirmPage({
   const valid = Boolean(token_hash && type);
 
   return (
-    <main className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-sm text-center">
-        <div className="mb-6 flex items-center justify-center gap-2 text-xl font-semibold tracking-tight">
-          <span className="inline-block size-3 rounded-full bg-primary" />
-          4Pie Labs
-        </div>
-
-        {valid ? (
-          <form action={verifyEmailOtpAction} className="space-y-4">
-            <input type="hidden" name="token_hash" value={token_hash} />
-            <input type="hidden" name="type" value={type} />
-            <input type="hidden" name="next" value={next ?? "/dashboard"} />
-            <h1 className="text-lg font-semibold">You&apos;re almost there</h1>
-            <p className="text-sm text-muted-foreground">
+    <AuthFrame brand={false}>
+      {valid ? (
+        <form action={verifyEmailOtpAction} className="flex flex-col gap-5">
+          <input type="hidden" name="token_hash" value={token_hash} />
+          <input type="hidden" name="type" value={type} />
+          <input type="hidden" name="next" value={next ?? "/dashboard"} />
+          <div className="flex flex-col gap-2">
+            <h2 className="font-display text-3xl font-semibold tracking-[-0.015em] text-dark-ink">
+              You&apos;re almost there
+            </h2>
+            <p className="text-sm leading-relaxed text-dark-ink-2">
               Click below to continue to your 4Pie Labs portal.
             </p>
-            <Button type="submit" className="w-full">
-              Continue
-            </Button>
-          </form>
-        ) : (
-          <div className="space-y-4">
-            <h1 className="text-lg font-semibold">Link is invalid or expired</h1>
-            <p className="text-sm text-muted-foreground">
-              Please ask for a fresh invitation, or reset your password.
-            </p>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/login">Back to sign in</Link>
-            </Button>
           </div>
-        )}
-      </div>
-    </main>
+          <Button type="submit" variant="amber" size="lg" className="w-full">
+            Continue
+          </Button>
+        </form>
+      ) : (
+        <div className="flex flex-col gap-5">
+          <h2 className="font-display text-3xl font-semibold tracking-[-0.015em] text-dark-ink">
+            Link is invalid or expired
+          </h2>
+          <p className="text-sm leading-relaxed text-dark-ink-2">
+            Please ask for a fresh invitation, or reset your password.
+          </p>
+          <div className="flex flex-col gap-2.5">
+            <Button asChild variant="amber" size="lg" className="w-full">
+              <Link href="/forgot-password">Reset password</Link>
+            </Button>
+            <Link
+              href="/login"
+              className="text-center text-xs font-semibold text-amber-400 hover:text-amber-200"
+            >
+              Back to sign in
+            </Link>
+          </div>
+        </div>
+      )}
+    </AuthFrame>
   );
 }

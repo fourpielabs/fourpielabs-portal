@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 
-import { CONTENT_PLATFORMS, CONTENT_STATUSES, labelOf } from "@/lib/constants";
+import { CONTENT_PLATFORMS, labelOf } from "@/lib/constants";
+import { StatusChip } from "@/components/ui/status-chip";
 import { formatDate } from "@/lib/format";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -25,11 +25,6 @@ const MONTHS = [
 ];
 const pad = (n: number) => String(n).padStart(2, "0");
 
-function statusVariant(s: string): "default" | "secondary" | "outline" {
-  if (s === "published") return "default";
-  if (s === "idea") return "outline";
-  return "secondary";
-}
 
 export function ClientContent({ items }: { items: ClientContentItem[] }) {
   const [cursor, setCursor] = useState(() => {
@@ -91,9 +86,7 @@ export function ClientContent({ items }: { items: ClientContentItem[] }) {
                   {i.publish_date && <span>· {formatDate(i.publish_date)}</span>}
                 </div>
               </div>
-              <Badge variant={statusVariant(i.status)} className="text-[10px]">
-                {labelOf(CONTENT_STATUSES, i.status)}
-              </Badge>
+              <StatusChip kind="content" value={i.status} />
               {i.asset_url && i.status === "published" && (
                 <Button asChild variant="ghost" size="sm">
                   <a href={i.asset_url} target="_blank" rel="noreferrer">
