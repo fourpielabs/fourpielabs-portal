@@ -181,19 +181,21 @@ export function CsvImport({
                 {rows.map((r) => {
                   const err = rowError(r);
                   return (
-                    <TableRow key={r.line}>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {r.line}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {r.metric_key}
-                      </TableCell>
+                    <TableRow key={r.line} className={err ? "bg-danger-bg" : ""}>
+                      <TableCell className="text-xs text-ink-3">{r.line}</TableCell>
+                      <TableCell className="font-mono text-xs">{r.metric_key}</TableCell>
                       <TableCell className="font-mono text-xs">{r.period}</TableCell>
                       <TableCell className="font-mono text-xs">{r.value}</TableCell>
-                      <TableCell
-                        className={`text-xs ${err ? "text-destructive" : "text-green-600"}`}
-                      >
-                        {err ?? "OK"}
+                      <TableCell>
+                        {err ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-danger-border bg-danger-bg px-2 py-0.5 text-[11px] font-semibold text-danger-text">
+                            {err}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-success-border bg-success-bg px-2 py-0.5 text-[11px] font-semibold text-success-text">
+                            OK
+                          </span>
+                        )}
                       </TableCell>
                     </TableRow>
                   );

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
-import { labelOf, PROGRAMS, CLIENT_STATUSES } from "@/lib/constants";
+import { labelOf, PROGRAMS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import {
   Table,
   TableBody,
@@ -13,11 +13,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-function statusVariant(status: string): "default" | "secondary" | "outline" {
-  if (status === "active") return "default";
-  if (status === "churned") return "outline";
-  return "secondary";
-}
 
 export default async function ClientsPage() {
   // team workspace list — clients are redirected to /dashboard
@@ -76,9 +71,7 @@ export default async function ClientsPage() {
                   </TableCell>
                   <TableCell>{labelOf(PROGRAMS, c.program)}</TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant(c.status)}>
-                      {labelOf(CLIENT_STATUSES, c.status)}
-                    </Badge>
+                    <StatusChip kind="client" value={c.status} />
                   </TableCell>
                   <TableCell className="text-right">
                     <Button asChild variant="ghost" size="sm">
