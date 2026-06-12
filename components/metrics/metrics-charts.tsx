@@ -76,12 +76,22 @@ export function MetricsCharts({
   }));
 
   const textColumns = [...axis].reverse(); // newest first
+  const numericColumns = [...axis].reverse(); // newest first
+  const selectedDef = numericDefs.find((d) => d.id === selected);
+  const rangeCaption = axis.length
+    ? `${formatMonthShort(axis[0])} – ${formatMonthShort(axis[axis.length - 1])}`
+    : "";
 
   return (
     <div className="space-y-6">
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-medium">Numeric trend</h3>
+          <div>
+            <h3 className="font-display text-xl font-semibold tracking-[-0.01em]">
+              {selectedDef?.label ?? "Numeric trend"}
+            </h3>
+            {rangeCaption && <p className="text-[12.5px] text-ink-3">{rangeCaption}</p>}
+          </div>
           {numericDefs.length > 0 && (
             <Select value={selected} onValueChange={setSelected}>
               <SelectTrigger size="sm" className="w-56">
@@ -145,9 +155,65 @@ export function MetricsCharts({
         )}
       </div>
 
+      {numericDefs.length > 0 && numericColumns.length > 0 && (
+        <div className="space-y-2">
+          <div>
+            <h3 className="font-display text-xl font-semibold tracking-[-0.01em]">Month by month</h3>
+            <p className="text-[12.5px] text-ink-3">Newest first · ▲▼ vs prior month</p>
+          </div>
+          <div className="overflow-x-auto rounded-2xl border border-border shadow-e2">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="sticky left-0 bg-bg">Month</TableHead>
+                  {numericDefs.map((d) => (
+                    <TableHead key={d.id} className="text-right whitespace-nowrap">
+                      {d.label}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {numericColumns.map((p, idx) => {
+                  const isLatest = idx === 0;
+                  const isFirst = idx === numericColumns.length - 1;
+                  const prevP = numericColumns[idx + 1];
+                  return (
+                    <TableRow key={p} className={isLatest ? "bg-amber-50" : ""}>
+                      <TableCell className={`sticky left-0 font-medium whitespace-nowrap ${isLatest ? "bg-amber-50" : "bg-surface"}`}>
+                        {formatMonthShort(p)}
+                        {isFirst && (
+                          <span className="ml-1.5 text-[10px] text-ink-3">first full month</span>
+                        )}
+                      </TableCell>
+                      {numericDefs.map((d) => {
+                        const cur = numericMap.get(`${d.id}|${p}`);
+                        const prior = isFirst ? null : (numericMap.get(`${d.id}|${prevP}`) ?? null);
+                        const delta = cur != null && prior != null ? cur - prior : null;
+                        const up = (delta ?? 0) > 0;
+                        return (
+                          <TableCell key={d.id} className="text-right tabular-nums">
+                            {cur != null ? cur.toLocaleString() : "—"}
+                            {delta != null && delta !== 0 && (
+                              <span className={`ml-1 text-[11px] ${up ? "text-success-text" : "text-danger-text"}`}>
+                                {up ? "▲" : "▼"}{Math.abs(delta).toLocaleString()}
+                              </span>
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
       {textDefs.length > 0 && axis.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Highlights by month</h3>
+          <h3 className="font-display text-xl font-semibold tracking-[-0.01em]">Highlights by month</h3>
           <div className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
