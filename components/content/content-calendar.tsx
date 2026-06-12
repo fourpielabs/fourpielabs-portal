@@ -41,9 +41,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ContentDialog, type ContentItem } from "./content-dialog";
-
-const selectClass =
-  "h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs";
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -145,30 +142,32 @@ export function ContentCalendar({
       {view === "table" && (
         <div className="space-y-3 pt-1">
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            className={selectClass}
-            value={platform}
-            onChange={(e) => setPlatform(e.target.value)}
-          >
-            <option value="">All platforms</option>
-            {CONTENT_PLATFORMS.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-          <select
-            className={selectClass}
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option value="">All statuses</option>
-            {CONTENT_STATUSES.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+          <Select value={platform || "all"} onValueChange={(v) => setPlatform(v === "all" ? "" : v)}>
+            <SelectTrigger size="sm" className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All platforms</SelectItem>
+              {CONTENT_PLATFORMS.map((p) => (
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
+            <SelectTrigger size="sm" className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {CONTENT_STATUSES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {(platform || status) && (
             <Button
               variant="ghost"

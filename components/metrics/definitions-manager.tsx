@@ -186,25 +186,28 @@ export function DefinitionsManager({
   const ordered = [...definitions].sort((a, b) => a.sort_order - b.sort_order);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {ordered.length} metric{ordered.length === 1 ? "" : "s"} defined
-        </p>
+    <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-e2">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold">Metrics</h3>
+          <p className="text-[11.5px] text-ink-3">
+            {ordered.length} defined
+          </p>
+        </div>
         <DefDialog
           clientId={clientId}
           trigger={
-            <Button size="sm">
+            <Button size="sm" variant="outline">
               <Plus className="size-4" /> Add metric
             </Button>
           }
         />
       </div>
-      <ul className="divide-y rounded-lg border">
+      <ul className="divide-y divide-row-divider">
         {ordered.map((d) => (
           <li
             key={d.id}
-            className={`flex items-center gap-2 p-3 ${d.is_active ? "" : "opacity-60"}`}
+            className={`flex items-center gap-2 py-3 ${d.is_active ? "" : "opacity-60"}`}
           >
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">

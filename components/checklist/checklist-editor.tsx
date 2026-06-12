@@ -24,7 +24,7 @@ import {
 } from "@/lib/actions/checklist";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SegmentedControl } from "@/components/ui/segmented";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -254,23 +254,23 @@ export function ChecklistEditor({
 }) {
   const onboarding = items.filter((i) => i.kind === "onboarding");
   const offboarding = items.filter((i) => i.kind === "offboarding");
+  const [kind, setKind] = useState<"onboarding" | "offboarding">("onboarding");
 
   return (
-    <Tabs defaultValue="onboarding">
-      <TabsList>
-        <TabsTrigger value="onboarding">
-          Onboarding ({onboarding.length})
-        </TabsTrigger>
-        <TabsTrigger value="offboarding">
-          Off-boarding ({offboarding.length})
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="onboarding" className="pt-4">
-        <KindPanel clientId={clientId} kind="onboarding" items={onboarding} />
-      </TabsContent>
-      <TabsContent value="offboarding" className="pt-4">
-        <KindPanel clientId={clientId} kind="offboarding" items={offboarding} />
-      </TabsContent>
-    </Tabs>
+    <div className="space-y-4">
+      <SegmentedControl
+        options={[
+          { value: "onboarding", label: `Onboarding (${onboarding.length})` },
+          { value: "offboarding", label: `Off-boarding (${offboarding.length})` },
+        ]}
+        value={kind}
+        onValueChange={setKind}
+      />
+      <KindPanel
+        clientId={clientId}
+        kind={kind}
+        items={kind === "onboarding" ? onboarding : offboarding}
+      />
+    </div>
   );
 }

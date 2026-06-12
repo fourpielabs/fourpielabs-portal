@@ -5,6 +5,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -138,6 +139,11 @@ export function MetricsCharts({
                   }}
                   labelStyle={{ color: "#A8A8A3" }}
                   itemStyle={{ color: "#FBBF24" }}
+                />
+                <ReferenceLine
+                  x={chartData[chartData.length - 1]?.period}
+                  stroke="#D6D3CD"
+                  strokeDasharray="3 3"
                 />
                 <Line
                   type="monotone"
