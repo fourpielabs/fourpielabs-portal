@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatMonthYear } from "@/lib/format";
 import {
   DefinitionsManager,
   type MetricDef,
@@ -60,9 +60,7 @@ export default async function MetricsPage({
     .filter((d) => d.is_active)
     .map((d) => ({ id: d.id, key: d.key, label: d.label, unit: d.unit }));
 
-  const monthMap = new Map(
-    (monthEntries ?? []).map((e) => [e.definition_id, e]),
-  );
+  const monthMap = new Map((monthEntries ?? []).map((e) => [e.definition_id, e]));
   const initialValues: Record<string, string> = {};
   for (const d of activeDefs) {
     const e = monthMap.get(d.id);
@@ -83,52 +81,81 @@ export default async function MetricsPage({
     .filter((d) => d.unit === "text")
     .map((d) => ({ id: d.id, label: d.label, unit: d.unit }));
 
+  // Entry status — per recent month, how many active defs are filled.
+  const filledByPeriod = new Map<string, number>();
+  for (const e of histEntries ?? []) {
+    const has = e.value_numeric !== null || (e.value_text ?? "") !== "";
+    if (has) filledByPeriod.set(e.period, (filledByPeriod.get(e.period) ?? 0) + 1);
+  }
+  const entryStatus = [...periods]
+    .reverse()
+    .slice(0, 6)
+    .map((p) => {
+      const filled = filledByPeriod.get(p) ?? 0;
+      const total = activeDefs.length;
+      const status =
+        total > 0 && filled >= total ? "complete" : filled > 0 ? "in_progress" : "empty";
+      return { period: p, status };
+    });
+
+  const statusChip = (s: string) =>
+    s === "complete"
+      ? "border border-success-border bg-success-bg text-success-text"
+      : s === "in_progress"
+        ? "border border-amber-200 bg-amber-100 text-amber-800"
+        : "border border-border text-ink-3";
+  const statusLabel = (s: string) =>
+    s === "complete" ? "Complete" : s === "in_progress" ? "In progress" : "Not started";
+
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Metrics</h2>
-        <p className="text-sm text-muted-foreground">
-          Define KPIs, enter monthly values, import via CSV, and view trends.
-        </p>
+    <div className="space-y-5">
+      <div className="grid gap-5 lg:grid-cols-[320px_1fr_300px] lg:items-start">
+        <DefinitionsManager clientId={clientId} definitions={allDefs} />
+
+        <MonthlyEntryGrid
+          clientId={clientId}
+          activeDefs={activeDefs}
+          initialPeriod={currentMonth}
+          initialValues={initialValues}
+        />
+
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-e2">
+          <h3 className="text-sm font-semibold">Entry status</h3>
+          <p className="text-[11.5px] text-ink-3">Recent months</p>
+          <ul className="mt-3 flex flex-col gap-2">
+            {entryStatus.map((m) => (
+              <li key={m.period} className="flex items-center justify-between gap-2 text-[13px]">
+                <span>{formatMonthYear(m.period)}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusChip(m.status)}`}>
+                  {statusLabel(m.status)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
-      <Tabs defaultValue="entry">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="entry">Monthly entry</TabsTrigger>
-          <TabsTrigger value="charts">Charts</TabsTrigger>
-          <TabsTrigger value="import">CSV import</TabsTrigger>
-          <TabsTrigger value="definitions">Definitions</TabsTrigger>
-        </TabsList>
+      {/* Client preview — exactly what the client sees */}
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-e2 sm:p-6">
+        <div className="mb-4">
+          <h3 className="font-display text-xl font-semibold tracking-[-0.01em]">Client preview</h3>
+          <p className="text-[12.5px] text-ink-3">
+            Exactly what the client sees on their Performance page.
+          </p>
+        </div>
+        <MetricsCharts
+          numericDefs={numericDefs}
+          textDefs={textDefs}
+          entries={(histEntries ?? []) as Entry[]}
+        />
+      </div>
 
-        <TabsContent value="entry" className="pt-4">
-          <MonthlyEntryGrid
-            clientId={clientId}
-            activeDefs={activeDefs}
-            initialPeriod={currentMonth}
-            initialValues={initialValues}
-          />
-        </TabsContent>
-
-        <TabsContent value="charts" className="pt-4">
-          <MetricsCharts
-            numericDefs={numericDefs}
-            textDefs={textDefs}
-            entries={(histEntries ?? []) as Entry[]}
-          />
-        </TabsContent>
-
-        <TabsContent value="import" className="pt-4">
-          <CsvImport
-            clientId={clientId}
-            defs={activeDefs.map((d) => ({ key: d.key, unit: d.unit }))}
-            currentMonth={currentMonth}
-          />
-        </TabsContent>
-
-        <TabsContent value="definitions" className="pt-4">
-          <DefinitionsManager clientId={clientId} definitions={allDefs} />
-        </TabsContent>
-      </Tabs>
+      {/* CSV import — full width */}
+      <CsvImport
+        clientId={clientId}
+        defs={activeDefs.map((d) => ({ key: d.key, unit: d.unit }))}
+        currentMonth={currentMonth}
+      />
     </div>
   );
 }
