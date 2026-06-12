@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { milestoneSchema, type MilestoneValues } from "@/lib/schemas";
+import { formatDate } from "@/lib/format";
 import {
   createMilestoneAction,
   updateMilestoneAction,
@@ -238,7 +239,7 @@ export function MilestonesEditor({
                 )}
                 {m.due_date && (
                   <span className="text-xs text-muted-foreground">
-                    due {m.due_date}
+                    due {formatDate(m.due_date)}
                   </span>
                 )}
               </div>

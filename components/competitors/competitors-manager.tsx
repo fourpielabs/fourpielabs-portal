@@ -250,7 +250,7 @@ export function CompetitorsManager({
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {competitors.map((c) => (
-            <div key={c.id} className="rounded-lg border p-4">
+            <div key={c.id} className="rounded-2xl border border-border bg-surface p-5 shadow-e2">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">
@@ -322,37 +322,55 @@ export function CompetitorsManager({
                   </AlertDialog>
                 </div>
               </div>
-              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                {c.follower_count != null && (
-                  <div>
-                    <dt className="text-muted-foreground">Followers</dt>
-                    <dd>{c.follower_count.toLocaleString()}</dd>
-                  </div>
-                )}
-                {c.avg_views != null && (
-                  <div>
-                    <dt className="text-muted-foreground">Avg views</dt>
-                    <dd>{c.avg_views.toLocaleString()}</dd>
-                  </div>
-                )}
-              </dl>
+              {(c.follower_count != null || c.avg_views != null) && (
+                <div className="mt-3 flex gap-6">
+                  {c.follower_count != null && (
+                    <div>
+                      <div className="text-[10px] font-bold tracking-wider text-ink-3 uppercase">Followers</div>
+                      <div className="text-base font-bold tabular-nums">{c.follower_count.toLocaleString()}</div>
+                    </div>
+                  )}
+                  {c.avg_views != null && (
+                    <div>
+                      <div className="text-[10px] font-bold tracking-wider text-ink-3 uppercase">Avg views</div>
+                      <div className="text-base font-bold tabular-nums">{c.avg_views.toLocaleString()}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {(c.top_content_format || c.hook_style) && (
+                <div className="mt-3 grid grid-cols-2 gap-3 text-[12.5px]">
+                  {c.top_content_format && (
+                    <div>
+                      <div className="text-[10px] font-bold tracking-wider text-ink-3 uppercase">Top format</div>
+                      <div>{c.top_content_format}</div>
+                    </div>
+                  )}
+                  {c.hook_style && (
+                    <div>
+                      <div className="text-[10px] font-bold tracking-wider text-ink-3 uppercase">Hook style</div>
+                      <div>{c.hook_style}</div>
+                    </div>
+                  )}
+                </div>
+              )}
               {c.whats_working && (
-                <p className="mt-2 text-sm">
-                  <span className="text-muted-foreground">Working: </span>
+                <p className="mt-3 text-[12.5px]">
+                  <span className="text-ink-3">What&apos;s working: </span>
                   {c.whats_working}
                 </p>
               )}
               {c.gap_notes && (
-                <p className="mt-1 text-sm">
-                  <span className="text-muted-foreground">Gap: </span>
+                <p className="mt-1 text-[12.5px]">
+                  <span className="text-ink-3">The gap: </span>
                   {c.gap_notes}
                 </p>
               )}
               {c.adapted_idea && (
-                <p className="mt-1 text-sm">
-                  <span className="text-muted-foreground">Idea: </span>
-                  {c.adapted_idea}
-                </p>
+                <div className="mt-3 rounded-[10px] bg-amber-50 p-3">
+                  <div className="text-[10px] font-bold tracking-wider text-amber-700 uppercase">Our play</div>
+                  <p className="mt-1 text-[12.5px] text-ink">{c.adapted_idea}</p>
+                </div>
               )}
             </div>
           ))}

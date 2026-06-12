@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
+import Link from "next/link";
+import { MoreHorizontal } from "lucide-react";
 import { labelOf, PROGRAMS } from "@/lib/constants";
-import { initials } from "@/lib/format";
+import { initials, formatMonthYear } from "@/lib/format";
 import { ClientTabs } from "@/components/clients/client-tabs";
 import { StatusChip } from "@/components/ui/status-chip";
+import { Badge } from "@/components/ui/badge";
 
 export default async function ClientLayout({
   children,
@@ -36,7 +39,7 @@ export default async function ClientLayout({
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="inline-flex size-11 items-center justify-center rounded-xl bg-amber-100 text-sm font-bold text-amber-800">
+        <span className="inline-flex size-12 items-center justify-center rounded-xl bg-amber-100 text-[15px] font-bold tracking-[-0.02em] text-amber-800">
           {initials(client.name, null)}
         </span>
         <div className="min-w-0">
@@ -44,13 +47,23 @@ export default async function ClientLayout({
             <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">
               {client.name}
             </h1>
+            <Badge variant="outline">{labelOf(PROGRAMS, client.program)}</Badge>
             <StatusChip kind="client" value={client.status} />
           </div>
-          <p className="mt-0.5 text-sm text-ink-3">
-            {labelOf(PROGRAMS, client.program)}
-            {dayLabel ? ` · ${dayLabel}` : ""}
+          <p className="mt-0.5 text-[12.5px] text-ink-3">
+            {client.start_date ? `Client since ${formatMonthYear(client.start_date)}` : ""}
+            {dayLabel ? `${client.start_date ? " · " : ""}${dayLabel}` : ""}
           </p>
         </div>
+        {profile.role === "admin" && (
+          <Link
+            href={`/clients/${client.id}/settings`}
+            aria-label="Client settings"
+            className="ml-auto inline-flex size-9 items-center justify-center rounded-full border border-border-strong text-ink-2 hover:border-ink hover:text-ink"
+          >
+            <MoreHorizontal className="size-4" />
+          </Link>
+        )}
       </div>
       <ClientTabs clientId={client.id} isAdmin={profile.role === "admin"} />
       <div>{children}</div>

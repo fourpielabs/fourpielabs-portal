@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Pencil, Pin, PinOff, Plus, Trash2 } from "lucide-react";
 
 import { setUpdateFlagsAction, deleteUpdateAction } from "@/lib/actions/updates";
+import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -173,7 +174,7 @@ export function UpdatesList({
                   </p>
                 )}
                 <p className="pt-2 text-xs text-muted-foreground">
-                  {u.author_name} · {new Date(u.created_at).toLocaleDateString()}
+                  {u.author_name} · {formatDate(u.created_at)}
                 </p>
               </li>
             );

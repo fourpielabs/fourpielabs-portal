@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import { reportSchema, type ReportValues } from "@/lib/schemas";
+import { formatReportPeriod } from "@/lib/format";
 import {
   createReportAction,
   updateReportAction,
@@ -217,8 +218,8 @@ export function ReportsManager({
                     <StatusChip kind="report" value={r.published ? "published" : "draft"} />
                   </div>
                   {(r.period_start || r.period_end) && (
-                    <div className="text-xs text-muted-foreground">
-                      {r.period_start ?? "—"} → {r.period_end ?? "—"}
+                    <div className="text-xs text-ink-3">
+                      {formatReportPeriod(r.period_start, r.period_end)}
                     </div>
                   )}
                 </div>

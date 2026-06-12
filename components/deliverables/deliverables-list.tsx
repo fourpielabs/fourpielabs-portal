@@ -11,6 +11,7 @@ import {
   deleteDeliverableAction,
 } from "@/lib/actions/deliverables";
 import { DELIVERABLE_TYPES, DELIVERABLE_STATUSES, labelOf } from "@/lib/constants";
+import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -97,7 +98,7 @@ export function DeliverablesList({
                   )}
                   {d.due_date && (
                     <span className="text-xs text-muted-foreground">
-                      due {d.due_date}
+                      due {formatDate(d.due_date)}
                     </span>
                   )}
                 </div>
