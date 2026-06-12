@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Markdown } from "@/components/markdown";
 import { DownloadButton } from "@/components/files/download-button";
-import { Badge } from "@/components/ui/badge";
+import { StatusChip } from "@/components/ui/status-chip";
 import { formatReportPeriod } from "@/lib/format";
 
 export type ClientReport = {
@@ -21,38 +22,70 @@ export function ClientReports({
   clientId: string;
   reports: ClientReport[];
 }) {
+  const [selectedId, setSelectedId] = useState(reports[0]?.id ?? null);
+
   if (reports.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <div className="rounded-2xl border-2 border-dashed border-border px-6 py-12 text-center text-sm text-ink-3">
         Your first report lands after month 1.
-      </p>
+      </div>
     );
   }
 
+  const selected = reports.find((r) => r.id === selectedId) ?? reports[0];
+  const selectedPeriod = formatReportPeriod(selected.period_start, selected.period_end);
+
   return (
-    <div className="space-y-4">
-      {reports.map((r) => (
-        <div key={r.id} className="rounded-lg border p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">{r.title}</span>
-              {formatReportPeriod(r.period_start, r.period_end) && (
-                <Badge variant="secondary" className="text-[10px]">
-                  {formatReportPeriod(r.period_start, r.period_end)}
-                </Badge>
-              )}
-            </div>
-            {r.pdf_path && (
-              <DownloadButton clientId={clientId} path={r.pdf_path} label="PDF" />
-            )}
-          </div>
-          {r.summary && (
-            <div className="pt-3">
-              <Markdown>{r.summary}</Markdown>
-            </div>
+    <div className="grid gap-5 lg:grid-cols-[1fr_2fr] lg:items-start">
+      {/* list */}
+      <ul className="flex flex-col gap-1.5">
+        {reports.map((r) => {
+          const active = r.id === selected.id;
+          const period = formatReportPeriod(r.period_start, r.period_end);
+          return (
+            <li key={r.id}>
+              <button
+                type="button"
+                onClick={() => setSelectedId(r.id)}
+                className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+                  active
+                    ? "border-border border-l-[3px] border-l-amber-600 bg-amber-50"
+                    : "border-border hover:bg-bg"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate font-semibold">{r.title}</span>
+                  <StatusChip kind="report" value="published" label="Published" />
+                </div>
+                {period && <div className="mt-0.5 text-xs text-ink-3">{period}</div>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* viewer */}
+      <div className="rounded-2xl border border-border bg-surface p-6 shadow-e2">
+        <div className="text-[11px] font-bold tracking-wider text-amber-700 uppercase">
+          Report
+        </div>
+        <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
+          <h3 className="font-display text-2xl font-semibold tracking-[-0.01em]">
+            {selected.title}
+          </h3>
+          {selected.pdf_path && (
+            <DownloadButton clientId={clientId} path={selected.pdf_path} label="Download PDF" />
           )}
         </div>
-      ))}
+        {selectedPeriod && <p className="mt-0.5 text-[12.5px] text-ink-3">{selectedPeriod}</p>}
+        {selected.summary ? (
+          <div className="mt-4">
+            <Markdown>{selected.summary}</Markdown>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-ink-3">No written summary for this report.</p>
+        )}
+      </div>
     </div>
   );
 }
