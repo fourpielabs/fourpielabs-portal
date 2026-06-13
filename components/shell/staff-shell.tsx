@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
+import { UserMenu } from "@/components/shell/user-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -137,27 +138,15 @@ function SidebarInner({
         })}
       </nav>
 
-      <form
-        action="/auth/signout"
-        method="post"
-        className="flex items-center gap-2.5 rounded-xl border border-border p-2.5"
-      >
-        <span className="inline-flex size-8 items-center justify-center rounded-full bg-surface-2 text-[11px] font-bold text-ink-2">
-          {initials(name, email)}
-        </span>
+      <div className="flex items-center gap-2.5 rounded-xl border border-border p-2.5">
+        <UserMenu name={name} email={email} size={32} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[13px] font-semibold">
             {name ?? email}
           </span>
           <span className="block truncate text-[11px] text-ink-3 capitalize">{role}</span>
         </span>
-        <button
-          type="submit"
-          className="rounded-full px-2.5 py-1 text-xs font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink"
-        >
-          Sign out
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

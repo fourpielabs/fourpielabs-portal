@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { initials } from "@/lib/format";
+import { UserMenu } from "@/components/shell/user-menu";
 
 type Item = { href: string; label: string };
 
@@ -86,15 +86,7 @@ export function ClientShell({
               );
             })}
           </nav>
-          <form action="/auth/signout" method="post" className="contents">
-            <button
-              title={name ?? email ?? "Account"}
-              type="submit"
-              className="inline-flex size-[38px] items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-800"
-            >
-              {initials(name, email)}
-            </button>
-          </form>
+          <UserMenu name={name} email={email} size={38} />
         </div>
       </header>
 
@@ -103,14 +95,7 @@ export function ClientShell({
         <Link href="/dashboard" className="font-display text-base font-bold tracking-tight">
           4Pie Labs<span className="text-amber-600">.</span>
         </Link>
-        <form action="/auth/signout" method="post">
-          <button
-            type="submit"
-            className="inline-flex size-8 items-center justify-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-800"
-          >
-            {initials(name, email)}
-          </button>
-        </form>
+        <UserMenu name={name} email={email} size={32} />
       </header>
 
       <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pt-6 pb-28 sm:px-8 sm:pt-11 sm:pb-10">

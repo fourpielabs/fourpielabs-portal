@@ -22,6 +22,7 @@ const ACTIONS = [
   "user.invite_revoked",
   "user.deactivated",
   "user.reactivated",
+  "profile.updated",
   "assignment.created",
   "assignment.removed",
   "password_reset.requested",
