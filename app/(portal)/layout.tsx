@@ -12,7 +12,11 @@ export default async function PortalLayout({
 
   if (profile.role === "client") {
     return (
-      <ClientShell name={profile.full_name} email={profile.email}>
+      <ClientShell
+        name={profile.full_name}
+        email={profile.email}
+        avatarUrl={profile.avatar_url}
+      >
         {children}
       </ClientShell>
     );
@@ -30,6 +34,7 @@ export default async function PortalLayout({
       role={profile.role}
       name={profile.full_name}
       email={profile.email}
+      avatarUrl={profile.avatar_url}
       clients={(clients ?? []) as ClientOption[]}
     >
       {children}

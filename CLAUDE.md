@@ -97,6 +97,15 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
   StatusChip, real Buttons/Selects, humanized labels) but using `rounded-lg border`
   **list rows** rather than full Card-row treatment. Functionally complete; a later
   pass can lift them to Card rows. Tracked so we don't lose it.
+- **UI component backlog (from the UI-6 verification audit — none have a current
+  call site, so deferred):** Checkbox / Radio / Pagination components (the app uses a
+  custom checklist toggle + Switch, and no list paginates — add only when a surface
+  needs them); styled **date / month / file-dropzone** pickers (currently native
+  `<input type=date|month|file>` — functional, just not the D2 fancy controls);
+  Button `loading`/`active` first-class states (loading is faked per-call-site with
+  `disabled` + label swap); broader **Skeleton** usage (only the route-level
+  `(portal)/loading.tsx` today). Avatar adoption is DONE (UI-6) — `PersonAvatar`
+  (image→initials) is live at every person/client tile.
 
 ## Build phases (complete + verify each before the next)
 

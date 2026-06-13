@@ -4,7 +4,8 @@ import { requireClientAccess } from "@/lib/auth/guards";
 import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 import { labelOf, PROGRAMS } from "@/lib/constants";
-import { initials, formatMonthYear } from "@/lib/format";
+import { formatMonthYear } from "@/lib/format";
+import { PersonAvatar } from "@/components/ui/person-avatar";
 import { ClientTabs } from "@/components/clients/client-tabs";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +24,7 @@ export default async function ClientLayout({
   const supabase = await createClient();
   const { data: client } = await supabase
     .from("clients")
-    .select("id, name, slug, status, program, start_date")
+    .select("id, name, slug, status, program, start_date, logo_url")
     .eq("id", clientId)
     .single();
 
@@ -39,9 +40,7 @@ export default async function ClientLayout({
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="inline-flex size-12 items-center justify-center rounded-xl bg-amber-100 text-[15px] font-bold tracking-[-0.02em] text-amber-800">
-          {initials(client.name, null)}
-        </span>
+        <PersonAvatar name={client.name} src={client.logo_url} square size="lg" className="shrink-0" />
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">

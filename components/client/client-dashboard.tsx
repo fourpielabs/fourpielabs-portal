@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { labelOf, PROGRAMS, DELIVERABLE_TYPES } from "@/lib/constants";
-import { formatMetricValue, formatMonthYear, initials } from "@/lib/format";
+import { formatMetricValue, formatMonthYear } from "@/lib/format";
+import { PersonAvatar } from "@/components/ui/person-avatar";
 import {
   ClientChecklist,
   type ClientChecklistItem,
@@ -336,9 +337,12 @@ export async function ClientDashboard({
             <Card>
               <CardContent className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-800">
-                    {initials(partner.full_name, partner.email)}
-                  </span>
+                  <PersonAvatar
+                    name={partner.full_name}
+                    email={partner.email}
+                    src={partner.avatar_url}
+                    size="lg"
+                  />
                   <div className="min-w-0">
                     <div className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">
                       Your partner

@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { labelOf, PROGRAMS } from "@/lib/constants";
-import { initials } from "@/lib/format";
+import { PersonAvatar } from "@/components/ui/person-avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusChip } from "@/components/ui/status-chip";
@@ -24,7 +24,7 @@ export default async function ClientsPage() {
 
   // RLS scopes both reads: admin sees all, team sees assigned clients only.
   const [{ data: clients }, { data: checklist }] = await Promise.all([
-    supabase.from("clients").select("id, name, slug, program, status").order("name"),
+    supabase.from("clients").select("id, name, slug, program, status, logo_url").order("name"),
     supabase.from("checklist_items").select("client_id, is_done").eq("kind", "onboarding"),
   ]);
 
@@ -92,9 +92,7 @@ export default async function ClientsPage() {
                   <TableRow key={c.id}>
                     <TableCell>
                       <Link href={`/clients/${c.id}`} className="flex items-center gap-3">
-                        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-[11px] font-bold text-amber-800">
-                          {initials(c.name, null)}
-                        </span>
+                        <PersonAvatar name={c.name} src={c.logo_url} square size="md" className="shrink-0" />
                         <span className="min-w-0">
                           <span className="block truncate font-semibold">{c.name}</span>
                           <span className="block truncate text-xs text-ink-3">{c.slug}</span>
@@ -133,9 +131,7 @@ export default async function ClientsPage() {
                 className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-e1"
               >
                 <div className="flex items-start gap-3">
-                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-xs font-bold text-amber-800">
-                    {initials(c.name, null)}
-                  </span>
+                  <PersonAvatar name={c.name} src={c.logo_url} square size="lg" className="shrink-0" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold">{c.name}</div>
                     <div className="truncate text-xs text-ink-3">{c.slug}</div>

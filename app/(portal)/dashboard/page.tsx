@@ -4,7 +4,7 @@ import { requireProfile } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { labelOf, PROGRAMS } from "@/lib/constants";
-import { initials } from "@/lib/format";
+import { PersonAvatar } from "@/components/ui/person-avatar";
 import { ClientDashboard } from "@/components/client/client-dashboard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
 
   const [{ data: clients }, { data: checklist }, { data: deliverables }, { data: updates }] =
     await Promise.all([
-      supabase.from("clients").select("id, name, slug, program, status").order("name"),
+      supabase.from("clients").select("id, name, slug, program, status, logo_url").order("name"),
       supabase.from("checklist_items").select("client_id, is_done").eq("kind", "onboarding"),
       supabase.from("deliverables").select("client_id, created_at").order("created_at", { ascending: false }),
       supabase.from("updates").select("client_id, created_at").order("created_at", { ascending: false }),
@@ -163,9 +163,7 @@ export default async function DashboardPage() {
                   className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-e2 transition-shadow hover:shadow-e3"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-sm font-bold text-amber-800">
-                      {initials(c.name, null)}
-                    </span>
+                    <PersonAvatar name={c.name} src={c.logo_url} square size="lg" className="shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-semibold group-hover:text-amber-800">
                         {c.name}

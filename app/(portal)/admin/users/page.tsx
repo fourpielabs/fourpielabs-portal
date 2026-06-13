@@ -2,7 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/guards";
 import { labelOf, ROLES } from "@/lib/constants";
-import { initials, formatDate } from "@/lib/format";
+import { formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { PersonAvatar } from "@/components/ui/person-avatar";
 import { InviteForm } from "@/components/admin/invite-form";
 import { UserActiveToggle } from "@/components/admin/user-active-toggle";
 import { PendingInviteActions } from "@/components/admin/pending-invite-actions";
@@ -32,7 +34,7 @@ export default async function AdminUsersPage() {
     await Promise.all([
       supabase
         .from("profiles")
-        .select("id, full_name, email, role, is_active, client_id")
+        .select("id, full_name, email, role, is_active, client_id, avatar_url")
         .order("role")
         .order("full_name"),
       supabase.from("clients").select("id, name").order("name"),
@@ -127,15 +129,17 @@ export default async function AdminUsersPage() {
                 >
                   <TableCell className="font-medium">
                     <span className="flex items-center gap-[11px]">
-                      <span
-                        className={`inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                          pending
-                            ? "border border-dashed border-amber-400 bg-surface text-amber-800"
-                            : "bg-amber-100 text-amber-800"
-                        } ${!p.is_active ? "opacity-70" : ""}`}
-                      >
-                        {initials(p.full_name, p.email)}
-                      </span>
+                      <PersonAvatar
+                        name={p.full_name}
+                        email={p.email}
+                        src={p.avatar_url}
+                        size="md"
+                        className={cn(
+                          "shrink-0",
+                          pending && "after:border-dashed after:border-amber-400",
+                          !p.is_active && "opacity-70",
+                        )}
+                      />
                       <span className="min-w-0">
                         <span className="flex items-center gap-2">
                           <span className={!p.is_active ? "text-ink-faint line-through" : ""}>

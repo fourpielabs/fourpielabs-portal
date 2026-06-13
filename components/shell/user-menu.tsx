@@ -3,8 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { LogOut, Settings } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { initials } from "@/lib/format";
+import { PersonAvatar } from "@/components/ui/person-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,11 +16,13 @@ import {
 export function UserMenu({
   name,
   email,
-  size = 38,
+  avatarUrl = null,
+  size = "md",
 }: {
   name: string | null;
   email: string | null;
-  size?: number;
+  avatarUrl?: string | null;
+  size?: "sm" | "md";
 }) {
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -30,15 +31,8 @@ export function UserMenu({
       <form ref={formRef} action="/auth/signout" method="post" className="hidden" />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            aria-label="Account menu"
-            className={cn(
-              "inline-flex items-center justify-center rounded-full bg-amber-100 font-bold text-amber-800",
-            )}
-            style={{ width: size, height: size, fontSize: size <= 34 ? 11 : 12 }}
-          >
-            {initials(name, email)}
+          <button type="button" aria-label="Account menu" className="rounded-full">
+            <PersonAvatar name={name} email={email} src={avatarUrl} size={size} />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">

@@ -49,10 +49,12 @@ function isActive(pathname: string, href: string) {
 export function ClientShell({
   name,
   email,
+  avatarUrl = null,
   children,
 }: {
   name: string | null;
   email: string | null;
+  avatarUrl?: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -86,7 +88,7 @@ export function ClientShell({
               );
             })}
           </nav>
-          <UserMenu name={name} email={email} size={38} />
+          <UserMenu name={name} email={email} avatarUrl={avatarUrl} size="md" />
         </div>
       </header>
 
@@ -95,7 +97,7 @@ export function ClientShell({
         <Link href="/dashboard" className="font-display text-base font-bold tracking-tight">
           4Pie Labs<span className="text-amber-600">.</span>
         </Link>
-        <UserMenu name={name} email={email} size={32} />
+        <UserMenu name={name} email={email} avatarUrl={avatarUrl} size="md" />
       </header>
 
       <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pt-6 pb-28 sm:px-8 sm:pt-11 sm:pb-10">

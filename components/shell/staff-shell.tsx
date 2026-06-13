@@ -86,6 +86,7 @@ function SidebarInner({
   role,
   name,
   email,
+  avatarUrl,
   clients,
   pathname,
   onNavigate,
@@ -93,6 +94,7 @@ function SidebarInner({
   role: string;
   name: string | null;
   email: string | null;
+  avatarUrl: string | null;
   clients: ClientOption[];
   pathname: string;
   onNavigate?: () => void;
@@ -139,7 +141,7 @@ function SidebarInner({
       </nav>
 
       <div className="flex items-center gap-2.5 rounded-xl border border-border p-2.5">
-        <UserMenu name={name} email={email} size={32} />
+        <UserMenu name={name} email={email} avatarUrl={avatarUrl} size="md" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[13px] font-semibold">
             {name ?? email}
@@ -155,12 +157,14 @@ export function StaffShell({
   role,
   name,
   email,
+  avatarUrl = null,
   clients,
   children,
 }: {
   role: string;
   name: string | null;
   email: string | null;
+  avatarUrl?: string | null;
   clients: ClientOption[];
   children: React.ReactNode;
 }) {
@@ -175,6 +179,7 @@ export function StaffShell({
           role={role}
           name={name}
           email={email}
+          avatarUrl={avatarUrl}
           clients={clients}
           pathname={pathname}
         />
@@ -220,6 +225,7 @@ export function StaffShell({
               role={role}
               name={name}
               email={email}
+              avatarUrl={avatarUrl}
               clients={clients}
               pathname={pathname}
               onNavigate={() => setDrawer(false)}
