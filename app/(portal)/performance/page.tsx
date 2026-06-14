@@ -54,7 +54,7 @@ export default async function ClientPerformancePage() {
       {(competitors ?? []).length > 0 && (
         <div className="flex flex-col gap-3">
           <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">
-            Competitor landscape
+            Competitors
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {(competitors ?? []).map((c) => (

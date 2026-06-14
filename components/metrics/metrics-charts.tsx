@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Line,
-  LineChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -115,7 +116,13 @@ export function MetricsCharts({
         ) : (
           <div className="h-72 w-full rounded-lg border p-3">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+              <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+                <defs>
+                  <linearGradient id="k3-amberfill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#D97706" stopOpacity={0.22} />
+                    <stop offset="100%" stopColor="#D97706" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid vertical={false} stroke="#F4F4F0" />
                 <XAxis
                   dataKey="period"
@@ -145,6 +152,14 @@ export function MetricsCharts({
                   stroke="#D6D3CD"
                   strokeDasharray="3 3"
                 />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="none"
+                  fill="url(#k3-amberfill)"
+                  connectNulls
+                  isAnimationActive={false}
+                />
                 <Line
                   type="monotone"
                   dataKey="value"
@@ -155,7 +170,7 @@ export function MetricsCharts({
                   activeDot={{ r: 5, fill: "#D97706", stroke: "#fff", strokeWidth: 2 }}
                   connectNulls
                 />
-              </LineChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         )}

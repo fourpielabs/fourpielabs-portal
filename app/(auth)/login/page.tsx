@@ -44,7 +44,7 @@ export default function LoginPage() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h2 className="font-display text-3xl font-semibold tracking-[-0.015em] text-dark-ink">
+        <h2 className="font-display text-[22px] font-semibold tracking-[-0.015em] text-dark-ink lg:text-3xl">
           Sign in to your portal
         </h2>
         <p className="text-sm text-dark-ink-2">Your email and password — that&apos;s it.</p>

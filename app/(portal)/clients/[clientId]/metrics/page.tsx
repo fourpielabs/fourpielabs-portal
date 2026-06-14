@@ -121,7 +121,6 @@ export default async function MetricsPage({
 
         <div className="rounded-2xl border border-border bg-surface p-5 shadow-e2">
           <h3 className="text-sm font-semibold">Entry status</h3>
-          <p className="text-[11.5px] text-ink-3">Recent months</p>
           <ul className="mt-3 flex flex-col gap-2">
             {entryStatus.map((m) => (
               <li key={m.period} className="flex items-center justify-between gap-2 text-[13px]">

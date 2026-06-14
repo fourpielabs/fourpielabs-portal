@@ -46,7 +46,7 @@ export function UserActiveToggle({ userId, isActive, isSelf, label }: Props) {
     return (
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="ghost" size="sm" disabled={pending}>
+          <Button variant="outline" size="sm" disabled={pending}>
             Deactivate
           </Button>
         </AlertDialogTrigger>

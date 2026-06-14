@@ -225,7 +225,7 @@ export default async function ClientOverviewPage({
                 })}
               </div>
             )}
-            <Button asChild size="sm" className="w-fit">
+            <Button asChild size="sm">
               <Link href={`${base}/metrics`}>
                 Enter {latestPeriod ? formatMonthYear(latestPeriod).split(" ")[0] : "month"} metrics
               </Link>

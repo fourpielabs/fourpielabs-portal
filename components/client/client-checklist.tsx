@@ -145,7 +145,7 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
                 )}
 
                 <span
-                  className={`flex-1 text-sm font-medium ${checked && !team ? "text-ink-3 line-through" : team ? "text-ink-2" : "text-ink"}`}
+                  className={`flex-1 text-sm font-medium ${team ? "text-ink-2" : "text-ink"}`}
                 >
                   {it.title}
                 </span>

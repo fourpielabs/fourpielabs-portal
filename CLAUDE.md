@@ -91,21 +91,28 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
   widen RLS to match a mockup. Example: the staff client-overview "activity feed" is a
   derived read of deliverables/updates/reports (works for team), **not** a raw
   `audit_log` read (admin-only).
-- **Post-launch polish candidate (named, from UI-5 audit):** seven per-client staff
-  editor tabs — **Program (milestones), Competitors, Notes, Reports, Updates, Files,
-  client Settings** — ship at accepted **B** fidelity: on-system (border-border rows,
-  StatusChip, real Buttons/Selects, humanized labels) but using `rounded-lg border`
-  **list rows** rather than full Card-row treatment. Functionally complete; a later
-  pass can lift them to Card rows. Tracked so we don't lose it.
-- **UI component backlog (from the UI-6 verification audit — none have a current
-  call site, so deferred):** Checkbox / Radio / Pagination components (the app uses a
-  custom checklist toggle + Switch, and no list paginates — add only when a surface
-  needs them); styled **date / month / file-dropzone** pickers (currently native
-  `<input type=date|month|file>` — functional, just not the D2 fancy controls);
-  Button `loading`/`active` first-class states (loading is faked per-call-site with
-  `disabled` + label swap); broader **Skeleton** usage (only the route-level
-  `(portal)/loading.tsx` today). Avatar adoption is DONE (UI-6) — `PersonAvatar`
-  (image→initials) is live at every person/client tile.
+- **UI Excellence Pass — DONE (closes the UI phase):** the seven per-client staff
+  editor tabs (Program/milestones, Competitors, Notes, Reports, Updates, Files,
+  client Settings) were **lifted from accepted-B `rounded-lg` list rows to D2 Card
+  rows** (`rounded-2xl border border-border bg-surface shadow-e1 hover:shadow-e2`).
+  Also resolved from the old backlog: Button **`loading`** is now a first-class
+  variant (spinner + `aria-busy`, two render paths so `asChild`/Slot stays
+  single-child) adopted at all submit sites; **Skeleton** broadened to list/table/
+  chart route loaders (admin/users, clients, performance, metrics); the metrics
+  **month-picker pill** (humanized label + chevron over the native input) and
+  **definitions grip handle** (keyboard ↑/↓ kept) shipped; the K3 performance chart
+  got its **D4 §05 amber area-fill gradient**. Avatar adoption DONE (UI-6) —
+  `PersonAvatar` (image→initials) is live at every person/client tile.
+- **UI backlog still deferred (no current call site):** Checkbox / Radio /
+  Pagination components (the app uses the custom checklist toggle + Switch, and
+  nothing paginates); styled **date / file-dropzone** pickers (native
+  `<input type=date|file>` remain — functional); Button **`active`** first-class
+  state. Add only when a surface needs them.
+- **Design system reference:** `design/` now holds **only the three permanent system
+  docs** — `D1 Style Tile`, `D2 Component Sheet`, `D4 Handoff Sheet` (in
+  `design/project/`). The K1–K6 keystone mockups and the byte-identical `design/v2`
+  bundle served their purpose and were removed (recoverable from git history). D1/D2/D4
+  + `SITE_STRUCTURE.md` remain the design source of truth.
 
 ## Build phases (complete + verify each before the next)
 

@@ -36,12 +36,14 @@ for (const vp of viewports) {
     if (m.type() === "error") errors.push(`[${role} ${vp.tag}] ${m.text()}`);
   });
 
-  await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
-  await page.fill("input[type=email]", EMAIL[role]);
-  await page.fill("input[type=password]", PASS);
-  await page.click('button:has-text("Sign in")');
-  await page.waitForURL("**/dashboard", { timeout: 30000 }).catch(() => {});
-  await page.waitForTimeout(700);
+  if (EMAIL[role]) {
+    await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
+    await page.fill("input[type=email]", EMAIL[role]);
+    await page.fill("input[type=password]", PASS);
+    await page.click('button:has-text("Sign in")');
+    await page.waitForURL("**/dashboard", { timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(700);
+  }
 
   // resolve {id} -> first client (staff)
   let clientId = null;
