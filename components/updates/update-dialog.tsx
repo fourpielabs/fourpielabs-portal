@@ -117,7 +117,7 @@ export function UpdateDialog({
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" loading={submitting}>
               {submitting ? "Saving…" : update ? "Save" : "Post update"}
             </Button>
           </DialogFooter>

@@ -80,7 +80,10 @@ export function UpdatesList({
           {ordered.map((u) => {
             const canEdit = isAdmin || u.author_id === currentUserId;
             return (
-              <li key={u.id} className="rounded-lg border p-4">
+              <li
+                key={u.id}
+                className="rounded-2xl border border-border bg-surface p-4 shadow-e1 transition-shadow hover:shadow-e2"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{u.title}</span>

@@ -48,7 +48,7 @@ for (const vp of viewports) {
   if (routes.some((r) => r.includes("{id}"))) {
     await page.goto(`${BASE}/clients`, { waitUntil: "networkidle" }).catch(() => {});
     const href = await page
-      .locator('a[href^="/clients/"]')
+      .locator('a[href^="/clients/"]:not([href="/clients/new"])')
       .first()
       .getAttribute("href")
       .catch(() => null);

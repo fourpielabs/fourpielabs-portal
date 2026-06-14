@@ -98,7 +98,7 @@ export function ProfileForm({
               </span>
             </div>
             <div>
-              <Button type="submit" disabled={saving || !isDirty}>
+              <Button type="submit" loading={saving} disabled={saving || !isDirty}>
                 {saving ? "Saving…" : "Save changes"}
               </Button>
             </div>

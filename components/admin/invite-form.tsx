@@ -120,7 +120,7 @@ export function InviteForm({ clients }: { clients: ClientOption[] }) {
         </div>
       )}
 
-      <Button type="submit" variant="amber" disabled={submitting}>
+      <Button type="submit" variant="amber" loading={submitting}>
         {submitting ? "Sending…" : "Send invite"}
       </Button>
     </form>

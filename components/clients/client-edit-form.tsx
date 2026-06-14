@@ -176,7 +176,7 @@ export function ClientEditForm({ defaults }: Props) {
         <Textarea id="internal_notes" rows={3} {...register("internal_notes")} />
       </div>
 
-      <Button type="submit" disabled={submitting}>
+      <Button type="submit" loading={submitting}>
         {submitting ? "Saving…" : "Save changes"}
       </Button>
     </form>

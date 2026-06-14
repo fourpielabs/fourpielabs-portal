@@ -149,7 +149,7 @@ export function ChecklistItemDialog({ clientId, kind, item, trigger }: Props) {
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" loading={submitting}>
               {submitting ? "Saving…" : item ? "Save" : "Add item"}
             </Button>
           </DialogFooter>

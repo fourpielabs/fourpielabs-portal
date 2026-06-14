@@ -61,11 +61,11 @@ export function AssignmentManager({ clientId, team, assignedIds }: Props) {
           No team members assigned yet.
         </p>
       ) : (
-        <ul className="divide-y rounded-md border">
+        <ul className="space-y-2">
           {assigned.map((m) => (
             <li
               key={m.id}
-              className="flex items-center justify-between gap-2 px-3 py-2"
+              className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-surface px-4 py-3 shadow-e1 transition-shadow hover:shadow-e2"
             >
               <span className="text-sm">
                 {m.full_name ?? m.email}

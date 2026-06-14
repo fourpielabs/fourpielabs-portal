@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ChevronDown } from "lucide-react";
 
 import {
   getMonthEntriesAction,
@@ -105,12 +106,17 @@ export function MonthlyEntryGrid({
           <div className="text-sm font-semibold">Monthly entry</div>
           <div className="text-[11.5px] text-ink-3">Tab moves down the column</div>
         </div>
-        <input
-          type="month"
-          value={period}
-          onChange={(e) => onMonthChange(e.target.value)}
-          className="h-9 rounded-full border border-border-strong bg-surface px-3 text-[13px] font-semibold outline-none hover:border-ink"
-        />
+        <div className="relative inline-flex h-9 items-center gap-1.5 rounded-full border border-border-strong bg-surface px-3.5 text-[13px] font-semibold transition-colors hover:border-ink has-[input:focus-visible]:border-ink">
+          <span>{monthName || "Select month"}</span>
+          <ChevronDown className="size-3.5 text-ink-3" aria-hidden />
+          <input
+            type="month"
+            value={period}
+            onChange={(e) => onMonthChange(e.target.value)}
+            aria-label="Select month"
+            className="absolute inset-0 cursor-pointer opacity-0"
+          />
+        </div>
       </div>
 
       <div className="relative">
@@ -173,6 +179,7 @@ export function MonthlyEntryGrid({
             </Button>
             <Button
               size="sm"
+              loading={saving}
               disabled={dirtyCount === 0 || errorCount > 0 || saving}
               onClick={onSave}
             >

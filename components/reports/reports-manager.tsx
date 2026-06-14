@@ -157,7 +157,7 @@ function ReportDialog({
             )}
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" loading={submitting}>
               {submitting ? "Saving…" : report ? "Save" : "Create draft"}
             </Button>
           </DialogFooter>
@@ -210,7 +210,10 @@ export function ReportsManager({
       ) : (
         <ul className="space-y-3">
           {reports.map((r) => (
-            <li key={r.id} className="rounded-lg border p-4">
+            <li
+              key={r.id}
+              className="rounded-2xl border border-border bg-surface p-4 shadow-e1 transition-shadow hover:shadow-e2"
+            >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">

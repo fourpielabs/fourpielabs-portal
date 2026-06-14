@@ -220,7 +220,7 @@ export function DeliverableDialog({
             )}
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" loading={submitting}>
               {submitting ? "Saving…" : deliverable ? "Save" : "Create"}
             </Button>
           </DialogFooter>

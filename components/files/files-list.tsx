@@ -75,13 +75,13 @@ export function FilesList({
           <h3 className="text-sm font-medium text-muted-foreground">
             {labelOf(FILE_CATEGORIES, cat)}
           </h3>
-          <ul className="divide-y rounded-lg border">
+          <ul className="space-y-2">
             {files
               .filter((f) => f.category === cat)
               .map((f) => (
                 <li
                   key={f.id}
-                  className="flex flex-wrap items-center gap-2 p-3 sm:flex-nowrap"
+                  className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-3 shadow-e1 transition-shadow hover:shadow-e2 sm:flex-nowrap"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{f.name}</div>

@@ -172,7 +172,7 @@ function MilestoneDialog({
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" loading={submitting}>
               {submitting ? "Saving…" : milestone ? "Save" : "Add milestone"}
             </Button>
           </DialogFooter>
@@ -222,7 +222,7 @@ export function MilestonesEditor({
         {ordered.map((m) => (
           <li
             key={m.id}
-            className="flex flex-wrap items-start gap-3 rounded-lg border p-3 sm:flex-nowrap"
+            className="flex flex-wrap items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-e1 transition-shadow hover:shadow-e2 sm:flex-nowrap"
           >
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">

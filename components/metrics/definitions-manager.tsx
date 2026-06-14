@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, Pencil, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Pencil, Plus } from "lucide-react";
 
 import { metricDefinitionSchema, type MetricDefinitionValues } from "@/lib/schemas";
 import {
@@ -155,7 +155,7 @@ function DefDialog({
             <Label>Active</Label>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" loading={submitting}>
               {submitting ? "Saving…" : def ? "Save" : "Add"}
             </Button>
           </DialogFooter>
@@ -209,6 +209,10 @@ export function DefinitionsManager({
             key={d.id}
             className={`flex items-center gap-2 py-3 ${d.is_active ? "" : "opacity-60"}`}
           >
+            <GripVertical
+              className="size-4 shrink-0 cursor-grab text-ink-3"
+              aria-hidden
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{d.label}</span>

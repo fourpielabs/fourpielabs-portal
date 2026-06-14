@@ -77,7 +77,7 @@ export function FileUpload({ clientId }: { clientId: string }) {
           <Switch checked={visible} onCheckedChange={setVisible} />
         </div>
       </div>
-      <Button type="submit" disabled={submitting}>
+      <Button type="submit" loading={submitting}>
         <Upload className="size-4" />
         {submitting ? "Uploading…" : "Upload"}
       </Button>

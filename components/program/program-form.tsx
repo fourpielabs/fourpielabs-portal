@@ -101,7 +101,7 @@ export function ProgramForm({ defaults }: { defaults: ProgramValues }) {
         </div>
       </div>
 
-      <Button type="submit" disabled={submitting}>
+      <Button type="submit" loading={submitting}>
         {submitting ? "Saving…" : "Save program details"}
       </Button>
     </form>

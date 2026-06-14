@@ -203,7 +203,7 @@ export function CsvImport({
               </TableBody>
             </Table>
           </div>
-          <Button onClick={commit} disabled={committing || validCount === 0}>
+          <Button onClick={commit} loading={committing} disabled={committing || validCount === 0}>
             <Upload className="size-4" />
             {committing
               ? "Importing…"

@@ -118,7 +118,7 @@ export default function AcceptInvitePage() {
             <p className="text-xs text-[#FCA5A5]">{errors.confirm.message}</p>
           )}
         </div>
-        <Button type="submit" variant="amber" size="lg" className="w-full" disabled={submitting}>
+        <Button type="submit" variant="amber" size="lg" className="w-full" loading={submitting}>
           {submitting ? "Saving…" : "Set password & continue"}
         </Button>
       </div>

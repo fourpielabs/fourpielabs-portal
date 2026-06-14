@@ -88,7 +88,7 @@ export default function LoginPage() {
             {...register("password", { onChange: clear })}
           />
         </div>
-        <Button type="submit" variant="amber" size="lg" className="mt-1.5 w-full" disabled={submitting}>
+        <Button type="submit" variant="amber" size="lg" className="mt-1.5 w-full" loading={submitting}>
           {submitting ? "Signing in…" : "Sign in"}
         </Button>
       </div>

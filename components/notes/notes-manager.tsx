@@ -130,7 +130,7 @@ function NoteDialog({
             <Label>Visible to client</Label>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" loading={submitting}>
               {submitting ? "Saving…" : note ? "Save" : "Add"}
             </Button>
           </DialogFooter>
@@ -181,7 +181,10 @@ export function NotesManager({
       ) : (
         <ul className="space-y-3">
           {notes.map((n) => (
-            <li key={n.id} className="rounded-lg border p-4">
+            <li
+              key={n.id}
+              className="rounded-2xl border border-border bg-surface p-4 shadow-e1 transition-shadow hover:shadow-e2"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{n.title}</span>

@@ -197,7 +197,7 @@ function CompetitorDialog({
             <Label>Visible to client</Label>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" loading={submitting}>
               {submitting ? "Saving…" : competitor ? "Save" : "Add"}
             </Button>
           </DialogFooter>

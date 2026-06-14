@@ -53,13 +53,13 @@ export function AvatarUpload({
             type="button"
             variant="outline"
             size="sm"
-            disabled={busy}
+            loading={busy}
             onClick={() => inputRef.current?.click()}
           >
             {busy ? "Uploading…" : avatarUrl ? "Change photo" : "Upload photo"}
           </Button>
           {avatarUrl && (
-            <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={remove}>
+            <Button type="button" variant="ghost" size="sm" loading={busy} onClick={remove}>
               Remove
             </Button>
           )}

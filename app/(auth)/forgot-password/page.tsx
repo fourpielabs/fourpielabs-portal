@@ -75,7 +75,7 @@ export default function ForgotPasswordPage() {
             {...register("email")}
           />
         </div>
-        <Button type="submit" variant="amber" size="lg" className="w-full" disabled={submitting}>
+        <Button type="submit" variant="amber" size="lg" className="w-full" loading={submitting}>
           {submitting ? "Sending…" : "Send reset link"}
         </Button>
         <Link

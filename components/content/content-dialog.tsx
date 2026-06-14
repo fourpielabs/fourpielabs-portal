@@ -200,7 +200,7 @@ export function ContentDialog({
             <Label>Visible to client</Label>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" loading={submitting}>
               {submitting ? "Saving…" : item ? "Save" : "Add"}
             </Button>
           </DialogFooter>
