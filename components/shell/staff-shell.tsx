@@ -110,7 +110,8 @@ function SidebarInner({
         4Pie Labs<span className="text-amber-600">.</span>
       </Link>
 
-      <ClientSwitcher clients={clients} />
+      {/* Admin navigates via the Clients list; the quick switcher is for team. */}
+      {role !== "admin" && <ClientSwitcher clients={clients} />}
 
       <nav className="flex flex-1 flex-col gap-0.5">
         {nav.map((i) => {

@@ -50,3 +50,6 @@ Thumbs.db
 
 # Testing
 /coverage
+
+# dev-only visual verification artifacts
+screenshots/

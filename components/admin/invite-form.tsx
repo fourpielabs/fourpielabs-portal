@@ -54,22 +54,22 @@ export function InviteForm({ clients }: { clients: ClientOption[] }) {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="grid gap-4 sm:grid-cols-2"
+      className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
     >
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" {...register("email")} />
+      <div className="flex-1 space-y-1.5 sm:min-w-[220px]">
+        <Label htmlFor="email">Email address</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="casey@premierpainting.com"
+          {...register("email")}
+        />
         {errors.email && (
           <p className="text-sm text-destructive">{errors.email.message}</p>
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="full_name">Full name (optional)</Label>
-        <Input id="full_name" {...register("full_name")} />
-      </div>
-
-      <div className="space-y-2">
+      <div className="space-y-1.5 sm:w-40">
         <Label>Role</Label>
         <Controller
           control={control}
@@ -92,8 +92,10 @@ export function InviteForm({ clients }: { clients: ClientOption[] }) {
       </div>
 
       {role === "client" && (
-        <div className="space-y-2">
-          <Label>Client</Label>
+        <div className="flex-1 space-y-1.5 sm:min-w-[200px]">
+          <Label>
+            Client <span className="font-normal text-ink-3">· required</span>
+          </Label>
           <Controller
             control={control}
             name="client_id"
@@ -113,18 +115,14 @@ export function InviteForm({ clients }: { clients: ClientOption[] }) {
             )}
           />
           {errors.client_id && (
-            <p className="text-sm text-destructive">
-              {errors.client_id.message}
-            </p>
+            <p className="text-sm text-destructive">{errors.client_id.message}</p>
           )}
         </div>
       )}
 
-      <div className="sm:col-span-2">
-        <Button type="submit" disabled={submitting}>
-          {submitting ? "Sending…" : "Send invitation"}
-        </Button>
-      </div>
+      <Button type="submit" variant="amber" disabled={submitting}>
+        {submitting ? "Sending…" : "Send invite"}
+      </Button>
     </form>
   );
 }

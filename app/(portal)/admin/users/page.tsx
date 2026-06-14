@@ -103,7 +103,7 @@ export default async function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      <div className="overflow-x-auto rounded-2xl border border-border shadow-e2">
+      <div className="hidden overflow-x-auto rounded-2xl border border-border shadow-e2 md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -189,6 +189,73 @@ export default async function AdminUsersPage() {
             })}
           </TableBody>
         </Table>
+      </div>
+
+      {/* mobile: cards (K6 table->cards at 390) */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {(profiles ?? []).map((p) => {
+          const pending = isPending(p);
+          const self = p.id === me.id;
+          const statusValue = !p.is_active ? "inactive" : pending ? "pending" : "active";
+          return (
+            <div
+              key={p.id}
+              className={cn(
+                "rounded-2xl border border-border bg-surface p-4 shadow-e1",
+                pending && "bg-[var(--pending-row)]",
+                !p.is_active && "opacity-60",
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <PersonAvatar
+                  name={p.full_name}
+                  email={p.email}
+                  src={p.avatar_url}
+                  size="md"
+                  className={cn("shrink-0", pending && "after:border-dashed after:border-amber-400")}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={cn("truncate font-medium", !p.is_active && "text-ink-faint line-through")}>
+                      {p.full_name ?? "—"}
+                    </span>
+                    {self && (
+                      <span className="rounded-full bg-amber-100 px-[7px] py-[1.5px] text-[9.5px] font-bold tracking-[0.05em] text-amber-800 uppercase">
+                        You
+                      </span>
+                    )}
+                  </div>
+                  <div className="truncate text-xs text-ink-3">{p.email}</div>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className={`inline-flex rounded-full px-2.5 py-[3px] text-[11px] font-semibold ${rolePill(p.role)}`}>
+                  {labelOf(ROLES, p.role)}
+                </span>
+                <StatusChip kind="user" value={statusValue} />
+                <span className="text-xs text-ink-3">{scopeFor(p)}</span>
+              </div>
+              <div className="mt-1 text-xs text-ink-3 tabular-nums">
+                Last active {lastActive.get(p.id) ? formatDate(lastActive.get(p.id)!) : "—"}
+              </div>
+              <div className="mt-3 [&_a]:h-11 [&_button]:h-11">
+                {pending ? (
+                  <PendingInviteActions
+                    userId={p.id}
+                    label={p.full_name ?? p.email ?? "this user"}
+                  />
+                ) : (
+                  <UserActiveToggle
+                    userId={p.id}
+                    isActive={p.is_active}
+                    isSelf={self}
+                    label={p.full_name ?? p.email ?? "this user"}
+                  />
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
