@@ -167,9 +167,30 @@ async function main() {
   });
   if (cuErr) throw cuErr;
 
+  // --- messaging fixtures ---------------------------------------------------
+  // threads are auto-seeded per client (trg_seed_client_threads) + backfilled for
+  // the demo clients; look up the ones we exercise.
+  const tid = async (cid: string, type: "client_shared" | "internal") => {
+    const { data } = await admin.from("threads").select("id").eq("client_id", cid).eq("type", type).single();
+    return data!.id as string;
+  };
+  const premierShared = await tid(premierId, "client_shared");
+  const premierInternal = await tid(premierId, "internal");
+  const pulseShared = await tid(pulseId, "client_shared");
+  const unShared = await tid(unId, "client_shared");
+  const { data: teamProf } = await admin.from("profiles").select("id").eq("email", "demo-team@example.com").single();
+  const teamUid = teamProf!.id as string;
+  // seed one message in each premier thread (service-role insert bypasses RLS)
+  await admin.from("messages").delete().eq("client_id", premierId).like("body", "RLS%");
+  await admin.from("messages").insert([
+    { thread_id: premierShared, client_id: premierId, thread_type: "client_shared", body: "RLSMSG-shared" },
+    { thread_id: premierInternal, client_id: premierId, thread_type: "internal", body: "RLSMSG-internal" },
+  ]);
+
   // ====================== AS CLIENT (demo-client / premier) =================
   const client = createClient(url, anonKey, { auth: { persistSession: false } });
   await client.auth.signInWithPassword({ email: "demo-client@example.com", password: PW });
+  const clientUid = (await client.auth.getUser()).data.user?.id as string;
 
   // cross-client reads (pulse data) must be 0
   for (const t of CLIENT_TABLES) await expectNoRows(client, "client", t, pulseId);
@@ -296,6 +317,58 @@ async function main() {
     );
   }
 
+  // --- messaging: client (demo-client / premier) ----------------------------
+  {
+    // reads OWN client_shared thread only — internal invisible
+    const { data: cThreads } = await client.from("threads").select("id, type");
+    rec(
+      "messaging",
+      "client reads OWN client_shared thread only (internal invisible)",
+      (cThreads?.length ?? 0) === 1 && cThreads?.[0]?.type === "client_shared",
+      `${cThreads?.length ?? 0} thread(s)`,
+    );
+    const { data: cx } = await client.from("threads").select("id").eq("client_id", pulseId);
+    rec("messaging", "client cross-client threads 0", (cx?.length ?? 0) === 0, `${cx?.length ?? 0} rows`);
+
+    // messages: sees shared-thread, NOT internal-thread, NOT cross-client
+    const { data: cMsgs } = await client.from("messages").select("body");
+    const bodies = (cMsgs ?? []).map((m) => m.body);
+    rec("messaging", "client reads shared-thread messages", bodies.includes("RLSMSG-shared"), "");
+    rec("messaging", "client CANNOT read internal-thread messages", !bodies.includes("RLSMSG-internal"), "");
+    const { data: cxMsg } = await client.from("messages").select("id").eq("client_id", pulseId);
+    rec("messaging", "client cross-client messages 0", (cxMsg?.length ?? 0) === 0, `${cxMsg?.length ?? 0} rows`);
+
+    // post via RPC: OWN shared allowed; OWN internal denied; cross-client denied
+    const pShared = await client.rpc("post_message", { p_thread_id: premierShared, p_body: "RLSPOST-shared" });
+    rec("messaging", "client post to OWN shared thread allowed", !pShared.error, pShared.error?.message ?? "");
+    const pInternal = await client.rpc("post_message", { p_thread_id: premierInternal, p_body: "RLSPOST-internal" });
+    rec("messaging", "client post to OWN internal thread DENIED", !!pInternal.error, pInternal.error?.message ?? "");
+    const pCross = await client.rpc("post_message", { p_thread_id: pulseShared, p_body: "RLSPOST-cross" });
+    rec("messaging", "client post to CROSS-CLIENT thread DENIED", !!pCross.error, pCross.error?.message ?? "");
+
+    // direct writes denied (no client write policy on any of these)
+    const di = await client.from("messages").insert({ thread_id: premierShared, client_id: premierId, thread_type: "client_shared", body: "RLSDIRECT" }).select("id");
+    rec("messaging", "client direct-INSERT messages DENIED", !!di.error || (di.data?.length ?? 0) === 0, di.error?.code ?? `${di.data?.length ?? 0} rows`);
+    const dt = await client.from("threads").insert({ client_id: premierId, type: "client_shared" }).select("id");
+    rec("messaging", "client direct-INSERT threads denied", !!dt.error || (dt.data?.length ?? 0) === 0, dt.error?.code ?? `${dt.data?.length ?? 0} rows`);
+    const dtr = await client.from("thread_reads").insert({ thread_id: premierShared, user_id: clientUid }).select("thread_id");
+    rec("messaging", "client direct-write thread_reads denied", !!dtr.error || (dtr.data?.length ?? 0) === 0, dtr.error?.code ?? `${dtr.data?.length ?? 0} rows`);
+
+    // mark_thread_read: own shared allowed; internal/cross denied
+    const mrShared = await client.rpc("mark_thread_read", { p_thread_id: premierShared });
+    rec("messaging", "client mark_thread_read OWN shared allowed", !mrShared.error, mrShared.error?.message ?? "");
+    const mrInternal = await client.rpc("mark_thread_read", { p_thread_id: premierInternal });
+    rec("messaging", "client mark_thread_read internal DENIED", !!mrInternal.error, mrInternal.error?.message ?? "");
+    const mrCross = await client.rpc("mark_thread_read", { p_thread_id: pulseShared });
+    rec("messaging", "client mark_thread_read cross-client DENIED", !!mrCross.error, mrCross.error?.message ?? "");
+
+    // reads OWN thread_reads only (admin seeds a team read row that must stay hidden)
+    await admin.from("thread_reads").upsert({ thread_id: premierShared, user_id: teamUid });
+    const { data: trRows } = await client.from("thread_reads").select("user_id");
+    const onlyOwn = (trRows ?? []).length >= 1 && (trRows ?? []).every((r) => r.user_id === clientUid);
+    rec("messaging", "client reads OWN thread_reads only", onlyOwn, `${trRows?.length ?? 0} row(s)`);
+  }
+
   // ====================== AS TEAM (demo-team, unassigned client) ============
   const team = createClient(url, anonKey, { auth: { persistSession: false } });
   await team.auth.signInWithPassword({ email: "demo-team@example.com", password: PW });
@@ -342,6 +415,24 @@ async function main() {
     );
     await admin.from("deliverables").update({ project_id: null }).eq("id", apprId); // reset
   }
+  // messaging: ASSIGNED team reads BOTH thread types + posts to both
+  {
+    const { data: tThreads } = await team.from("threads").select("type").eq("client_id", premierId);
+    rec("team→assigned", "read BOTH thread types", (tThreads?.length ?? 0) === 2, `${tThreads?.length ?? 0} threads`);
+    const tShared = await team.rpc("post_message", { p_thread_id: premierShared, p_body: "RLS team shared" });
+    rec("team→assigned", "post to shared thread allowed", !tShared.error, tShared.error?.message ?? "");
+    const tInternal = await team.rpc("post_message", { p_thread_id: premierInternal, p_body: "RLS team internal" });
+    rec("team→assigned", "post to internal thread allowed", !tInternal.error, tInternal.error?.message ?? "");
+  }
+  // messaging: UNASSIGNED team — no read, no post, no mark
+  {
+    const { data: tun } = await team.from("threads").select("id").eq("client_id", unId);
+    rec("team→unassigned", "read threads 0", (tun?.length ?? 0) === 0, `${tun?.length ?? 0} rows`);
+    const tunPost = await team.rpc("post_message", { p_thread_id: unShared, p_body: "RLS unassigned" });
+    rec("team→unassigned", "post denied", !!tunPost.error, tunPost.error?.message ?? "");
+    const tunMark = await team.rpc("mark_thread_read", { p_thread_id: unShared });
+    rec("team→unassigned", "mark_thread_read denied", !!tunMark.error, tunMark.error?.message ?? "");
+  }
 
   // ====================== AS ANON ===========================================
   const anon = createClient(url, anonKey, { auth: { persistSession: false } });
@@ -364,6 +455,14 @@ async function main() {
     if (ai.data?.[0]?.id) await admin.from("projects").delete().eq("id", ai.data[0].id);
     const acp = await anon.rpc("create_project", { p_title: "x", p_description: "" });
     rec("anon", "create_project RPC denied", !!acp.error);
+    const anThreads = await anon.from("threads").select("id");
+    rec("anon", "read threads 0", (anThreads.data?.length ?? 0) === 0, `${anThreads.data?.length ?? 0} rows`);
+    const anMsgs = await anon.from("messages").select("id");
+    rec("anon", "read messages 0", (anMsgs.data?.length ?? 0) === 0, `${anMsgs.data?.length ?? 0} rows`);
+    const anPost = await anon.rpc("post_message", { p_thread_id: premierShared, p_body: "x" });
+    rec("anon", "post_message denied", !!anPost.error);
+    const anMark = await anon.rpc("mark_thread_read", { p_thread_id: premierShared });
+    rec("anon", "mark_thread_read denied", !!anMark.error);
   }
 
   // ====================== SEED GATING =======================================
@@ -385,7 +484,25 @@ async function main() {
     rec("seed-gating", "program client HAS milestones", (progMs ?? 0) > 0, `${progMs ?? 0} rows`);
   }
 
+  // ====================== THREAD SEEDING (both client types) ================
+  {
+    // project client (projId) was created during this run → trigger seeded 2 threads
+    const { data: projTypes } = await admin.from("threads").select("type").eq("client_id", projId);
+    const projBoth =
+      (projTypes ?? []).filter((t) => t.type === "client_shared").length === 1 &&
+      (projTypes ?? []).filter((t) => t.type === "internal").length === 1;
+    rec("seeding", "PROJECT client seeded 1 shared + 1 internal thread", projBoth, `${projTypes?.length ?? 0} threads`);
+    // program client (premier) — backfilled in the migration
+    const { data: progTypes } = await admin.from("threads").select("type").eq("client_id", premierId);
+    const progBoth =
+      (progTypes ?? []).filter((t) => t.type === "client_shared").length === 1 &&
+      (progTypes ?? []).filter((t) => t.type === "internal").length === 1;
+    rec("seeding", "PROGRAM client has its 2 threads (backfill)", progBoth, `${progTypes?.length ?? 0} threads`);
+  }
+
   // --- cleanup --------------------------------------------------------------
+  await admin.from("messages").delete().eq("client_id", premierId).like("body", "RLS%");
+  await admin.from("thread_reads").delete().eq("thread_id", premierShared);
   await admin.from("projects").delete().eq("client_id", premierId).like("title", "RLS%");
   {
     const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });

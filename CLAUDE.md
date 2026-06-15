@@ -193,6 +193,26 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > cross-client rejection). **Out of scope (future ideas, NOT built):** project files /
 > notes / time tracking / budgets / invoicing; project-change notifications (Phase 4).
 >
+> **Phase 4a (Communication data layer) COMPLETE (2026-06-16).** Migrations
+> `20260615224421_communication_4a.sql` + `20260615225734_communication_4a_fix_can_access.sql`
+> (both pushed). `threads` (`client_shared` | `internal`, unique `(client_id,type)`),
+> `messages` (`client_id` + `thread_type` denormalized for RLS), `thread_reads`
+> (PK `(thread_id,user_id)`, unread mechanism) — all RLS-enabled. RLS shape =
+> admin all · team `is_assigned(client_id)` for BOTH types · client SELECT-only its
+> OWN `client_shared` thread + messages (internal invisible at the DB layer). Client
+> writes via SECURITY DEFINER RPCs ONLY: `post_message(thread_id, body)` and
+> `mark_thread_read(thread_id)` (scope via `app.can_access_thread`); **no direct
+> client INSERT/UPDATE policy** on threads/messages/thread_reads. Seeding:
+> `seed_client_threads()` AFTER INSERT trigger seeds 1 shared + 1 internal per client
+> for BOTH program AND project clients (NOT gated, unlike the program-only roadmap
+> seed); existing clients backfilled. **Security fix mid-phase:** `app.can_access_thread`
+> leaked for unassigned team (`x = my_client_id()` → NULL → past `if not NULL`) — fixed
+> with `coalesce(..., false)`; a same-pattern audit of all live policies/RPCs found NO
+> other holes (see the `language sql` coalesce note in Schema notes). `test:rls`
+> **152/152** (new `messaging` + `seeding` groups). NO UI/bell/email yet — those are
+> 4b–4d (PHASE4_COMMUNICATION_BLUEPRINT.md to be re-shared; it fell out of the repo
+> during compaction).
+>
 > **Current status:** P1 + P2 + P3 COMPLETE. Migrations on the linked Tokyo
 > project (`frmukrgjkhlpxplhzeqj`); auth + demo seed (P1); admin workspace (P2);
 > team workspace core (P3): per-client layout with assignment-scoped guard
@@ -276,6 +296,13 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 
 ### Schema notes
 
+- **⚠️ `language sql` boolean security helpers MUST `coalesce(..., false)`** their
+  result — they lack the explicit null-guards the `plpgsql` RPCs have (which start
+  with `if app.my_client_id() is null then raise` or use `is distinct from`). A bare
+  `x = app.my_client_id()` is **NULL** for staff (my_client_id is null), and a SQL
+  function returns that NULL up to `if not <fn>` in the caller, where `if not NULL`
+  silently doesn't raise → access leaks. This was the `app.can_access_thread` (4a)
+  root cause; fixed by wrapping the `select` in `coalesce(..., false)`.
 - **Enums: exactly the 14 from spec §4** — `user_role`, `client_status`,
   `client_industry`, `program_tier`, `checklist_kind`, `checklist_assignee`,
   `milestone_status`, `deliverable_status`, `deliverable_type`, `content_status`,
