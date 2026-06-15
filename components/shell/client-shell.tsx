@@ -43,13 +43,21 @@ const MORE: { href: string; label: string; icon: typeof Package }[] = [
   { href: "/documents", label: "Documents", icon: FileText },
 ];
 
+// Project clients' mobile bar — only their applicable tabs (no overflow needed).
+const BOTTOM_PROJECT: { href: string; label: string; icon: typeof Package }[] = [
+  { href: "/dashboard", label: "Home", icon: Home },
+  { href: "/deliverables", label: "Deliverables", icon: Package },
+  { href: "/calls-notes", label: "Calls", icon: Phone },
+  { href: "/documents", label: "Docs", icon: FileText },
+];
+
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 // Program-only tabs — hidden (presentation only) for `project` clients. Route
-// guards are untouched; a project client hitting these URLs is handled, not errored.
-const PROGRAM_ONLY = new Set(["/program", "/performance"]);
+// guards still redirect these URLs to /dashboard, so it's handled, not errored.
+const PROGRAM_ONLY = new Set(["/program", "/performance", "/content"]);
 
 export function ClientShell({
   name,
@@ -69,8 +77,9 @@ export function ClientShell({
 
   const isProject = clientType === "project";
   const top = isProject ? TOP.filter((i) => !PROGRAM_ONLY.has(i.href)) : TOP;
-  const bottom = isProject ? BOTTOM.filter((b) => !PROGRAM_ONLY.has(b.href)) : BOTTOM;
-  const moreActive = MORE.some((m) => isActive(pathname, m.href));
+  const bottom = isProject ? BOTTOM_PROJECT : BOTTOM;
+  const more = isProject ? [] : MORE;
+  const moreActive = more.some((m) => isActive(pathname, m.href));
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -143,29 +152,31 @@ export function ClientShell({
               </Link>
             );
           })}
-          <button
-            type="button"
-            onClick={() => setMoreOpen(true)}
-            className="flex flex-col items-center gap-0.5"
-            aria-label="More"
-          >
-            <span
-              className={cn(
-                "inline-flex size-12 items-center justify-center rounded-full transition-colors",
-                moreActive ? "bg-ink text-white" : "text-ink-2",
-              )}
+          {more.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              className="flex flex-col items-center gap-0.5"
+              aria-label="More"
             >
-              <MoreHorizontal className="size-5" />
-            </span>
-            <span className={cn("text-[9.5px]", moreActive ? "font-semibold text-ink" : "text-ink-3")}>
-              More
-            </span>
-          </button>
+              <span
+                className={cn(
+                  "inline-flex size-12 items-center justify-center rounded-full transition-colors",
+                  moreActive ? "bg-ink text-white" : "text-ink-2",
+                )}
+              >
+                <MoreHorizontal className="size-5" />
+              </span>
+              <span className={cn("text-[9.5px]", moreActive ? "font-semibold text-ink" : "text-ink-3")}>
+                More
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* More sheet */}
-      {moreOpen && (
+      {moreOpen && more.length > 0 && (
         <div className="fixed inset-0 z-50 sm:hidden" role="dialog" aria-modal="true">
           <div
             className="absolute inset-0 bg-ink/40"
@@ -184,7 +195,7 @@ export function ClientShell({
               </button>
             </div>
             <div className="flex flex-col">
-              {MORE.map((m) => {
+              {more.map((m) => {
                 const Icon = m.icon;
                 return (
                   <Link

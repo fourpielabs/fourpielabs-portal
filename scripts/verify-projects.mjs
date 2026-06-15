@@ -93,6 +93,9 @@ try {
   await page.fill("#name", `Verify Prov ${ts}`);
   await page.fill("#slug", provSlug); // override auto-slug to a deterministic value
   await pickSelect(page, "Client type", "Project");
+  await page.waitForTimeout(300);
+  const programLabels = await page.locator('form label:has-text("Program")').count();
+  rec("create form: Program tier hidden for project", programLabels === 0, `${programLabels} program label(s)`);
   await page.fill("#client_full_name", "Prov Client");
   await page.fill("#client_email", provEmail);
   await shot(page, "1_create_form");
@@ -166,15 +169,19 @@ try {
   rec("board: dashboard shows projects board (not roadmap)", /Your projects/i.test(bodyText) && !/90-day/i.test(bodyText), "");
   const programTabs = await page.locator('header nav a:has-text("Program")').count();
   const perfTabs = await page.locator('header nav a:has-text("Performance")').count();
-  rec("board: Program + Performance tabs hidden", programTabs === 0 && perfTabs === 0, `program=${programTabs} perf=${perfTabs}`);
+  const contentTabs = await page.locator('header nav a:has-text("Content")').count();
+  rec(
+    "board: Program + Performance + Content tabs hidden",
+    programTabs === 0 && perfTabs === 0 && contentTabs === 0,
+    `program=${programTabs} perf=${perfTabs} content=${contentTabs}`,
+  );
 
-  // /performance redirects gracefully to /dashboard
-  await page.goto(`${BASE}/performance`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
-  rec("board: /performance redirects to /dashboard", page.url().replace(/\/$/, "").endsWith("/dashboard"), page.url());
-  await page.goto(`${BASE}/program`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
-  rec("board: /program redirects to /dashboard", page.url().replace(/\/$/, "").endsWith("/dashboard"), page.url());
+  // each program-only route redirects gracefully to /dashboard
+  for (const route of ["/performance", "/program", "/content"]) {
+    await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(800);
+    rec(`board: ${route} redirects to /dashboard`, page.url().replace(/\/$/, "").endsWith("/dashboard"), page.url());
+  }
 
   // add a project via the board → create_project
   await page.goto(`${BASE}/dashboard`, { waitUntil: "networkidle" });
@@ -222,8 +229,13 @@ try {
   const progBody = await page.locator("body").innerText();
   const progNavProgram = await page.locator('header nav a:has-text("Program")').count();
   const progNavPerf = await page.locator('header nav a:has-text("Performance")').count();
+  const progNavContent = await page.locator('header nav a:has-text("Content")').count();
   rec("program client: roadmap dashboard intact (90-day present)", /90-day/i.test(progBody), "");
-  rec("program client: Program + Performance tabs present", progNavProgram >= 1 && progNavPerf >= 1, `program=${progNavProgram} perf=${progNavPerf}`);
+  rec(
+    "program client: Program + Performance + Content tabs present",
+    progNavProgram >= 1 && progNavPerf >= 1 && progNavContent >= 1,
+    `program=${progNavProgram} perf=${progNavPerf} content=${progNavContent}`,
+  );
   await logout();
 } catch (e) {
   rec("UNCAUGHT ERROR", false, String(e?.message ?? e));

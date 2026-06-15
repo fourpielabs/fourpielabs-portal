@@ -143,21 +143,29 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > (explicit column list, still no `internal_notes`); `seed_new_client()` GATED
 > so project clients seed NO checklist/roadmap/metrics (program path byte-for-
 > byte unchanged). Provisioning: admin "create client account" — the
-> create-client form (`components/clients/client-create-form.tsx`) takes
-> `client_type` + optional client-user email/name and provisions the client
-> login via the existing prefetch-safe welcome/invite email
-> (`createClientAction`); client **invites are now staff-only** (admin/team) in
-> `sendInviteAction` + `invite-form.tsx`. Client experience: project clients get
-> the **projects board** (`components/client/projects-board.tsx` +
+> **conditional** create-client form (`components/clients/client-create-form.tsx`)
+> puts `client_type` FIRST and reacts to it: program shows the Program tier;
+> **project hides it** (general fields + account section only). It also takes an
+> optional client-user email/name and provisions the client login via the
+> existing prefetch-safe welcome/invite email (`createClientAction`); client
+> **invites are now staff-only** (admin/team) in `sendInviteAction` +
+> `invite-form.tsx`. **Project clients store `program='foundation'` as a neutral
+> baseline** — the `clients.program` column is NOT NULL but is never read for
+> project clients (set in `createClientAction`). Client experience: project
+> clients get the **projects board** (`components/client/projects-board.tsx` +
 > `project-dialog.tsx`) instead of the program dashboard (`client-dashboard.tsx`
-> branches on `client_type`); the Program + Performance tabs are hidden
-> (presentation-only, `client-shell.tsx`) and those routes **redirect** project
-> clients to `/dashboard` (guards intact, no error). `test:rls` **123/123**
-> (project write-path, SELECT scoping, type-gate, team assigned/unassigned,
-> anon, seed-gating both directions). **v1 follow-up (NOT built):** an "invite
-> client user" action on the client **settings** page, to provision a login for
-> a client created without an email (today the only provisioning point is the
-> create-client form).
+> branches on `client_type`); the **Program, Performance + Content** tabs are
+> hidden (presentation-only, `client-shell.tsx` — project clients see only
+> Dashboard · Deliverables · Calls & Notes · Documents) and those routes
+> (`/program`, `/performance`, `/content`) **redirect** project clients to
+> `/dashboard` (guards intact, no error). `test:rls` **123/123** (project
+> write-path, SELECT scoping, type-gate, team assigned/unassigned, anon,
+> seed-gating both directions); E2E (`scripts/verify-projects.mjs`) **16/16**.
+> **v1 follow-ups (NOT built):** (1) an "invite client user" action on the
+> client **settings** page, to provision a login for a client created without an
+> email (today the only provisioning point is the create-client form); (2) make
+> `clients.program` **nullable** so project clients carry no dummy program tier
+> (current baseline is the `'foundation'` placeholder above).
 >
 > **Current status:** P1 + P2 + P3 COMPLETE. Migrations on the linked Tokyo
 > project (`frmukrgjkhlpxplhzeqj`); auth + demo seed (P1); admin workspace (P2);

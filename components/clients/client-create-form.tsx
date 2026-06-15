@@ -85,6 +85,34 @@ export function ClientCreateForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-xl space-y-5">
+      {/* Client type is the FIRST decision — the rest of the form reacts to it. */}
+      <div className="space-y-2 rounded-xl border border-border bg-bg p-4">
+        <Label>Client type</Label>
+        <Controller
+          control={control}
+          name="client_type"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CLIENT_TYPES.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        <p className="text-xs text-ink-3">
+          {clientType === "project"
+            ? "Projects board — no program tier, 90-day roadmap, or metrics. The client manages their own scoped projects."
+            : "Program engagement — seeds the onboarding checklist, 90-day roadmap & program metrics."}
+        </p>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="name">Business name</Label>
         <Input
@@ -131,54 +159,29 @@ export function ClientCreateForm() {
           />
         </div>
 
-        <div className="space-y-2">
-          <Label>Program</Label>
-          <Controller
-            control={control}
-            name="program"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROGRAMS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Client type</Label>
-          <Controller
-            control={control}
-            name="client_type"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CLIENT_TYPES.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <p className="text-xs text-ink-3">
-            {clientType === "project"
-              ? "Projects board — no 90-day roadmap or metrics are seeded."
-              : "Seeds the onboarding checklist, 90-day roadmap & metrics."}
-          </p>
-        </div>
+        {clientType === "program" && (
+          <div className="space-y-2">
+            <Label>Program</Label>
+            <Controller
+              control={control}
+              name="program"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROGRAMS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label>Status</Label>

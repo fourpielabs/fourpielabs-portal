@@ -45,7 +45,9 @@ export async function createClientAction(
       name: v.name,
       slug: v.slug,
       industry: v.industry,
-      program: v.program,
+      // project clients have no program tier (field is hidden); store a neutral
+      // baseline so the NOT NULL column stays consistent (it's never read for them).
+      program: v.client_type === "project" ? "foundation" : v.program,
       client_type: v.client_type,
       status: v.status,
       website_url: clean(v.website_url),

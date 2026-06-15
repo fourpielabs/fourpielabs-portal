@@ -9,8 +9,9 @@ export default async function NewClientPage() {
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">New client</h1>
         <p className="text-muted-foreground">
-          Creating a client automatically seeds its onboarding checklist, 90-day
-          roadmap, and program metric definitions.
+          Program clients are seeded an onboarding checklist, 90-day roadmap, and
+          metric definitions. Project clients get a projects board instead — pick
+          the type below.
         </p>
       </div>
       <ClientCreateForm />
