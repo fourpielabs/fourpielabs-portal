@@ -23,9 +23,10 @@ export default async function ClientsPage() {
   const supabase = await createClient();
 
   // RLS scopes both reads: admin sees all, team sees assigned clients only.
-  const [{ data: clients }, { data: checklist }] = await Promise.all([
-    supabase.from("clients").select("id, name, slug, program, status, logo_url").order("name"),
+  const [{ data: clients }, { data: checklist }, { data: projects }] = await Promise.all([
+    supabase.from("clients").select("id, name, slug, program, client_type, status, logo_url").order("name"),
     supabase.from("checklist_items").select("client_id, is_done").eq("kind", "onboarding"),
+    supabase.from("projects").select("client_id, status"),
   ]);
 
   const isAdmin = profile.role === "admin";
@@ -36,8 +37,21 @@ export default async function ClientsPage() {
     if (c.is_done) g.done++;
     checklistBy.set(c.client_id, g);
   }
-  const stat = (id: string) => {
-    const g = checklistBy.get(id);
+  const projectsBy = new Map<string, { total: number; active: number }>();
+  for (const p of projects ?? []) {
+    const g = projectsBy.get(p.client_id) ?? { total: 0, active: 0 };
+    g.total++;
+    if (p.status === "active" || p.status === "in_review") g.active++;
+    projectsBy.set(p.client_id, g);
+  }
+  // Per-client progress: project clients show project count/active; program clients show checklist.
+  const progress = (c: { id: string; client_type?: string | null }) => {
+    if (c.client_type === "project") {
+      const g = projectsBy.get(c.id);
+      if (!g || g.total === 0) return "No projects";
+      return `${g.total} project${g.total === 1 ? "" : "s"}${g.active ? ` · ${g.active} active` : ""}`;
+    }
+    const g = checklistBy.get(c.id);
     return g ? `${g.done}/${g.total}` : "—";
   };
 
@@ -83,7 +97,7 @@ export default async function ClientsPage() {
                   <TableHead>Client</TableHead>
                   <TableHead>Program</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Checklist</TableHead>
+                  <TableHead>Progress</TableHead>
                   <TableHead className="text-right">Manage</TableHead>
                 </TableRow>
               </TableHeader>
@@ -100,12 +114,16 @@ export default async function ClientsPage() {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="amber">{labelOf(PROGRAMS, c.program)}</Badge>
+                      {c.client_type === "project" ? (
+                        <Badge variant="secondary">Project</Badge>
+                      ) : (
+                        <Badge variant="amber">{labelOf(PROGRAMS, c.program)}</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <StatusChip kind="client" value={c.status} />
                     </TableCell>
-                    <TableCell className="tabular-nums text-ink-2">{stat(c.id)}</TableCell>
+                    <TableCell className="tabular-nums text-ink-2">{progress(c)}</TableCell>
                     <TableCell className="text-right">
                       <Button asChild variant="ghost" size="sm">
                         <Link href={`/clients/${c.id}`}>Open</Link>
@@ -139,9 +157,15 @@ export default async function ClientsPage() {
                   <ArrowRight className="size-4 shrink-0 text-ink-faint" />
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="amber">{labelOf(PROGRAMS, c.program)}</Badge>
+                  {c.client_type === "project" ? (
+                    <Badge variant="secondary">Project</Badge>
+                  ) : (
+                    <Badge variant="amber">{labelOf(PROGRAMS, c.program)}</Badge>
+                  )}
                   <StatusChip kind="client" value={c.status} />
-                  <span className="text-xs text-ink-3 tabular-nums">Checklist {stat(c.id)}</span>
+                  <span className="text-xs text-ink-3 tabular-nums">
+                    {c.client_type === "project" ? progress(c) : `Checklist ${progress(c)}`}
+                  </span>
                 </div>
               </Link>
             ))}

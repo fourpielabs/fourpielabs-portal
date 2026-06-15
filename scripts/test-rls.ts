@@ -281,6 +281,19 @@ async function main() {
     rec("projects", "project client reads OWN projects", !ownSel.error && (ownSel.data?.length ?? 0) >= 1, `${ownSel.data?.length ?? 0} rows`);
     const xSel = await projClient.from("projects").select("id").eq("client_id", premierId);
     rec("projects", "project client cross-client read 0", (xSel.data?.length ?? 0) === 0, `${xSel.data?.length ?? 0} rows`);
+
+    // deliverable↔project link is a STAFF path — a client has no deliverable write
+    const clientLink = await projClient
+      .from("deliverables")
+      .update({ project_id: premierProjectId })
+      .eq("id", apprId)
+      .select("id");
+    rec(
+      "projects",
+      "project client cannot link deliverable→project (direct UPDATE denied)",
+      !!clientLink.error || (clientLink.data?.length ?? 0) === 0,
+      clientLink.error?.code ?? `${clientLink.data?.length ?? 0} rows`,
+    );
   }
 
   // ====================== AS TEAM (demo-team, unassigned client) ============
@@ -314,6 +327,20 @@ async function main() {
     const ti = await team.from("projects").insert({ client_id: premierId, title: "RLS team-assigned" }).select("id");
     rec("team→assigned", "write premier project allowed", !ti.error && (ti.data?.length ?? 0) === 1, ti.error?.code ?? `${ti.data?.length ?? 0} rows`);
     if (ti.data?.[0]?.id) await admin.from("projects").delete().eq("id", ti.data[0].id);
+
+    // staff can link a deliverable to a project of the SAME client (set project_id)
+    const teamLink = await team
+      .from("deliverables")
+      .update({ project_id: premierProjectId })
+      .eq("id", apprId)
+      .select("id");
+    rec(
+      "team→assigned",
+      "link deliverable→project (set project_id) allowed",
+      !teamLink.error && (teamLink.data?.length ?? 0) === 1,
+      teamLink.error?.code ?? `${teamLink.data?.length ?? 0} rows`,
+    );
+    await admin.from("deliverables").update({ project_id: null }).eq("id", apprId); // reset
   }
 
   // ====================== AS ANON ===========================================

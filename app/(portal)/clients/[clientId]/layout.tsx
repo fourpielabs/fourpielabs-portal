@@ -24,14 +24,17 @@ export default async function ClientLayout({
   const supabase = await createClient();
   const { data: client } = await supabase
     .from("clients")
-    .select("id, name, slug, status, program, start_date, logo_url")
+    .select("id, name, slug, status, program, client_type, start_date, logo_url")
     .eq("id", clientId)
     .single();
 
   if (!client) notFound();
 
+  const isProject = client.client_type === "project";
+
+  // "Day N of 90" is the program roadmap framing — not meaningful for projects.
   let dayLabel: string | null = null;
-  if (client.start_date) {
+  if (!isProject && client.start_date) {
     const start = new Date(`${client.start_date}T00:00:00`);
     const days = Math.floor((Date.now() - start.getTime()) / 86_400_000) + 1;
     if (days >= 1) dayLabel = `Day ${Math.min(days, 90)} of 90`;
@@ -46,7 +49,11 @@ export default async function ClientLayout({
             <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">
               {client.name}
             </h1>
-            <Badge variant="amber">{labelOf(PROGRAMS, client.program)}</Badge>
+            {isProject ? (
+              <Badge variant="secondary">Project</Badge>
+            ) : (
+              <Badge variant="amber">{labelOf(PROGRAMS, client.program)}</Badge>
+            )}
             <StatusChip kind="client" value={client.status} />
           </div>
           <p className="mt-0.5 text-[12.5px] text-ink-3">
@@ -64,7 +71,11 @@ export default async function ClientLayout({
           </Link>
         )}
       </div>
-      <ClientTabs clientId={client.id} isAdmin={profile.role === "admin"} />
+      <ClientTabs
+        clientId={client.id}
+        isAdmin={profile.role === "admin"}
+        clientType={client.client_type}
+      />
       <div>{children}</div>
     </div>
   );

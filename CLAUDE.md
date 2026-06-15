@@ -167,6 +167,32 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > `clients.program` **nullable** so project clients carry no dummy program tier
 > (current baseline is the `'foundation'` placeholder above).
 >
+> **Project-completion sub-phase COMPLETE (2026-06-16).** Wires the project↔client
+> relationship end-to-end — **NO migration** (staff ride the existing `projects` +
+> `deliverables` for-all policies; clients stay RPC-only, no new client write policy).
+> Staff project management: `staffCreate/Update/SetStatus/DeleteProjectAction`
+> (`lib/actions/projects.ts`; `requireClientAccess`; direct writes scoped
+> `.eq("client_id", clientId)`; `projectStaffSchema` adds start/due dates — the client
+> RPC has none, so dates are staff-managed); a project-client-only **Projects tab**
+> (`app/(portal)/clients/[clientId]/projects/page.tsx` +
+> `components/projects/{staff-projects-manager,project-form-dialog}.tsx`). Per-client
+> staff tabs branch on `client_type` (`client-tabs.tsx` — project clients get Overview ·
+> Projects · Deliverables · Calls; program-only tabs hidden). **Deliverable→project
+> link** (`deliverables.project_id` now has UI): `deliverableSchema.project_id` threaded
+> through create/update with a **same-client guard** (`resolveProjectId` rejects a
+> foreign project_id — RLS checks the deliverable's client_id but not the linked
+> project's), a Project picker in the deliverable dialog (project clients only), and a
+> project badge per linked deliverable; project cards (staff manager + client board) list
+> their deliverables (bidirectional). **Staff visibility:** clients grid + dashboard cards
+> show a Project badge + project count/active (not the empty checklist, under a "Progress"
+> column); the staff client **overview** branches to a projects summary (count by status +
+> recent projects) for project clients; `StatusChip` gains a `project` kind. Audit:
+> `project.status_changed` / `project.deleted` added. `test:rls` **125/125** (+2: staff can
+> set `deliverables.project_id`; a client cannot). E2E (`scripts/verify-projects.mjs`)
+> **25/25** (staff create/edit/status, link a deliverable, bidirectional display,
+> cross-client rejection). **Out of scope (future ideas, NOT built):** project files /
+> notes / time tracking / budgets / invoicing; project-change notifications (Phase 4).
+>
 > **Current status:** P1 + P2 + P3 COMPLETE. Migrations on the linked Tokyo
 > project (`frmukrgjkhlpxplhzeqj`); auth + demo seed (P1); admin workspace (P2);
 > team workspace core (P3): per-client layout with assignment-scoped guard

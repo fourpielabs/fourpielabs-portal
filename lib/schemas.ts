@@ -81,6 +81,17 @@ export const projectUpdateSchema = projectCreateSchema.extend({
 });
 export type ProjectUpdateValues = z.infer<typeof projectUpdateSchema>;
 
+// Staff project management (direct table writes under the projects for-all
+// policies — admin/assigned team). Staff also set dates; the client RPC doesn't.
+export const projectStaffSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  description: z.string().trim().optional(),
+  status: z.enum(["proposed", "active", "in_review", "complete"]),
+  start_date: optionalDate,
+  due_date: optionalDate,
+});
+export type ProjectStaffValues = z.infer<typeof projectStaffSchema>;
+
 export const setActiveSchema = z.object({
   userId: z.string().uuid(),
   isActive: z.boolean(),
@@ -149,6 +160,9 @@ export const deliverableSchema = z.object({
   due_date: optionalDate,
   preview_url: optionalUrl,
   visible_to_client: z.boolean(),
+  // optional link to one of the client's projects ("" = none, only offered for
+  // project-type clients). The action re-validates it belongs to the same client.
+  project_id: z.string().uuid().or(z.literal("")).optional().nullable(),
 });
 export type DeliverableValues = z.infer<typeof deliverableSchema>;
 

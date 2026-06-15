@@ -51,6 +51,7 @@ const provSlug = `verify-prov-${ts}`;
 const boardSlug = `verify-board-${ts}`;
 const boardEmail = `verify-board-${ts}@example.com`;
 let boardClientId = null;
+let foreignProjectId = null;
 
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -237,10 +238,144 @@ try {
     `program=${progNavProgram} perf=${progNavPerf} content=${progNavContent}`,
   );
   await logout();
+
+  // ========================================================================
+  // PHASE 4 — STAFF project management + deliverable→project link (as admin)
+  // ========================================================================
+  await login("demo-admin@example.com");
+
+  // staff overview for a project client shows the projects summary, not a checklist
+  await page.goto(`${BASE}/clients/${boardClientId}`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(700);
+  await shot(page, "7_staff_overview");
+  const overviewBody = await page.locator("body").innerText();
+  const tabProjects = await page.locator('nav a:has-text("Projects")').count();
+  const tabChecklist = await page.locator('nav a:has-text("Checklist")').count();
+  const tabProgram = await page.locator('nav a:has-text("Program")').count();
+  rec(
+    "staff: project-client overview shows Projects summary (not checklist)",
+    /Projects/.test(overviewBody) && !/Checklist progress/.test(overviewBody),
+    "",
+  );
+  rec(
+    "staff: per-client tabs branched (Projects shown, Checklist/Program hidden)",
+    tabProjects >= 1 && tabChecklist === 0 && tabProgram === 0,
+    `projects=${tabProjects} checklist=${tabChecklist} program=${tabProgram}`,
+  );
+
+  // staff Projects tab: create a project
+  await page.goto(`${BASE}/clients/${boardClientId}/projects`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(600);
+  await page.click('button:has-text("New project")');
+  await page.waitForTimeout(400);
+  const staffProjTitle = `E2E Staff Project ${ts}`;
+  await page.fill("#sp-title", staffProjTitle);
+  await page.fill("#sp-desc", "Created by staff E2E.");
+  await page.locator('button:has-text("Create")').last().click();
+  await page.waitForSelector(`text=${staffProjTitle}`, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  await shot(page, "8_staff_projects");
+  const { data: staffProj } = await admin
+    .from("projects")
+    .select("id, status")
+    .eq("client_id", boardClientId)
+    .eq("title", staffProjTitle)
+    .maybeSingle();
+  rec("staff: create project worked", !!staffProj, staffProj?.id ?? "missing");
+
+  // staff edit status via the edit dialog (newest card is first)
+  await page.locator('button[aria-label="Edit"]').first().click();
+  await page.waitForTimeout(500);
+  await pickSelect(page, "Status", "In review");
+  await page.locator('button:has-text("Save")').last().click();
+  await page.waitForTimeout(1200);
+  const { data: staffProjEdited } = await admin
+    .from("projects")
+    .select("status")
+    .eq("id", staffProj?.id ?? "00000000-0000-0000-0000-000000000000")
+    .maybeSingle();
+  rec("staff: set project status worked (in_review)", staffProjEdited?.status === "in_review", staffProjEdited?.status ?? "n/a");
+
+  // staff deliverables tab: project picker present; attach a deliverable
+  await page.goto(`${BASE}/clients/${boardClientId}/deliverables`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(600);
+  await page.click('button:has-text("New deliverable")');
+  await page.waitForTimeout(500);
+  const pickerPresent = await page.locator('label:has-text("Project")').count();
+  rec("staff: deliverable dialog shows Project picker (project client)", pickerPresent >= 1, `${pickerPresent}`);
+  const delTitle = `E2E Staff Deliverable ${ts}`;
+  await page.fill("#d-title", delTitle);
+  await pickSelect(page, "Project", staffProjTitle);
+  await page.locator('button:has-text("Create")').last().click();
+  await page.waitForSelector(`text=${delTitle}`, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(600);
+  await shot(page, "9_staff_deliverable_linked");
+  const { data: linkedDel } = await admin
+    .from("deliverables")
+    .select("id, project_id")
+    .eq("client_id", boardClientId)
+    .eq("title", delTitle)
+    .maybeSingle();
+  rec(
+    "staff: deliverable linked to project (project_id set)",
+    !!staffProj && linkedDel?.project_id === staffProj.id,
+    linkedDel?.project_id === staffProj?.id ? "linked" : "NOT linked",
+  );
+
+  // the project card lists the linked deliverable (bidirectional)
+  await page.goto(`${BASE}/clients/${boardClientId}/projects`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(700);
+  const projectsBody = await page.locator("body").innerText();
+  rec("staff: project card lists its deliverable (bidirectional)", projectsBody.includes(delTitle), "");
+
+  // cross-client guard: a foreign project is NOT resolvable/offered for this client
+  const { data: premier } = await admin
+    .from("clients")
+    .select("id")
+    .eq("slug", "premier-painting")
+    .maybeSingle();
+  if (premier?.id) {
+    const { data: foreignProj } = await admin
+      .from("projects")
+      .insert({ client_id: premier.id, title: `E2E Foreign ${ts}` })
+      .select("id")
+      .single();
+    foreignProjectId = foreignProj.id;
+    // the exact query resolveProjectId runs — a foreign project isn't owned by this client
+    const { data: guardRows } = await admin
+      .from("projects")
+      .select("id")
+      .eq("id", foreignProjectId)
+      .eq("client_id", boardClientId);
+    rec(
+      "cross-client: foreign project NOT resolvable for this client (action would reject)",
+      (guardRows?.length ?? 0) === 0,
+      `${guardRows?.length ?? 0} rows`,
+    );
+    // and the deliverable picker offers OWN projects only (never the foreign one)
+    await page.goto(`${BASE}/clients/${boardClientId}/deliverables`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(500);
+    await page.click('button:has-text("New deliverable")');
+    await page.waitForTimeout(400);
+    await page
+      .locator('div.space-y-2:has(label:has-text("Project")) button[role="combobox"]')
+      .click();
+    await page.waitForTimeout(300);
+    const offersForeign = await page.locator(`[role="option"]:has-text("E2E Foreign ${ts}")`).count();
+    const offersOwn = await page.locator(`[role="option"]:has-text("${staffProjTitle}")`).count();
+    rec(
+      "cross-client: deliverable picker offers OWN projects only (not foreign)",
+      offersForeign === 0 && offersOwn >= 1,
+      `foreign=${offersForeign} own=${offersOwn}`,
+    );
+    await page.keyboard.press("Escape");
+  }
+  await logout();
 } catch (e) {
   rec("UNCAUGHT ERROR", false, String(e?.message ?? e));
 } finally {
   // cleanup fixtures
+  if (foreignProjectId) await admin.from("projects").delete().eq("id", foreignProjectId);
   if (boardClientId) await admin.from("clients").delete().eq("id", boardClientId);
   const bu = await findUserByEmail(boardEmail);
   if (bu) await admin.auth.admin.deleteUser(bu.id);

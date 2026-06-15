@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { Clock, ClipboardList, FileText, Megaphone, Package } from "lucide-react";
+import { Clock, ClipboardList, FileText, FolderKanban, Megaphone, Package } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
 import { formatDate, formatMonthYear } from "@/lib/format";
+import { PROJECT_STATUSES, labelOf } from "@/lib/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Banner } from "@/components/ui/banner";
+import { StatusChip } from "@/components/ui/status-chip";
 
 type MetricEntry = {
   value_numeric: number | null;
@@ -40,6 +42,8 @@ export default async function ClientOverviewPage({
   const base = `/clients/${clientId}`;
 
   const [
+    { data: client },
+    { data: projects },
     { data: checklist },
     { data: entries },
     { data: waiting },
@@ -47,6 +51,12 @@ export default async function ClientOverviewPage({
     { data: updates },
     { data: reports },
   ] = await Promise.all([
+    supabase.from("clients").select("client_type").eq("id", clientId).maybeSingle(),
+    supabase
+      .from("projects")
+      .select("id, title, status, due_date, created_at")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false }),
     supabase
       .from("checklist_items")
       .select("is_done, phase_label")
@@ -128,6 +138,55 @@ export default async function ClientOverviewPage({
   const waitingList = waiting ?? [];
   const ringCirc = 2 * Math.PI * 30;
 
+  // Project-client overview: project counts by status + recent projects.
+  const isProject = client?.client_type === "project";
+  const projectList = (projects ?? []) as {
+    id: string;
+    title: string;
+    status: string;
+    due_date: string | null;
+  }[];
+  const projByStatus = PROJECT_STATUSES.map((s) => ({
+    ...s,
+    count: projectList.filter((p) => p.status === s.value).length,
+  }));
+  const activeCount = projectList.filter(
+    (p) => p.status === "active" || p.status === "in_review",
+  ).length;
+  const recentProjects = projectList.slice(0, 5);
+
+  const activityCard = (
+    <Card size="sm">
+      <CardContent className="flex flex-col gap-2">
+        <h3 className="text-[14.5px] font-semibold">Recent activity</h3>
+        {activity.length === 0 ? (
+          <p className="flex items-center gap-2 py-6 text-sm text-ink-3">
+            <ClipboardList className="size-4" /> No activity yet.
+          </p>
+        ) : (
+          <ul className="flex flex-col">
+            {activity.map((a, i) => {
+              const cfg = ACTIVITY[a.kind] ?? ACTIVITY.Update;
+              const Icon = cfg.icon;
+              return (
+                <li key={i} className="flex items-center gap-3 border-b border-row-divider py-2.5 last:border-0">
+                  <span
+                    className="inline-flex size-7 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: cfg.bg, color: cfg.fg }}
+                  >
+                    <Icon className="size-3.5" />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[12.5px]">{a.title}</span>
+                  <span className="shrink-0 text-xs text-ink-3">{formatDate(a.at)}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       {waitingList.length > 0 && (
@@ -147,6 +206,75 @@ export default async function ClientOverviewPage({
         </Banner>
       )}
 
+      {isProject && (
+        <div className="grid gap-5 lg:grid-cols-[1fr_1fr_1.25fr]">
+          {/* projects summary */}
+          <Card size="sm">
+            <CardContent className="flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                  <FolderKanban className="size-6" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-[14.5px] font-semibold">Projects</h3>
+                  <p className="text-xs text-ink-3 tabular-nums">
+                    {projectList.length} total · {activeCount} in flight
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5 text-xs">
+                {projByStatus.map((s) => (
+                  <div key={s.value} className="flex items-center justify-between">
+                    <span className="text-ink-2">{s.label}</span>
+                    <span className="tabular-nums text-ink-3">{s.count}</span>
+                  </div>
+                ))}
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`${base}/projects`}>Open projects</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* recent projects */}
+          <Card size="sm">
+            <CardContent className="flex flex-col gap-3">
+              <h3 className="text-[14.5px] font-semibold">Recent projects</h3>
+              {recentProjects.length === 0 ? (
+                <p className="text-sm text-ink-3">
+                  No projects yet — create one from the Projects tab.
+                </p>
+              ) : (
+                <ul className="flex flex-col">
+                  {recentProjects.map((p) => (
+                    <li
+                      key={p.id}
+                      className="flex items-center justify-between gap-2 border-b border-row-divider py-2.5 last:border-0"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-[12.5px] font-medium">{p.title}</span>
+                        {p.due_date && (
+                          <span className="block text-xs text-ink-3">
+                            Due {formatDate(p.due_date)}
+                          </span>
+                        )}
+                      </span>
+                      <StatusChip kind="project" value={p.status} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Button asChild size="sm">
+                <Link href={`${base}/projects`}>Manage projects</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {activityCard}
+        </div>
+      )}
+
+      {!isProject && (
       <div className="grid gap-5 lg:grid-cols-[1fr_1fr_1.25fr]">
         {/* checklist progress */}
         <Card size="sm">
@@ -234,36 +362,9 @@ export default async function ClientOverviewPage({
         </Card>
 
         {/* activity */}
-        <Card size="sm">
-          <CardContent className="flex flex-col gap-2">
-            <h3 className="text-[14.5px] font-semibold">Recent activity</h3>
-            {activity.length === 0 ? (
-              <p className="flex items-center gap-2 py-6 text-sm text-ink-3">
-                <ClipboardList className="size-4" /> No activity yet.
-              </p>
-            ) : (
-              <ul className="flex flex-col">
-                {activity.map((a, i) => {
-                  const cfg = ACTIVITY[a.kind] ?? ACTIVITY.Update;
-                  const Icon = cfg.icon;
-                  return (
-                    <li key={i} className="flex items-center gap-3 border-b border-row-divider py-2.5 last:border-0">
-                      <span
-                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-full"
-                        style={{ background: cfg.bg, color: cfg.fg }}
-                      >
-                        <Icon className="size-3.5" />
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-[12.5px]">{a.title}</span>
-                      <span className="shrink-0 text-xs text-ink-3">{formatDate(a.at)}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        {activityCard}
       </div>
+      )}
     </div>
   );
 }

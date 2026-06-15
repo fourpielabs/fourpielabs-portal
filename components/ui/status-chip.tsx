@@ -55,6 +55,12 @@ export const STATUS_MAP: Record<string, Record<string, Recipe>> = {
     draft: { label: "Draft — hidden from client", text: G, bg: N_BG, border: N_BD, icon: "eye-off" },
     published: { label: "Published", text: "#166534", bg: "#DCFCE7", border: "#BBF7D0", dot: "#15803D" },
   },
+  project: {
+    proposed: { label: "Proposed", text: G, bg: N_BG, border: N_BD, dot: N_DOT },
+    active: { label: "Active", text: "#92400E", bg: "#FEF3C7", border: "#FDE68A", dot: "#D97706" },
+    in_review: { label: "In review", text: "#1D4ED8", bg: "#DBEAFE", border: "#BFDBFE", dot: "#2563EB" },
+    complete: { label: "Complete", text: "#166534", bg: "#DCFCE7", border: "#BBF7D0", dot: "#15803D" },
+  },
 };
 
 export function StatusChip({

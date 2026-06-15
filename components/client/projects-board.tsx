@@ -1,7 +1,7 @@
 import { FolderKanban, Plus } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
-import { labelOf, DELIVERABLE_TYPES, PROJECT_STATUSES } from "@/lib/constants";
+import { labelOf, DELIVERABLE_TYPES } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { Greeting } from "@/components/client/greeting";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,14 +9,6 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusChip } from "@/components/ui/status-chip";
 import { ProjectDialog, type ProjectRow } from "./project-dialog";
-
-// Project status pill styles (StatusChip has no `project` kind; kept local).
-const STATUS_STYLE: Record<string, string> = {
-  proposed: "border-border-strong bg-surface text-ink-2",
-  active: "border-amber-200 bg-amber-100 text-amber-800",
-  in_review: "border-amber-200 bg-amber-50 text-amber-700",
-  complete: "border-success-border bg-success-bg text-success-text",
-};
 
 type DeliverableMini = {
   id: string;
@@ -41,7 +33,7 @@ export async function ProjectsBoard({
       supabase.from("client_clients").select("name").maybeSingle(),
       supabase
         .from("projects")
-        .select("id, title, description, status, due_date, created_at")
+        .select("id, title, description, status, start_date, due_date, created_at")
         .order("created_at", { ascending: false }),
       supabase
         .from("deliverables")
@@ -49,7 +41,8 @@ export async function ProjectsBoard({
         .order("created_at", { ascending: false }),
     ]);
 
-  const list = (projects ?? []) as ProjectRow[];
+  type BoardProject = ProjectRow & { start_date: string | null };
+  const list = (projects ?? []) as BoardProject[];
   const byProject = new Map<string, DeliverableMini[]>();
   for (const d of (deliverables ?? []) as DeliverableMini[]) {
     if (!d.project_id) continue;
@@ -106,15 +99,15 @@ export async function ProjectsBoard({
                       <h3 className="font-display text-lg font-semibold tracking-[-0.01em]">
                         {p.title}
                       </h3>
-                      {p.due_date && (
-                        <p className="text-xs text-ink-3">Due {formatDate(p.due_date)}</p>
+                      {(p.start_date || p.due_date) && (
+                        <p className="text-xs text-ink-3">
+                          {p.start_date && `Start ${formatDate(p.start_date)}`}
+                          {p.start_date && p.due_date && " · "}
+                          {p.due_date && `Due ${formatDate(p.due_date)}`}
+                        </p>
                       )}
                     </div>
-                    <span
-                      className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${STATUS_STYLE[p.status] ?? STATUS_STYLE.proposed}`}
-                    >
-                      {labelOf(PROJECT_STATUSES, p.status)}
-                    </span>
+                    <StatusChip kind="project" value={p.status} />
                   </div>
                   {p.description && <p className="text-sm text-ink-2">{p.description}</p>}
                   {dels.length > 0 && (

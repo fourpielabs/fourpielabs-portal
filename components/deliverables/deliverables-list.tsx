@@ -37,17 +37,23 @@ import { DownloadButton } from "@/components/files/download-button";
 import {
   DeliverableDialog,
   type DeliverableRow,
+  type ProjectOption,
 } from "./deliverable-dialog";
 
 export function DeliverablesList({
   clientId,
   deliverables,
+  projects = [],
+  clientType = "program",
 }: {
   clientId: string;
   deliverables: DeliverableRow[];
+  projects?: ProjectOption[];
+  clientType?: "program" | "project";
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const projectTitle = new Map(projects.map((p) => [p.id, p.title]));
 
   async function run(p: Promise<{ ok: boolean; error?: string }>) {
     setPending(true);
@@ -67,6 +73,8 @@ export function DeliverablesList({
         </p>
         <DeliverableDialog
           clientId={clientId}
+          projects={projects}
+          clientType={clientType}
           trigger={
             <Button size="sm">
               <Plus className="size-4" /> New deliverable
@@ -102,6 +110,11 @@ export function DeliverablesList({
                   {d.client_approved_at && (
                     <Badge className="border-success-border bg-success-bg text-[10px] text-success-text">
                       Client approved
+                    </Badge>
+                  )}
+                  {d.project_id && projectTitle.get(d.project_id) && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      {projectTitle.get(d.project_id)}
                     </Badge>
                   )}
                   {d.due_date && (
@@ -182,6 +195,8 @@ export function DeliverablesList({
                 <DeliverableDialog
                   clientId={clientId}
                   deliverable={d}
+                  projects={projects}
+                  clientType={clientType}
                   trigger={
                     <Button variant="ghost" size="icon" aria-label="Edit">
                       <Pencil className="size-4" />

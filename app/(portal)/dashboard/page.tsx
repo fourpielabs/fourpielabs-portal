@@ -35,12 +35,13 @@ export default async function DashboardPage() {
   const isAdmin = profile.role === "admin";
   const firstName = (profile.full_name ?? "there").split(" ")[0];
 
-  const [{ data: clients }, { data: checklist }, { data: deliverables }, { data: updates }] =
+  const [{ data: clients }, { data: checklist }, { data: deliverables }, { data: updates }, { data: projects }] =
     await Promise.all([
-      supabase.from("clients").select("id, name, slug, program, status, logo_url").order("name"),
+      supabase.from("clients").select("id, name, slug, program, client_type, status, logo_url").order("name"),
       supabase.from("checklist_items").select("client_id, is_done").eq("kind", "onboarding"),
       supabase.from("deliverables").select("client_id, created_at").order("created_at", { ascending: false }),
       supabase.from("updates").select("client_id, created_at").order("created_at", { ascending: false }),
+      supabase.from("projects").select("client_id, status"),
     ]);
 
   // aggregate per-client stats in JS (no N+1)
@@ -50,6 +51,13 @@ export default async function DashboardPage() {
     g.total++;
     if (c.is_done) g.done++;
     checklistBy.set(c.client_id, g);
+  }
+  const projectsBy = new Map<string, { total: number; active: number }>();
+  for (const p of projects ?? []) {
+    const g = projectsBy.get(p.client_id) ?? { total: 0, active: 0 };
+    g.total++;
+    if (p.status === "active" || p.status === "in_review") g.active++;
+    projectsBy.set(p.client_id, g);
   }
   const lastActivity = new Map<string, string>();
   for (const row of [...(deliverables ?? []), ...(updates ?? [])]) {
@@ -156,6 +164,8 @@ export default async function DashboardPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {clients.map((c) => {
               const cl = checklistBy.get(c.id);
+              const pj = projectsBy.get(c.id);
+              const isProj = c.client_type === "project";
               return (
                 <Link
                   key={c.id}
@@ -173,18 +183,33 @@ export default async function DashboardPage() {
                     <ArrowRight className="size-4 shrink-0 text-ink-faint transition-colors group-hover:text-ink" />
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="amber">{labelOf(PROGRAMS, c.program)}</Badge>
+                    {isProj ? (
+                      <Badge variant="secondary">Project</Badge>
+                    ) : (
+                      <Badge variant="amber">{labelOf(PROGRAMS, c.program)}</Badge>
+                    )}
                     <StatusChip kind="client" value={c.status} />
                   </div>
                   <div className="flex items-center gap-2 text-xs text-ink-3 tabular-nums">
-                    {cl && (
-                      <>
-                        <span>
-                          Checklist {cl.done}/{cl.total}
-                        </span>
-                        <span>·</span>
-                      </>
-                    )}
+                    {isProj
+                      ? pj &&
+                        pj.total > 0 && (
+                          <>
+                            <span>
+                              {pj.total} project{pj.total === 1 ? "" : "s"}
+                              {pj.active ? ` · ${pj.active} active` : ""}
+                            </span>
+                            <span>·</span>
+                          </>
+                        )
+                      : cl && (
+                          <>
+                            <span>
+                              Checklist {cl.done}/{cl.total}
+                            </span>
+                            <span>·</span>
+                          </>
+                        )}
                     <span>{relTime(lastActivity.get(c.id) ?? null)}</span>
                   </div>
                 </Link>

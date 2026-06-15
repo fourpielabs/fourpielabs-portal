@@ -13,7 +13,32 @@ const clean = (v: string | undefined | null) => (v && v.length > 0 ? v : null);
 
 function revalidate(clientId: string) {
   revalidatePath(`/clients/${clientId}/deliverables`);
+  revalidatePath(`/clients/${clientId}/projects`);
   revalidatePath(`/clients/${clientId}`);
+}
+
+const INVALID_PROJECT = Symbol("invalid-project");
+
+/**
+ * Resolve + validate a deliverable's project_id. "" / null / undefined → null
+ * (unlinked). A uuid must reference a project of THIS SAME client — otherwise
+ * returns INVALID_PROJECT (defense-in-depth: RLS checks the deliverable's
+ * client_id but not that the linked project shares it).
+ */
+async function resolveProjectId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clientId: string,
+  raw: string | null | undefined,
+): Promise<string | null | typeof INVALID_PROJECT> {
+  const id = clean(raw);
+  if (!id) return null;
+  const { data } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", id)
+    .eq("client_id", clientId)
+    .maybeSingle();
+  return data ? id : INVALID_PROJECT;
 }
 
 export async function createDeliverableAction(
@@ -28,6 +53,11 @@ export async function createDeliverableAction(
   const v = parsed.data;
   const supabase = await createClient();
 
+  const projectId = await resolveProjectId(supabase, clientId, v.project_id);
+  if (projectId === INVALID_PROJECT) {
+    return { ok: false, error: "That project doesn't belong to this client." };
+  }
+
   const { data, error } = await supabase
     .from("deliverables")
     .insert({
@@ -38,6 +68,7 @@ export async function createDeliverableAction(
       status: v.status,
       due_date: clean(v.due_date),
       preview_url: clean(v.preview_url),
+      project_id: projectId,
       file_path: filePath ?? null,
       visible_to_client: v.visible_to_client,
       delivered_at: v.status === "delivered" ? new Date().toISOString() : null,
@@ -84,6 +115,11 @@ export async function updateDeliverableAction(
       ? (current?.delivered_at ?? new Date().toISOString())
       : null;
 
+  const projectId = await resolveProjectId(supabase, clientId, v.project_id);
+  if (projectId === INVALID_PROJECT) {
+    return { ok: false, error: "That project doesn't belong to this client." };
+  }
+
   const patch: Record<string, unknown> = {
     title: v.title,
     description: clean(v.description),
@@ -91,6 +127,7 @@ export async function updateDeliverableAction(
     status: v.status,
     due_date: clean(v.due_date),
     preview_url: clean(v.preview_url),
+    project_id: projectId,
     visible_to_client: v.visible_to_client,
     delivered_at,
   };

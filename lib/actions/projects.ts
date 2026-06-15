@@ -2,18 +2,28 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth/guards";
+import { requireProfile, requireClientAccess } from "@/lib/auth/guards";
 import { logAudit } from "@/lib/audit";
 import {
   projectCreateSchema,
   projectUpdateSchema,
+  projectStaffSchema,
   type ProjectCreateValues,
   type ProjectUpdateValues,
+  type ProjectStaffValues,
 } from "@/lib/schemas";
 
 type Result<T = undefined> =
   | { ok: true; data?: T }
   | { ok: false; error: string };
+
+const clean = (v: string | undefined | null) => (v && v.length > 0 ? v : null);
+
+function revalidateStaffProject(clientId: string) {
+  revalidatePath(`/clients/${clientId}/projects`);
+  revalidatePath(`/clients/${clientId}/deliverables`);
+  revalidatePath(`/clients/${clientId}`);
+}
 
 /**
  * Project clients create/edit their OWN projects ONLY through the
@@ -90,5 +100,139 @@ export async function updateProjectAction(
   });
 
   revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+// ===========================================================================
+// STAFF project management (admin / assigned team). Direct table writes under
+// the existing `projects_admin_all` / `projects_team_all` for-all policies — NO
+// new RLS. `requireClientAccess` gates to admin-or-assigned; every write is
+// scoped `.eq("client_id", clientId)` so staff only touch that client's rows.
+// ===========================================================================
+export async function staffCreateProjectAction(
+  clientId: string,
+  input: ProjectStaffValues,
+): Promise<Result<{ id: string }>> {
+  const me = await requireClientAccess(clientId);
+  const parsed = projectStaffSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+  const v = parsed.data;
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("projects")
+    .insert({
+      client_id: clientId,
+      title: v.title,
+      description: clean(v.description),
+      status: v.status,
+      start_date: clean(v.start_date),
+      due_date: clean(v.due_date),
+      created_by: me.id,
+    })
+    .select("id")
+    .single();
+  if (error) return { ok: false, error: error.message };
+
+  await logAudit({
+    actorId: me.id,
+    action: "project.created",
+    entity: "project",
+    entityId: data.id,
+    clientId,
+    metadata: { title: v.title, status: v.status, by: "staff" },
+  });
+  revalidateStaffProject(clientId);
+  return { ok: true, data: { id: data.id } };
+}
+
+export async function staffUpdateProjectAction(
+  clientId: string,
+  id: string,
+  input: ProjectStaffValues,
+): Promise<Result> {
+  const me = await requireClientAccess(clientId);
+  const parsed = projectStaffSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+  const v = parsed.data;
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("projects")
+    .update({
+      title: v.title,
+      description: clean(v.description),
+      status: v.status,
+      start_date: clean(v.start_date),
+      due_date: clean(v.due_date),
+    })
+    .eq("id", id)
+    .eq("client_id", clientId);
+  if (error) return { ok: false, error: error.message };
+
+  await logAudit({
+    actorId: me.id,
+    action: "project.updated",
+    entity: "project",
+    entityId: id,
+    clientId,
+    metadata: { title: v.title, status: v.status, by: "staff" },
+  });
+  revalidateStaffProject(clientId);
+  return { ok: true };
+}
+
+export async function staffSetProjectStatusAction(
+  clientId: string,
+  id: string,
+  status: ProjectStaffValues["status"],
+): Promise<Result> {
+  const me = await requireClientAccess(clientId);
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("projects")
+    .update({ status })
+    .eq("id", id)
+    .eq("client_id", clientId);
+  if (error) return { ok: false, error: error.message };
+
+  await logAudit({
+    actorId: me.id,
+    action: "project.status_changed",
+    entity: "project",
+    entityId: id,
+    clientId,
+    metadata: { status },
+  });
+  revalidateStaffProject(clientId);
+  return { ok: true };
+}
+
+export async function staffDeleteProjectAction(
+  clientId: string,
+  id: string,
+): Promise<Result> {
+  const me = await requireClientAccess(clientId);
+  const supabase = await createClient();
+  // deliverables.project_id is ON DELETE SET NULL, so attached deliverables stay.
+  const { error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", id)
+    .eq("client_id", clientId);
+  if (error) return { ok: false, error: error.message };
+
+  await logAudit({
+    actorId: me.id,
+    action: "project.deleted",
+    entity: "project",
+    entityId: id,
+    clientId,
+  });
+  revalidateStaffProject(clientId);
   return { ok: true };
 }

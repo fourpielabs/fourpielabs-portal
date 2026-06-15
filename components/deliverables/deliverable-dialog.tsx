@@ -45,16 +45,26 @@ export type DeliverableRow = {
   visible_to_client: boolean;
   file_path: string | null;
   client_approved_at: string | null;
+  project_id: string | null;
 };
+
+export type ProjectOption = { id: string; title: string };
+
+// Radix Select can't use "" as an item value; map a sentinel to the empty form value.
+const NO_PROJECT = "__none__";
 
 export function DeliverableDialog({
   clientId,
   deliverable,
   trigger,
+  projects = [],
+  clientType = "program",
 }: {
   clientId: string;
   deliverable?: DeliverableRow;
   trigger: React.ReactNode;
+  projects?: ProjectOption[];
+  clientType?: "program" | "project";
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -78,8 +88,11 @@ export function DeliverableDialog({
       due_date: deliverable?.due_date ?? "",
       preview_url: deliverable?.preview_url ?? "",
       visible_to_client: deliverable?.visible_to_client ?? false,
+      project_id: deliverable?.project_id ?? "",
     },
   });
+
+  const showProjectPicker = clientType === "project" && projects.length > 0;
 
   async function onSubmit(values: DeliverableValues) {
     setSubmitting(true);
@@ -204,6 +217,38 @@ export function DeliverableDialog({
               </p>
             )}
           </div>
+          {showProjectPicker && (
+            <div className="space-y-2">
+              <Label>Project</Label>
+              <Controller
+                control={control}
+                name="project_id"
+                render={({ field }) => (
+                  <Select
+                    value={field.value ? field.value : NO_PROJECT}
+                    onValueChange={(v) =>
+                      field.onChange(v === NO_PROJECT ? "" : v)
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_PROJECT}>No project</SelectItem>
+                      {projects.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <p className="text-xs text-ink-3">
+                Link this deliverable to one of the client&apos;s projects.
+              </p>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="d-file">
               {deliverable?.file_path ? "Replace file" : "Attach file"}

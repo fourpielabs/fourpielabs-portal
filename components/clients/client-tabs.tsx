@@ -11,23 +11,37 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type Props = { clientId: string; isAdmin: boolean };
+type Props = {
+  clientId: string;
+  isAdmin: boolean;
+  clientType?: "program" | "project";
+};
 type Tab = { href: string; label: string; exact?: boolean };
 
-export function ClientTabs({ clientId, isAdmin }: Props) {
+export function ClientTabs({ clientId, isAdmin, clientType = "program" }: Props) {
   const pathname = usePathname();
   const base = `/clients/${clientId}`;
+  const isProject = clientType === "project";
 
-  const primary: Tab[] = [
-    { href: base, label: "Overview", exact: true },
-    { href: `${base}/checklist`, label: "Checklist" },
-    { href: `${base}/program`, label: "Program" },
-    { href: `${base}/content`, label: "Content" },
-    { href: `${base}/metrics`, label: "Metrics" },
-    { href: `${base}/competitors`, label: "Competitors" },
-    { href: `${base}/deliverables`, label: "Deliverables" },
-    { href: `${base}/calls`, label: "Calls" },
-  ];
+  // Project clients get a Projects tab and drop the program-only tabs (Checklist,
+  // Program, Content, Metrics, Competitors). Program clients are unchanged.
+  const primary: Tab[] = isProject
+    ? [
+        { href: base, label: "Overview", exact: true },
+        { href: `${base}/projects`, label: "Projects" },
+        { href: `${base}/deliverables`, label: "Deliverables" },
+        { href: `${base}/calls`, label: "Calls" },
+      ]
+    : [
+        { href: base, label: "Overview", exact: true },
+        { href: `${base}/checklist`, label: "Checklist" },
+        { href: `${base}/program`, label: "Program" },
+        { href: `${base}/content`, label: "Content" },
+        { href: `${base}/metrics`, label: "Metrics" },
+        { href: `${base}/competitors`, label: "Competitors" },
+        { href: `${base}/deliverables`, label: "Deliverables" },
+        { href: `${base}/calls`, label: "Calls" },
+      ];
   const more: Tab[] = [
     { href: `${base}/notes`, label: "Notes" },
     { href: `${base}/reports`, label: "Reports" },
