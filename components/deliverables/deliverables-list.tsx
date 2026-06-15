@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Eye, EyeOff, Pencil, Plus, Trash2, ExternalLink } from "lucide-react";
+import { Eye, EyeOff, Package, Pencil, Plus, Trash2, ExternalLink } from "lucide-react";
 
 import {
   setDeliverableStatusAction,
@@ -14,6 +14,7 @@ import { DELIVERABLE_TYPES, DELIVERABLE_STATUSES, labelOf } from "@/lib/constant
 import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Select,
   SelectContent,
@@ -59,7 +60,7 @@ export function DeliverablesList({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-ink-3">
           {deliverables.length === 0
             ? "No deliverables yet."
             : `${deliverables.length} deliverable${deliverables.length === 1 ? "" : "s"}`}
@@ -75,15 +76,17 @@ export function DeliverablesList({
       </div>
 
       {deliverables.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-          Track everything you&apos;re delivering here — drafts, links, and files.
-        </div>
+        <EmptyState
+          icon={<Package />}
+          title="No deliverables yet"
+          description="Track everything you're delivering here — drafts, links, and files."
+        />
       ) : (
         <ul className="space-y-2">
           {deliverables.map((d) => (
             <li
               key={d.id}
-              className="flex flex-wrap items-start gap-3 rounded-lg border p-3 sm:flex-nowrap"
+              className="flex flex-wrap items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-e1 transition-shadow hover:shadow-e2 sm:flex-nowrap"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -97,13 +100,13 @@ export function DeliverablesList({
                     </Badge>
                   )}
                   {d.due_date && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-ink-3">
                       due {formatDate(d.due_date)}
                     </span>
                   )}
                 </div>
                 {d.description && (
-                  <p className="pt-1 text-sm text-muted-foreground">
+                  <p className="pt-1 text-sm text-ink-3">
                     {d.description}
                   </p>
                 )}

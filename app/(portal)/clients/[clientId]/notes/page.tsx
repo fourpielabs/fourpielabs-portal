@@ -19,12 +19,6 @@ export default async function NotesPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Meeting notes</h2>
-        <p className="text-sm text-muted-foreground">
-          One entry per session — decisions, actions, next steps.
-        </p>
-      </div>
       <NotesManager clientId={clientId} notes={(notes ?? []) as MeetingNote[]} />
     </div>
   );

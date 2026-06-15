@@ -24,13 +24,6 @@ export default async function ChecklistPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Checklists</h2>
-        <p className="text-sm text-muted-foreground">
-          Onboarding and off-boarding. Toggle items done, reorder, set assignee,
-          and control client visibility.
-        </p>
-      </div>
       <ChecklistEditor
         clientId={clientId}
         items={(items ?? []) as ChecklistItem[]}

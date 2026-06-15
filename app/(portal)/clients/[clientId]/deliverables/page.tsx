@@ -24,12 +24,6 @@ export default async function DeliverablesPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Deliverables</h2>
-        <p className="text-sm text-muted-foreground">
-          The delivery hub — status, links, files, and client visibility.
-        </p>
-      </div>
       <DeliverablesList
         clientId={clientId}
         deliverables={(deliverables ?? []) as DeliverableRow[]}

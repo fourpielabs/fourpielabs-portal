@@ -22,12 +22,6 @@ export default async function ContentPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Content calendar</h2>
-        <p className="text-sm text-muted-foreground">
-          Plan and track content across channels — table and month views.
-        </p>
-      </div>
       <ContentCalendar clientId={clientId} items={(items ?? []) as ContentItem[]} />
     </div>
   );

@@ -319,14 +319,14 @@ export function CallsManager({
         </CardHeader>
         <CardContent>
           {callTypes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No call types yet.</p>
+            <p className="text-sm text-ink-3">No call types yet.</p>
           ) : (
-            <ul className="divide-y rounded-lg border">
+            <ul className="divide-y divide-row-divider">
               {callTypes.map((c) => (
                 <li key={c.id} className="flex items-center gap-2 p-3">
                   <div className="min-w-0 flex-1">
                     <div className="font-medium">{c.name}</div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-ink-3">
                       {c.duration_label && <span>{c.duration_label}</span>}
                       {c.frequency_label && <span>· {c.frequency_label}</span>}
                       {c.booking_url && (
@@ -376,9 +376,9 @@ export function CallsManager({
         </CardHeader>
         <CardContent>
           {recordings.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No recordings logged yet.</p>
+            <p className="text-sm text-ink-3">No recordings logged yet.</p>
           ) : (
-            <ul className="divide-y rounded-lg border">
+            <ul className="divide-y divide-row-divider">
               {recordings.map((r) => (
                 <li key={r.id} className="flex items-center gap-2 p-3">
                   <div className="min-w-0 flex-1">
@@ -395,7 +395,7 @@ export function CallsManager({
                         </Badge>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-ink-3">
                       {r.key_topic && <span>{r.key_topic}</span>}
                       {r.recording_url && (
                         <Button asChild variant="ghost" size="sm">

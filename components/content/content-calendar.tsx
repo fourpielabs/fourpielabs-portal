@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 
 import {
   setContentStatusAction,
@@ -14,6 +14,7 @@ import { CONTENT_PLATFORMS, CONTENT_STATUSES, labelOf } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { SegmentedControl } from "@/components/ui/segmented";
 import {
   Select,
@@ -184,13 +185,17 @@ export function ContentCalendar({
         </div>
 
         {filtered.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-            {items.length === 0
-              ? "No content planned yet."
-              : "No items match these filters."}
-          </div>
+          <EmptyState
+            icon={<Calendar />}
+            title={items.length === 0 ? "No content planned yet" : "No matches"}
+            description={
+              items.length === 0
+                ? "Plan and track content across channels here."
+                : "No items match these filters."
+            }
+          />
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
+          <div className="overflow-x-auto rounded-2xl border border-border shadow-e2">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -214,7 +219,7 @@ export function ContentCalendar({
                         )}
                       </div>
                       {i.content_type && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-ink-3">
                           {i.content_type}
                         </div>
                       )}
@@ -333,7 +338,7 @@ export function ContentCalendar({
         </div>
         <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border bg-border text-xs">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-            <div key={d} className="bg-muted px-1 py-1 text-center font-medium text-muted-foreground">
+            <div key={d} className="bg-muted px-1 py-1 text-center font-medium text-ink-3">
               {d}
             </div>
           ))}
@@ -345,7 +350,7 @@ export function ContentCalendar({
                 key={idx}
                 className="min-h-20 bg-card p-1 align-top"
               >
-                {day && <div className="mb-1 text-muted-foreground">{day}</div>}
+                {day && <div className="mb-1 text-ink-3">{day}</div>}
                 <div className="space-y-1">
                   {dayItems.map((i) => (
                     <ContentDialog
@@ -369,7 +374,7 @@ export function ContentCalendar({
           })}
         </div>
         {unscheduled > 0 && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-ink-3">
             {unscheduled} item{unscheduled === 1 ? "" : "s"} with no publish date
             (see the Table view).
           </p>

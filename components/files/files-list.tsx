@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { Eye, EyeOff, FileText, Trash2 } from "lucide-react";
 
 import { setFileVisibilityAction, deleteFileAction } from "@/lib/actions/files";
 import { FILE_CATEGORIES, labelOf } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,9 +59,11 @@ export function FilesList({
 
   if (files.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-        No documents yet. Upload agreements, invoices, brand assets, and more.
-      </div>
+      <EmptyState
+        icon={<FileText />}
+        title="No documents yet"
+        description="Upload agreements, invoices, brand assets, and more."
+      />
     );
   }
 
@@ -72,7 +75,7 @@ export function FilesList({
     <div className="space-y-5">
       {categories.map((cat) => (
         <div key={cat} className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground">
+          <h3 className="text-sm font-medium text-ink-3">
             {labelOf(FILE_CATEGORIES, cat)}
           </h3>
           <ul className="space-y-2">
@@ -87,7 +90,7 @@ export function FilesList({
                     <div className="truncate font-medium">{f.name}</div>
                     <div className="flex items-center gap-2 pt-0.5">
                       {f.size_bytes && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-ink-3">
                           {fmtSize(f.size_bytes)}
                         </span>
                       )}

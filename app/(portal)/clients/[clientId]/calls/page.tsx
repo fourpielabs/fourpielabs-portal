@@ -30,12 +30,6 @@ export default async function CallsPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Calls &amp; recordings</h2>
-        <p className="text-sm text-muted-foreground">
-          Booking links and a log of past sessions.
-        </p>
-      </div>
       <CallsManager
         clientId={clientId}
         callTypes={(callTypes ?? []) as CallType[]}

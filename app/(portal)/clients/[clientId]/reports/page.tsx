@@ -19,13 +19,6 @@ export default async function ReportsPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Reports</h2>
-        <p className="text-sm text-muted-foreground">
-          Monthly performance reports. Drafts stay hidden; clients only see
-          published reports (enforced by RLS).
-        </p>
-      </div>
       <ReportsManager clientId={clientId} reports={(reports ?? []) as Report[]} />
     </div>
   );

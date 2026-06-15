@@ -24,12 +24,6 @@ export default async function CompetitorsPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Competitor tracker</h2>
-        <p className="text-sm text-muted-foreground">
-          What competitors are doing, where the gaps are, and ideas to adapt.
-        </p>
-      </div>
       <CompetitorsManager
         clientId={clientId}
         competitors={(competitors ?? []) as Competitor[]}

@@ -37,12 +37,6 @@ export default async function UpdatesPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Updates</h2>
-        <p className="text-sm text-muted-foreground">
-          Post progress notes to the client. Pin important ones.
-        </p>
-      </div>
       <UpdatesList
         clientId={clientId}
         updates={items}
