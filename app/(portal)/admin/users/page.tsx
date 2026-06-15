@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/guards";
 import { labelOf, ROLES } from "@/lib/constants";
-import { formatDate } from "@/lib/format";
+import { formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PersonAvatar } from "@/components/ui/person-avatar";
 import { InviteForm } from "@/components/admin/invite-form";
@@ -167,7 +167,7 @@ export default async function AdminUsersPage() {
                     <StatusChip kind="user" value={statusValue} />
                   </TableCell>
                   <TableCell className="text-[13px] text-ink-3 tabular-nums">
-                    {lastActive.get(p.id) ? formatDate(lastActive.get(p.id)!) : "—"}
+                    {lastActive.get(p.id) ? formatRelative(lastActive.get(p.id)!) : "—"}
                   </TableCell>
                   <TableCell className="text-right">
                     {pending ? (
@@ -236,7 +236,7 @@ export default async function AdminUsersPage() {
                 <span className="text-xs text-ink-3">{scopeFor(p)}</span>
               </div>
               <div className="mt-1 text-xs text-ink-3 tabular-nums">
-                Last active {lastActive.get(p.id) ? formatDate(lastActive.get(p.id)!) : "—"}
+                Last active {lastActive.get(p.id) ? formatRelative(lastActive.get(p.id)!) : "—"}
               </div>
               <div className="mt-3 [&_a]:h-11 [&_button]:h-11">
                 {pending ? (
