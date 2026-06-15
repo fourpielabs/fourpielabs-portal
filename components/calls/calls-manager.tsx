@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Eye, EyeOff, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 
+import { formatDate } from "@/lib/format";
 import {
   callTypeSchema,
   callRecordingSchema,
@@ -384,8 +385,8 @@ export function CallsManager({
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{r.call_type ?? "Call"}</span>
                       {r.call_date && (
-                        <span className="text-xs text-muted-foreground">
-                          {r.call_date}
+                        <span className="text-xs text-ink-3">
+                          {formatDate(r.call_date)}
                         </span>
                       )}
                       {!r.visible_to_client && (

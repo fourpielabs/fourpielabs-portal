@@ -11,6 +11,7 @@ import {
   deleteContentItemAction,
 } from "@/lib/actions/content";
 import { CONTENT_PLATFORMS, CONTENT_STATUSES, labelOf } from "@/lib/constants";
+import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SegmentedControl } from "@/components/ui/segmented";
@@ -220,7 +221,7 @@ export function ContentCalendar({
                     </TableCell>
                     <TableCell>{labelOf(CONTENT_PLATFORMS, i.platform)}</TableCell>
                     <TableCell className="whitespace-nowrap text-sm">
-                      {i.publish_date ?? "—"}
+                      {i.publish_date ? formatDate(i.publish_date) : "—"}
                     </TableCell>
                     <TableCell>
                       <Select

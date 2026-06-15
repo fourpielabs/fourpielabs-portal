@@ -9,6 +9,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import { reportSchema, type ReportValues } from "@/lib/schemas";
 import { formatReportPeriod } from "@/lib/format";
+import { Markdown } from "@/components/markdown";
 import {
   createReportAction,
   updateReportAction,
@@ -281,9 +282,9 @@ export function ReportsManager({
                 </div>
               </div>
               {r.summary && (
-                <p className="whitespace-pre-wrap pt-2 text-sm text-muted-foreground">
-                  {r.summary}
-                </p>
+                <div className="pt-2 text-sm text-ink-2">
+                  <Markdown>{r.summary}</Markdown>
+                </div>
               )}
             </li>
           ))}

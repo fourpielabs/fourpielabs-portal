@@ -14,6 +14,8 @@ import {
   deleteMeetingNoteAction,
   setMeetingNoteVisibilityAction,
 } from "@/lib/actions/notes";
+import { formatDate } from "@/lib/format";
+import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -162,7 +164,9 @@ export function NotesManager({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {notes.length === 0 ? "No notes yet." : `${notes.length} notes`}
+          {notes.length === 0
+            ? "No notes yet."
+            : `${notes.length} note${notes.length === 1 ? "" : "s"}`}
         </p>
         <NoteDialog
           clientId={clientId}
@@ -189,8 +193,8 @@ export function NotesManager({
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{n.title}</span>
                   {n.meeting_date && (
-                    <span className="text-xs text-muted-foreground">
-                      {n.meeting_date}
+                    <span className="text-xs text-ink-3">
+                      {formatDate(n.meeting_date)}
                     </span>
                   )}
                   {!n.visible_to_client && (
@@ -256,9 +260,9 @@ export function NotesManager({
                 </div>
               </div>
               {n.body && (
-                <p className="whitespace-pre-wrap pt-2 text-sm text-muted-foreground">
-                  {n.body}
-                </p>
+                <div className="pt-2 text-sm text-ink-2">
+                  <Markdown>{n.body}</Markdown>
+                </div>
               )}
             </li>
           ))}

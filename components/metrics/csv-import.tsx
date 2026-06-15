@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Download, Upload } from "lucide-react";
 
 import { commitCsvAction } from "@/lib/actions/metrics";
 import { Button } from "@/components/ui/button";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import {
   Table,
   TableBody,
@@ -63,7 +64,7 @@ export function CsvImport({
   currentMonth: string;
 }) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [headerError, setHeaderError] = useState<string | null>(null);
   const [committing, setCommitting] = useState(false);
@@ -81,10 +82,10 @@ export function CsvImport({
     URL.revokeObjectURL(url);
   }
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  function handleFile(file: File | null) {
     setRows(null);
     setHeaderError(null);
+    setFileName(file?.name ?? null);
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
@@ -135,7 +136,7 @@ export function CsvImport({
         `Imported ${res.committed} rows; ${res.errors.length} skipped (see preview).`,
       );
     }
-    if (fileRef.current) fileRef.current.value = "";
+    setFileName(null);
     setRows(null);
     router.refresh();
   }
@@ -148,15 +149,14 @@ export function CsvImport({
         <Button variant="outline" size="sm" onClick={downloadTemplate}>
           <Download className="size-4" /> Download template
         </Button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".csv,text/csv"
-          onChange={onFile}
-          className="text-sm"
-        />
       </div>
-      <p className="text-xs text-muted-foreground">
+      <FileDropzone
+        onFile={handleFile}
+        accept=".csv,text/csv"
+        selectedName={fileName}
+        hint="CSV with columns: metric_key, period (YYYY-MM), value"
+      />
+      <p className="text-xs text-ink-3">
         Long format: one row per metric per month. Columns: <code>metric_key</code>,{" "}
         <code>period</code> (YYYY-MM), <code>value</code>. Re-importing a month
         updates existing values (no duplicates).
