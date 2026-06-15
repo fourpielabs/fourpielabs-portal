@@ -94,6 +94,7 @@ export const AUDIT_ACTION_GROUPS = {
     "report.unpublished",
     "report.deleted",
   ],
+  Projects: ["project.created", "project.updated"],
   Updates: ["update.created", "update.updated", "update.deleted", "update.flags_changed"],
   Files: ["file.uploaded", "file.visibility_changed", "file.deleted"],
   Program: ["program.updated"],

@@ -135,6 +135,38 @@ async function main() {
     .from("deliverables").select("id").eq("client_id", premierId).eq("title", "RLSHIDE-d").single();
   const hideId = hideDel!.id;
 
+  // --- projects fixtures ----------------------------------------------------
+  // A PROJECT client (no seed) + its own client user; plus a project on premier
+  // (a PROGRAM client) for cross-client and team-assigned checks.
+  await admin.from("clients").delete().eq("slug", "rls-project");
+  const { data: proj } = await admin
+    .from("clients")
+    .insert({ name: "RLS Project", slug: "rls-project", industry: "other_local_service", program: "foundation", status: "onboarding", client_type: "project" })
+    .select("id")
+    .single();
+  const projId = proj!.id;
+  const { data: premierProject } = await admin
+    .from("projects")
+    .insert({ client_id: premierId, title: "RLSPROJ-premier" })
+    .select("id")
+    .single();
+  const premierProjectId = premierProject!.id;
+
+  // project-client auth user — handle_new_user seeds its profile from metadata
+  const projEmail = "rls-project-client@example.com";
+  {
+    const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const existing = list?.users.find((u) => u.email === projEmail);
+    if (existing) await admin.auth.admin.deleteUser(existing.id);
+  }
+  const { error: cuErr } = await admin.auth.admin.createUser({
+    email: projEmail,
+    password: PW,
+    email_confirm: true,
+    user_metadata: { role: "client", client_id: projId, full_name: "RLS Project Client" },
+  });
+  if (cuErr) throw cuErr;
+
   // ====================== AS CLIENT (demo-client / premier) =================
   const client = createClient(url, anonKey, { auth: { persistSession: false } });
   await client.auth.signInWithPassword({ email: "demo-client@example.com", password: PW });
@@ -214,6 +246,43 @@ async function main() {
     await admin.from("deliverables").update({ client_approved_at: null }).eq("id", apprId);
   }
 
+  // --- projects: client write path (create_project / update_project RPCs) ---
+  const projClient = createClient(url, anonKey, { auth: { persistSession: false } });
+  await projClient.auth.signInWithPassword({ email: projEmail, password: PW });
+  {
+    // a PROGRAM client (demo-client / premier) cannot create projects — type gate
+    const pg = await client.rpc("create_project", { p_title: "RLS should fail", p_description: "" });
+    rec("projects", "PROGRAM client create denied (type gate)", !!pg.error, pg.error?.message ?? "");
+
+    // project client CAN create its OWN project via the RPC
+    const cr = await projClient.rpc("create_project", { p_title: "RLSPROJ-own", p_description: "desc" });
+    rec("projects", "project client create OWN allowed", !cr.error, cr.error?.message ?? "");
+    const newProj = (Array.isArray(cr.data) ? cr.data[0] : cr.data) as { id: string } | null;
+
+    // project client CAN update its OWN project (incl. status — client owns it)
+    let updOk = false, updErr = "";
+    if (newProj?.id) {
+      const up = await projClient.rpc("update_project", { p_id: newProj.id, p_title: "RLSPROJ-own2", p_description: "d2", p_status: "active" });
+      updOk = !up.error; updErr = up.error?.message ?? "";
+    }
+    rec("projects", "project client update OWN allowed (status)", updOk, updErr);
+
+    // direct INSERT denied — no client INSERT policy on projects
+    const di = await projClient.from("projects").insert({ client_id: projId, title: "RLS direct" }).select("id");
+    rec("projects", "project client direct INSERT denied", !!di.error || (di.data?.length ?? 0) === 0, di.error?.code ?? `${di.data?.length ?? 0} rows`);
+    if (di.data?.[0]?.id) await admin.from("projects").delete().eq("id", di.data[0].id);
+
+    // update ANOTHER client's project denied (premier's project)
+    const xu = await projClient.rpc("update_project", { p_id: premierProjectId, p_title: "RLS hijack", p_description: "", p_status: "complete" });
+    rec("projects", "project client update CROSS-CLIENT denied", !!xu.error, xu.error?.message ?? "");
+
+    // SELECT scoping: own visible, cross-client invisible
+    const ownSel = await projClient.from("projects").select("id").eq("client_id", projId);
+    rec("projects", "project client reads OWN projects", !ownSel.error && (ownSel.data?.length ?? 0) >= 1, `${ownSel.data?.length ?? 0} rows`);
+    const xSel = await projClient.from("projects").select("id").eq("client_id", premierId);
+    rec("projects", "project client cross-client read 0", (xSel.data?.length ?? 0) === 0, `${xSel.data?.length ?? 0} rows`);
+  }
+
   // ====================== AS TEAM (demo-team, unassigned client) ============
   const team = createClient(url, anonKey, { auth: { persistSession: false } });
   await team.auth.signInWithPassword({ email: "demo-team@example.com", password: PW });
@@ -230,6 +299,22 @@ async function main() {
     const tap = await team.rpc("set_deliverable_approval", { deliverable_id: apprId, approved: true });
     rec("client-write", "TEAM approve deliverable denied (client-only)", !!tap.error);
   }
+  // projects: unassigned team can neither read nor write the project client's
+  {
+    const tr = await team.from("projects").select("id").eq("client_id", projId);
+    rec("team→unassigned", "read projects 0", (tr.data?.length ?? 0) === 0, `${tr.data?.length ?? 0} rows`);
+    const ti = await team.from("projects").insert({ client_id: projId, title: "RLS team-un" }).select("id");
+    rec("team→unassigned", "write projects denied", !!ti.error || (ti.data?.length ?? 0) === 0, ti.error?.code ?? `${ti.data?.length ?? 0} rows`);
+    if (ti.data?.[0]?.id) await admin.from("projects").delete().eq("id", ti.data[0].id);
+  }
+  // projects: ASSIGNED team (demo-team ↔ premier) can read + write premier's
+  {
+    const tr = await team.from("projects").select("id").eq("client_id", premierId);
+    rec("team→assigned", "read premier projects allowed", !tr.error && (tr.data?.length ?? 0) >= 1, `${tr.data?.length ?? 0} rows`);
+    const ti = await team.from("projects").insert({ client_id: premierId, title: "RLS team-assigned" }).select("id");
+    rec("team→assigned", "write premier project allowed", !ti.error && (ti.data?.length ?? 0) === 1, ti.error?.code ?? `${ti.data?.length ?? 0} rows`);
+    if (ti.data?.[0]?.id) await admin.from("projects").delete().eq("id", ti.data[0].id);
+  }
 
   // ====================== AS ANON ===========================================
   const anon = createClient(url, anonKey, { auth: { persistSession: false } });
@@ -245,9 +330,42 @@ async function main() {
     rec("anon", "storage sign denied", !!error);
     const aap = await anon.rpc("set_deliverable_approval", { deliverable_id: apprId, approved: true });
     rec("client-write", "ANON approve deliverable denied", !!aap.error);
+    const ar = await anon.from("projects").select("id");
+    rec("anon", "read projects 0", (ar.data?.length ?? 0) === 0, `${ar.data?.length ?? 0} rows`);
+    const ai = await anon.from("projects").insert({ client_id: premierId, title: "RLS anon" }).select("id");
+    rec("anon", "write projects denied", !!ai.error || (ai.data?.length ?? 0) === 0, ai.error?.code ?? `${ai.data?.length ?? 0} rows`);
+    if (ai.data?.[0]?.id) await admin.from("projects").delete().eq("id", ai.data[0].id);
+    const acp = await anon.rpc("create_project", { p_title: "x", p_description: "" });
+    rec("anon", "create_project RPC denied", !!acp.error);
+  }
+
+  // ====================== SEED GATING =======================================
+  // A project client is seeded NOTHING; a program client (premier) is seeded.
+  {
+    const [{ count: projCk }, { count: projMs }, { count: projMd }] = await Promise.all([
+      admin.from("checklist_items").select("id", { count: "exact", head: true }).eq("client_id", projId),
+      admin.from("milestones").select("id", { count: "exact", head: true }).eq("client_id", projId),
+      admin.from("metric_definitions").select("id", { count: "exact", head: true }).eq("client_id", projId),
+    ]);
+    rec("seed-gating", "project client has NO checklist", (projCk ?? 0) === 0, `${projCk ?? 0} rows`);
+    rec("seed-gating", "project client has NO milestones", (projMs ?? 0) === 0, `${projMs ?? 0} rows`);
+    rec("seed-gating", "project client has NO metric defs", (projMd ?? 0) === 0, `${projMd ?? 0} rows`);
+    const [{ count: progCk }, { count: progMs }] = await Promise.all([
+      admin.from("checklist_items").select("id", { count: "exact", head: true }).eq("client_id", premierId),
+      admin.from("milestones").select("id", { count: "exact", head: true }).eq("client_id", premierId),
+    ]);
+    rec("seed-gating", "program client HAS checklist", (progCk ?? 0) > 0, `${progCk ?? 0} rows`);
+    rec("seed-gating", "program client HAS milestones", (progMs ?? 0) > 0, `${progMs ?? 0} rows`);
   }
 
   // --- cleanup --------------------------------------------------------------
+  await admin.from("projects").delete().eq("client_id", premierId).like("title", "RLS%");
+  {
+    const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const u = list?.users.find((x) => x.email === projEmail);
+    if (u) await admin.auth.admin.deleteUser(u.id);
+  }
+  await admin.from("clients").delete().eq("id", projId); // cascades projId's projects
   await admin.from("deliverables").delete().eq("client_id", premierId).like("title", "RLSHIDE%");
   await admin.from("deliverables").delete().eq("client_id", premierId).like("title", "RLSAPPR%");
   await admin.from("deliverables").delete().eq("client_id", pulseId).like("title", "RLSXC%");

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { labelOf, PROGRAMS } from "@/lib/constants";
@@ -30,6 +31,9 @@ export default async function ClientProgramPage() {
       .select("id, title, description, phase_label, status, due_date")
       .order("sort_order"),
   ]);
+
+  // Program-only page — project clients are routed to their projects board.
+  if (client?.client_type === "project") redirect("/dashboard");
 
   // Hide rows with no value; End date falls back to "Ongoing".
   const details: { label: string; value: string | null }[] = [

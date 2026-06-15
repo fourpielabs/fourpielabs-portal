@@ -47,19 +47,29 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+// Program-only tabs — hidden (presentation only) for `project` clients. Route
+// guards are untouched; a project client hitting these URLs is handled, not errored.
+const PROGRAM_ONLY = new Set(["/program", "/performance"]);
+
 export function ClientShell({
   name,
   email,
   avatarUrl = null,
+  clientType = "program",
   children,
 }: {
   name: string | null;
   email: string | null;
   avatarUrl?: string | null;
+  clientType?: "program" | "project";
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  const isProject = clientType === "project";
+  const top = isProject ? TOP.filter((i) => !PROGRAM_ONLY.has(i.href)) : TOP;
+  const bottom = isProject ? BOTTOM.filter((b) => !PROGRAM_ONLY.has(b.href)) : BOTTOM;
   const moreActive = MORE.some((m) => isActive(pathname, m.href));
 
   return (
@@ -71,7 +81,7 @@ export function ClientShell({
             <BrandLogo className="text-lg" />
           </Link>
           <nav className="flex items-center gap-2">
-            {TOP.map((i) => {
+            {top.map((i) => {
               const active = isActive(pathname, i.href);
               return (
                 <Link
@@ -109,7 +119,7 @@ export function ClientShell({
       {/* mobile bottom tab bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 px-3.5 pb-3.5 sm:hidden">
         <div className="mx-auto flex max-w-md items-center justify-between rounded-full bg-surface px-3.5 py-2 shadow-e3">
-          {BOTTOM.map((b) => {
+          {bottom.map((b) => {
             const active = isActive(pathname, b.href);
             const Icon = b.icon;
             return (

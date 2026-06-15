@@ -132,6 +132,33 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
   fail; unassigned-team access must fail); audit coverage; mobile/Lighthouse; deploy +
   custom domain.
 
+> **Onboarding + Projects sub-phase COMPLETE (2026-06-15).** Migration
+> `20260615181456_onboarding_projects.sql` (pushed): `clients.client_type`
+> enum `program|project` (default `program` — existing clients untouched); new
+> `projects` table (RLS: admin all / team `is_assigned` / client SELECT own;
+> NO client INSERT/UPDATE policy); `deliverables.project_id` (nullable FK);
+> client write path via SECURITY DEFINER RPCs `create_project` /
+> `update_project` (type-gated to `project` clients, own-client only, status
+> settable by the owning client); `client_clients` view gains `client_type`
+> (explicit column list, still no `internal_notes`); `seed_new_client()` GATED
+> so project clients seed NO checklist/roadmap/metrics (program path byte-for-
+> byte unchanged). Provisioning: admin "create client account" — the
+> create-client form (`components/clients/client-create-form.tsx`) takes
+> `client_type` + optional client-user email/name and provisions the client
+> login via the existing prefetch-safe welcome/invite email
+> (`createClientAction`); client **invites are now staff-only** (admin/team) in
+> `sendInviteAction` + `invite-form.tsx`. Client experience: project clients get
+> the **projects board** (`components/client/projects-board.tsx` +
+> `project-dialog.tsx`) instead of the program dashboard (`client-dashboard.tsx`
+> branches on `client_type`); the Program + Performance tabs are hidden
+> (presentation-only, `client-shell.tsx`) and those routes **redirect** project
+> clients to `/dashboard` (guards intact, no error). `test:rls` **123/123**
+> (project write-path, SELECT scoping, type-gate, team assigned/unassigned,
+> anon, seed-gating both directions). **v1 follow-up (NOT built):** an "invite
+> client user" action on the client **settings** page, to provision a login for
+> a client created without an email (today the only provisioning point is the
+> create-client form).
+>
 > **Current status:** P1 + P2 + P3 COMPLETE. Migrations on the linked Tokyo
 > project (`frmukrgjkhlpxplhzeqj`); auth + demo seed (P1); admin workspace (P2);
 > team workspace core (P3): per-client layout with assignment-scoped guard

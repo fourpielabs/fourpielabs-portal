@@ -24,6 +24,22 @@ export const ROLES = [
   { value: "client", label: "Client" },
 ] as const;
 
+/** Staff-invitable roles (clients are provisioned via the create-client flow,
+ * not invited — see sendInviteAction / createClientAction). */
+export const STAFF_ROLES = ROLES.filter((r) => r.value !== "client");
+
+export const CLIENT_TYPES = [
+  { value: "program", label: "Program — 90-day roadmap" },
+  { value: "project", label: "Project — scoped / one-off work" },
+] as const;
+
+export const PROJECT_STATUSES = [
+  { value: "proposed", label: "Proposed" },
+  { value: "active", label: "Active" },
+  { value: "in_review", label: "In review" },
+  { value: "complete", label: "Complete" },
+] as const;
+
 export const DELIVERABLE_TYPES = [
   { value: "blog_post", label: "Blog post" },
   { value: "landing_page", label: "Landing page" },

@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/guards";
 import { logAudit } from "@/lib/audit";
+import { mapEmailSendError } from "@/lib/auth/email-errors";
 import {
   clientCreateSchema,
   clientUpdateSchema,
@@ -22,11 +24,13 @@ function clean(v: string | undefined | null) {
   return v && v.length > 0 ? v : null;
 }
 
-/** Create a client. The DB AFTER INSERT trigger seeds checklist, milestones,
- * and program-specific metric definitions automatically. Admin only. */
+/** Create a client. For a `program` client the DB AFTER INSERT trigger seeds the
+ * checklist, milestones, and program-specific metric definitions; a `project`
+ * client is seeded NOTHING (it uses the projects board). Optionally provisions a
+ * client portal user (welcome email + secure set-password link). Admin only. */
 export async function createClientAction(
   input: ClientCreateValues,
-): Promise<Result<{ id: string }>> {
+): Promise<Result<{ id: string; inviteError?: string }>> {
   const admin = await requireRole(["admin"]);
   const parsed = clientCreateSchema.safeParse(input);
   if (!parsed.success) {
@@ -42,6 +46,7 @@ export async function createClientAction(
       slug: v.slug,
       industry: v.industry,
       program: v.program,
+      client_type: v.client_type,
       status: v.status,
       website_url: clean(v.website_url),
       start_date: clean(v.start_date),
@@ -62,11 +67,65 @@ export async function createClientAction(
     entity: "client",
     entityId: data.id,
     clientId: data.id,
-    metadata: { name: v.name, slug: v.slug, program: v.program },
+    metadata: { name: v.name, slug: v.slug, program: v.program, client_type: v.client_type },
   });
 
+  // Optional: provision the client portal user via the welcome/invite email.
+  // The handle_new_user trigger reads role/client_id/full_name from the invite
+  // metadata; the link routes through the prefetch-safe /auth/confirm → set
+  // password. NO plaintext password is ever generated or sent.
+  const email = clean(v.client_email);
+  let inviteError: string | undefined;
+  if (email) {
+    const adminClient = createAdminClient();
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+    const { error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(
+      email,
+      {
+        data: {
+          role: "client",
+          client_id: data.id,
+          full_name: clean(v.client_full_name),
+        },
+        redirectTo: `${siteUrl}/auth/confirm?next=/accept-invite`,
+      },
+    );
+    if (inviteErr) {
+      const status = (inviteErr as { status?: number }).status;
+      console.error("client-user provisioning failed:", {
+        email,
+        clientId: data.id,
+        status,
+        message: inviteErr.message,
+      });
+      await logAudit({
+        actorId: admin.id,
+        action: "user.invite_failed",
+        entity: "invitation",
+        clientId: data.id,
+        metadata: { email, role: "client", status: status ?? null, error: inviteErr.message },
+      });
+      inviteError = mapEmailSendError(inviteErr.message, status, { adminViewer: true });
+    } else {
+      await supabase.from("invitations").insert({
+        email,
+        role: "client",
+        client_id: data.id,
+        invited_by: admin.id,
+      });
+      await logAudit({
+        actorId: admin.id,
+        action: "user.invited",
+        entity: "invitation",
+        clientId: data.id,
+        metadata: { email, role: "client" },
+      });
+    }
+  }
+
   revalidatePath("/clients");
-  return { ok: true, data: { id: data.id } };
+  revalidatePath("/admin/users");
+  return { ok: true, data: { id: data.id, inviteError } };
 }
 
 /** Update editable client fields. Admin only. */

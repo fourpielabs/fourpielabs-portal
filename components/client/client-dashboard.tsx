@@ -9,6 +9,7 @@ import {
   ClientChecklist,
   type ClientChecklistItem,
 } from "@/components/client/client-checklist";
+import { ProjectsBoard } from "@/components/client/projects-board";
 import { Greeting } from "@/components/client/greeting";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,16 @@ export async function ClientDashboard({
   userName: string | null;
 }) {
   const supabase = await createClient();
+
+  // Branch: a `project` client gets the projects board instead of the 90-day
+  // program dashboard. The program path below is unchanged for program clients.
+  const { data: typeRow } = await supabase
+    .from("client_clients")
+    .select("client_type")
+    .maybeSingle();
+  if (typeRow?.client_type === "project") {
+    return <ProjectsBoard clientId={clientId} userName={userName} />;
+  }
 
   const [
     { data: client },

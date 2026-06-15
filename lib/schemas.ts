@@ -28,9 +28,15 @@ export const clientCreateSchema = z.object({
     "other_local_service",
   ]),
   program: z.enum(["foundation", "pipeline", "operating_system", "pulse"]),
+  // program → 90-day roadmap (seeded); project → projects board (no roadmap seed).
+  client_type: z.enum(["program", "project"]),
   status: z.enum(["onboarding", "active", "paused", "churned"]),
   website_url: optionalUrl,
   start_date: optionalDate,
+  // Optional client-user provisioning (the "create client account" flow). When an
+  // email is supplied we invite a client portal user and send the welcome email.
+  client_email: z.string().trim().email("Enter a valid email").or(z.literal("")).optional(),
+  client_full_name: z.string().trim().optional(),
 });
 export type ClientCreateValues = z.infer<typeof clientCreateSchema>;
 
@@ -53,18 +59,27 @@ export const clientUpdateSchema = z.object({
 });
 export type ClientUpdateValues = z.infer<typeof clientUpdateSchema>;
 
-export const inviteSchema = z
-  .object({
-    email: z.string().trim().email("Enter a valid email"),
-    full_name: z.string().trim().optional(),
-    role: z.enum(["admin", "team", "client"]),
-    client_id: z.string().uuid().optional().or(z.literal("")),
-  })
-  .refine((v) => v.role !== "client" || (v.client_id && v.client_id.length > 0), {
-    message: "A client invite must select a client",
-    path: ["client_id"],
-  });
+// Invites are STAFF-ONLY (admin/team). Client portal users are provisioned via
+// the create-client flow (createClientAction), never invited from here.
+export const inviteSchema = z.object({
+  email: z.string().trim().email("Enter a valid email"),
+  full_name: z.string().trim().optional(),
+  role: z.enum(["admin", "team"]),
+});
 export type InviteValues = z.infer<typeof inviteSchema>;
+
+// --- Projects (client-owned, written via create_project/update_project RPCs) --
+export const projectCreateSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  description: z.string().trim().optional(),
+});
+export type ProjectCreateValues = z.infer<typeof projectCreateSchema>;
+
+export const projectUpdateSchema = projectCreateSchema.extend({
+  id: z.string().uuid(),
+  status: z.enum(["proposed", "active", "in_review", "complete"]),
+});
+export type ProjectUpdateValues = z.infer<typeof projectUpdateSchema>;
 
 export const setActiveSchema = z.object({
   userId: z.string().uuid(),

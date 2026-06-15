@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 import { inviteSchema, type InviteValues } from "@/lib/schemas";
 import { sendInviteAction } from "@/lib/actions/users";
-import { ROLES } from "@/lib/constants";
+import { STAFF_ROLES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,24 +20,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type ClientOption = { id: string; name: string };
-
-export function InviteForm({ clients }: { clients: ClientOption[] }) {
+export function InviteForm() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const {
     register,
     handleSubmit,
     control,
-    watch,
     reset,
     formState: { errors },
   } = useForm<InviteValues>({
     resolver: zodResolver(inviteSchema),
-    defaultValues: { email: "", full_name: "", role: "team", client_id: "" },
+    defaultValues: { email: "", full_name: "", role: "team" },
   });
-
-  const role = watch("role");
 
   async function onSubmit(values: InviteValues) {
     setSubmitting(true);
@@ -87,7 +82,7 @@ export function InviteForm({ clients }: { clients: ClientOption[] }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ROLES.map((o) => (
+                {STAFF_ROLES.map((o) => (
                   <SelectItem key={o.value} value={o.value}>
                     {o.label}
                   </SelectItem>
@@ -97,35 +92,6 @@ export function InviteForm({ clients }: { clients: ClientOption[] }) {
           )}
         />
       </div>
-
-      {role === "client" && (
-        <div className="flex-1 space-y-1.5 sm:min-w-[200px]">
-          <Label>
-            Client <span className="font-normal text-ink-3">· required</span>
-          </Label>
-          <Controller
-            control={control}
-            name="client_id"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a client…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.client_id && (
-            <p className="text-sm text-destructive">{errors.client_id.message}</p>
-          )}
-        </div>
-      )}
 
       <Button type="submit" variant="amber" loading={submitting}>
         {submitting ? "Sending…" : "Send invite"}

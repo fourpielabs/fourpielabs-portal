@@ -13,9 +13,11 @@ type Result<T = undefined> =
   | { ok: false; error: string };
 
 /**
- * Invite a user via the Auth admin API (service role). role + client_id +
- * full_name go into invite metadata, which the handle_new_user trigger reads
- * to create the profiles row. A matching invitations row is recorded. Admin only.
+ * Invite a STAFF user (admin/team) via the Auth admin API (service role). role +
+ * full_name go into invite metadata, which the handle_new_user trigger reads to
+ * create the profiles row. A matching invitations row is recorded. Admin only.
+ * Client portal users are NOT invited here — they're provisioned by
+ * createClientAction (the "create client account" flow).
  */
 export async function sendInviteAction(
   input: InviteValues,
@@ -26,7 +28,8 @@ export async function sendInviteAction(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
   const v = parsed.data;
-  const clientId = v.role === "client" ? (v.client_id as string) : null;
+  // Staff invites are never client-scoped; clients are provisioned, not invited.
+  const clientId = null;
 
   const adminClient = createAdminClient();
   const siteUrl =

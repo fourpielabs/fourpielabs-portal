@@ -91,15 +91,15 @@ export default async function AdminUsersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Invite a user</CardTitle>
+          <CardTitle>Invite a staff user</CardTitle>
           <CardDescription>
-            Sends a Supabase invitation. Client invites require a client. If a
-            send fails you&apos;ll see a specific reason (and it&apos;s recorded
-            in the audit log).
+            Sends a Supabase invitation to an admin or team member. Client portal
+            users are created with their client — see New client. If a send fails
+            you&apos;ll see a specific reason (also recorded in the audit log).
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <InviteForm clients={clients ?? []} />
+          <InviteForm />
         </CardContent>
       </Card>
 

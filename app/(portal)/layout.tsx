@@ -11,11 +11,19 @@ export default async function PortalLayout({
   const profile = await requireProfile();
 
   if (profile.role === "client") {
+    // client_type drives which top-level tabs render (project clients don't get
+    // the program-specific Program/Performance tabs). Read via the safe view.
+    const clientSupabase = await createClient();
+    const { data: c } = await clientSupabase
+      .from("client_clients")
+      .select("client_type")
+      .maybeSingle();
     return (
       <ClientShell
         name={profile.full_name}
         email={profile.email}
         avatarUrl={profile.avatar_url}
+        clientType={(c?.client_type as "program" | "project") ?? "program"}
       >
         {children}
       </ClientShell>
