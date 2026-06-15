@@ -2,10 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/ui/brand-logo";
 
-/**
- * Public landing. Real auth-based routing (redirect to /login or the role's
- * home) is wired in P1 step 4. For now this is a simple branded entry point.
- */
+/** Public landing — a simple branded entry point that links to /login. */
 export default function Home() {
   return (
     <main className="flex flex-1 items-center justify-center p-6">

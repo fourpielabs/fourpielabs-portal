@@ -7,6 +7,17 @@ import { toast } from "sonner";
 import { assignUserAction, unassignUserAction } from "@/lib/actions/users";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -57,7 +68,7 @@ export function AssignmentManager({ clientId, team, assignedIds }: Props) {
   return (
     <div className="space-y-4">
       {assigned.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-ink-3">
           No team members assigned yet.
         </p>
       ) : (
@@ -70,19 +81,38 @@ export function AssignmentManager({ clientId, team, assignedIds }: Props) {
               <span className="text-sm">
                 {m.full_name ?? m.email}
                 {m.full_name && (
-                  <span className="ml-2 text-xs text-muted-foreground">
+                  <span className="ml-2 text-xs text-ink-3">
                     {m.email}
                   </span>
                 )}
               </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={pending}
-                onClick={() => remove(m.id)}
-              >
-                Remove
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" disabled={pending}>
+                    Remove
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Remove {m.full_name ?? m.email}?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      They&apos;ll immediately lose access to this client&apos;s
+                      workspace. You can reassign them anytime.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={() => remove(m.id)}
+                    >
+                      Remove
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </li>
           ))}
         </ul>
@@ -107,7 +137,7 @@ export function AssignmentManager({ clientId, team, assignedIds }: Props) {
           </Button>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-ink-3">
           All team members are assigned.
         </p>
       )}

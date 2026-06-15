@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { formatDate } from "@/lib/format";
 import { AuditFilters } from "@/components/admin/audit-filters";
 import { EmptyState } from "@/components/ui/empty-state";
+import { AUDIT_ACTIONS } from "@/lib/audit-actions";
 import {
   Table,
   TableBody,
@@ -11,23 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-const ACTIONS = [
-  "client.created",
-  "client.updated",
-  "client.status_changed",
-  "user.invited",
-  "user.invite_failed",
-  "user.invite_resent",
-  "user.invite_revoked",
-  "user.deactivated",
-  "user.reactivated",
-  "profile.updated",
-  "assignment.created",
-  "assignment.removed",
-  "password_reset.requested",
-  "password_reset.failed",
-];
 
 export default async function AuditPage({
   searchParams,
@@ -67,7 +51,7 @@ export default async function AuditPage({
 
       <AuditFilters
         clients={clients ?? []}
-        actions={ACTIONS}
+        actions={AUDIT_ACTIONS}
         current={{ client: clientFilter, action: actionFilter }}
       />
 

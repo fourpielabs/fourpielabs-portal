@@ -46,7 +46,7 @@ export default async function ClientLayout({
             <h1 className="font-display text-2xl font-semibold tracking-[-0.01em]">
               {client.name}
             </h1>
-            <Badge variant="outline">{labelOf(PROGRAMS, client.program)}</Badge>
+            <Badge variant="amber">{labelOf(PROGRAMS, client.program)}</Badge>
             <StatusChip kind="client" value={client.status} />
           </div>
           <p className="mt-0.5 text-[12.5px] text-ink-3">

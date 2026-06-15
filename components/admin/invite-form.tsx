@@ -56,6 +56,13 @@ export function InviteForm({ clients }: { clients: ClientOption[] }) {
       onSubmit={handleSubmit(onSubmit)}
       className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
     >
+      <div className="space-y-1.5 sm:w-44">
+        <Label htmlFor="full_name">
+          Name <span className="font-normal text-ink-3">· optional</span>
+        </Label>
+        <Input id="full_name" placeholder="Casey Jones" {...register("full_name")} />
+      </div>
+
       <div className="flex-1 space-y-1.5 sm:min-w-[220px]">
         <Label htmlFor="email">Email address</Label>
         <Input

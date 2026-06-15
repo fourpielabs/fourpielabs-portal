@@ -1,8 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { AuditAction } from "@/lib/audit-actions";
 
 export type AuditInput = {
   actorId: string | null;
-  action: string; // e.g. "client.created", "user.deactivated"
+  action: AuditAction; // must be a constant from lib/audit-actions.ts (no drift)
   entity?: string | null;
   entityId?: string | null;
   clientId?: string | null;
