@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusChip } from "@/components/ui/status-chip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { DeliverableApprove } from "@/components/client/deliverable-approve";
 import { ExternalLink, Package } from "lucide-react";
 
 export default async function ClientDeliverablesPage() {
@@ -16,7 +17,9 @@ export default async function ClientDeliverablesPage() {
   // RLS: visible_to_client deliverables for the client's own client
   const { data: deliverables } = await supabase
     .from("deliverables")
-    .select("id, title, description, type, status, due_date, delivered_at, preview_url, file_path")
+    .select(
+      "id, title, description, type, status, due_date, delivered_at, preview_url, file_path, client_approved_at",
+    )
     .order("created_at", { ascending: false });
 
   return (
@@ -57,6 +60,9 @@ export default async function ClientDeliverablesPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusChip kind="deliverable" value={d.status} />
+                  {(d.status === "needs_review" || d.client_approved_at) && (
+                    <DeliverableApprove id={d.id} approved={!!d.client_approved_at} />
+                  )}
                   {d.preview_url && (
                     <Button asChild variant="outline" size="sm">
                       <a href={d.preview_url} target="_blank" rel="noreferrer">

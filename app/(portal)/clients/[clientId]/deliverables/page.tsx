@@ -17,7 +17,7 @@ export default async function DeliverablesPage({
   const { data: deliverables } = await supabase
     .from("deliverables")
     .select(
-      "id, title, description, type, status, due_date, preview_url, visible_to_client, file_path, created_at",
+      "id, title, description, type, status, due_date, preview_url, visible_to_client, file_path, created_at, client_approved_at",
     )
     .eq("client_id", clientId)
     .order("created_at", { ascending: false });

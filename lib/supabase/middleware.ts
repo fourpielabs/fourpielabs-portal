@@ -1,16 +1,32 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-/** Routes that an unauthenticated visitor is allowed to reach. */
-const AUTH_ROUTES = ["/login", "/accept-invite", "/forgot-password"];
+/** Routes an unauthenticated visitor is allowed to reach. */
+const PUBLIC_ROUTES = ["/login", "/accept-invite", "/forgot-password"];
 
-function isAuthRoute(pathname: string) {
-  return AUTH_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));
-}
+/**
+ * Auth routes an ALREADY-authed user is bounced OFF (back to /dashboard).
+ *
+ * `/accept-invite` is intentionally NOT here. A recovery/invite link verifies
+ * the token and establishes a session BEFORE the set-password form renders, so
+ * the user is authed by the time they reach `/accept-invite` — bouncing them was
+ * the original "set new password is unreachable" bug. Accepted tradeoff: any
+ * authed user can reach `/accept-invite` and set their OWN password (equivalent
+ * to the Settings reset path; it only mutates the caller's own session, no
+ * cross-user risk). This is intended — not a bug.
+ */
+const BOUNCE_ROUTES = ["/login", "/forgot-password"];
+
+const matchesRoute = (routes: string[], p: string) =>
+  routes.some((r) => p === r || p.startsWith(`${r}/`));
 
 function isPublic(pathname: string) {
-  // "/" landing, the auth pages, and the /auth/* confirm+signout handlers.
-  return pathname === "/" || pathname.startsWith("/auth") || isAuthRoute(pathname);
+  // "/" landing, the /auth/* confirm+signout handlers, and the public auth pages.
+  return (
+    pathname === "/" ||
+    pathname.startsWith("/auth") ||
+    matchesRoute(PUBLIC_ROUTES, pathname)
+  );
 }
 
 /**
@@ -66,7 +82,7 @@ export async function updateSession(request: NextRequest) {
   if (!user && !isPublic(pathname)) {
     return redirectTo("/login");
   }
-  if (user && (isAuthRoute(pathname) || pathname === "/")) {
+  if (user && (matchesRoute(BOUNCE_ROUTES, pathname) || pathname === "/")) {
     return redirectTo("/dashboard");
   }
 

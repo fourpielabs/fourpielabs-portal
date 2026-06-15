@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireClientAccess } from "@/lib/auth/guards";
+import { requireClientAccess, requireProfile } from "@/lib/auth/guards";
 import { logAudit } from "@/lib/audit";
 import { deliverableSchema, type DeliverableValues } from "@/lib/schemas";
 
@@ -212,5 +212,39 @@ export async function deleteDeliverableAction(
     clientId,
   });
   revalidate(clientId);
+  return { ok: true };
+}
+
+/**
+ * CLIENT-ONLY write path: approve / un-approve a deliverable. Calls the
+ * SECURITY DEFINER RPC `set_deliverable_approval`, which enforces (own client +
+ * visible + only the client_approved_at column). The client has NO direct UPDATE
+ * policy on deliverables — this RPC is the sole approval mechanism.
+ */
+export async function setDeliverableApprovalAction(
+  deliverableId: string,
+  approved: boolean,
+): Promise<Result> {
+  const me = await requireProfile();
+  if (me.role !== "client" || !me.client_id) {
+    return { ok: false, error: "Not allowed" };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_deliverable_approval", {
+    deliverable_id: deliverableId,
+    approved,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  await logAudit({
+    actorId: me.id,
+    action: "deliverable.client_approved",
+    entity: "deliverable",
+    entityId: deliverableId,
+    clientId: me.client_id,
+    metadata: { approved },
+  });
+  revalidatePath("/deliverables");
+  revalidatePath("/dashboard");
   return { ok: true };
 }

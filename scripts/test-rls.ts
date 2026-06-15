@@ -117,6 +117,24 @@ async function main() {
   await admin.from("deliverables").insert({ client_id: premierId, title: "RLSHIDE-d", type: "other", status: "pending", visible_to_client: false });
   await admin.from("reports").insert({ client_id: premierId, title: "RLSHIDE-r", published: false });
 
+  // approval-RPC fixtures: a VISIBLE deliverable on premier (the client's own), a
+  // cross-client one on pulse, and the hidden premier one looked up by title.
+  const { data: apprDel } = await admin
+    .from("deliverables")
+    .insert({ client_id: premierId, title: "RLSAPPR-d", type: "other", status: "needs_review", visible_to_client: true })
+    .select("id")
+    .single();
+  const apprId = apprDel!.id;
+  const { data: xcDel } = await admin
+    .from("deliverables")
+    .insert({ client_id: pulseId, title: "RLSXC-d", type: "other", status: "needs_review", visible_to_client: true })
+    .select("id")
+    .single();
+  const xcId = xcDel!.id;
+  const { data: hideDel } = await admin
+    .from("deliverables").select("id").eq("client_id", premierId).eq("title", "RLSHIDE-d").single();
+  const hideId = hideDel!.id;
+
   // ====================== AS CLIENT (demo-client / premier) =================
   const client = createClient(url, anonKey, { auth: { persistSession: false } });
   await client.auth.signInWithPassword({ email: "demo-client@example.com", password: PW });
@@ -159,6 +177,43 @@ async function main() {
     rec("client", "RPC toggle OFFBOARDING item denied", !!oo.error);
   }
 
+  // --- deliverable approval (the NEW client write path) ---------------------
+  {
+    const cols =
+      "id, client_id, title, description, type, status, due_date, preview_url, file_path, visible_to_client, delivered_at, created_by, created_at, updated_at, client_approved_at";
+    const { data: before } = await admin.from("deliverables").select(cols).eq("id", apprId).single();
+
+    // 1. client CAN approve own visible deliverable via the RPC
+    const ap = await client.rpc("set_deliverable_approval", { deliverable_id: apprId, approved: true });
+    rec("client-write", "approve OWN visible deliverable allowed", !ap.error, ap.error?.message ?? "");
+
+    // 2. only client_approved_at changed (updated_at is the system trigger column)
+    const { data: after } = await admin.from("deliverables").select(cols).eq("id", apprId).single();
+    const changed = Object.keys(before ?? {}).filter(
+      (k) => JSON.stringify((before as Record<string, unknown>)[k]) !== JSON.stringify((after as Record<string, unknown>)[k]),
+    );
+    const allowed = new Set(["client_approved_at", "updated_at"]);
+    const onlyApproval =
+      changed.includes("client_approved_at") &&
+      changed.every((k) => allowed.has(k)) &&
+      !!(after as Record<string, unknown>).client_approved_at;
+    rec("client-write", "approve mutated ONLY client_approved_at", onlyApproval, `changed: ${changed.join(",") || "none"}`);
+
+    // 3. direct UPDATE denied (no client UPDATE policy → error or 0 rows)
+    const upd = await client.from("deliverables").update({ client_approved_at: null }).eq("id", apprId).select("id");
+    rec("client-write", "direct UPDATE deliverables denied", !!upd.error || (upd.data?.length ?? 0) === 0, upd.error?.code ?? `${upd.data?.length ?? 0} rows`);
+
+    // 4. cross-client approval denied
+    const xc = await client.rpc("set_deliverable_approval", { deliverable_id: xcId, approved: true });
+    rec("client-write", "approve CROSS-CLIENT deliverable denied", !!xc.error);
+
+    // 5. hidden (not visible_to_client) approval denied
+    const hd = await client.rpc("set_deliverable_approval", { deliverable_id: hideId, approved: true });
+    rec("client-write", "approve HIDDEN deliverable denied", !!hd.error);
+
+    await admin.from("deliverables").update({ client_approved_at: null }).eq("id", apprId);
+  }
+
   // ====================== AS TEAM (demo-team, unassigned client) ============
   const team = createClient(url, anonKey, { auth: { persistSession: false } });
   await team.auth.signInWithPassword({ email: "demo-team@example.com", password: PW });
@@ -170,6 +225,10 @@ async function main() {
   {
     const { error } = await team.storage.from("client-files").createSignedUrl(`${unId}/x.txt`, 60);
     rec("team→unassigned", "storage sign denied", !!error);
+  }
+  {
+    const tap = await team.rpc("set_deliverable_approval", { deliverable_id: apprId, approved: true });
+    rec("client-write", "TEAM approve deliverable denied (client-only)", !!tap.error);
   }
 
   // ====================== AS ANON ===========================================
@@ -184,10 +243,14 @@ async function main() {
     rec("anon", "RPC toggle denied", !!aoff.error);
     const { error } = await anon.storage.from("client-files").createSignedUrl(`${premierId}/x.txt`, 60);
     rec("anon", "storage sign denied", !!error);
+    const aap = await anon.rpc("set_deliverable_approval", { deliverable_id: apprId, approved: true });
+    rec("client-write", "ANON approve deliverable denied", !!aap.error);
   }
 
   // --- cleanup --------------------------------------------------------------
   await admin.from("deliverables").delete().eq("client_id", premierId).like("title", "RLSHIDE%");
+  await admin.from("deliverables").delete().eq("client_id", premierId).like("title", "RLSAPPR%");
+  await admin.from("deliverables").delete().eq("client_id", pulseId).like("title", "RLSXC%");
   await admin.from("reports").delete().eq("client_id", premierId).like("title", "RLSHIDE%");
   await admin.from("clients").delete().eq("id", unId);
 

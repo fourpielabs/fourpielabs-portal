@@ -48,6 +48,7 @@ export const AUDIT_ACTION_GROUPS = {
     "deliverable.status_changed",
     "deliverable.visibility_changed",
     "deliverable.deleted",
+    "deliverable.client_approved",
   ],
   Content: [
     "content_item.created",

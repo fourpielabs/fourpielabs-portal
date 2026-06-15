@@ -99,6 +99,11 @@ export function DeliverablesList({
                       hidden
                     </Badge>
                   )}
+                  {d.client_approved_at && (
+                    <Badge className="border-success-border bg-success-bg text-[10px] text-success-text">
+                      Client approved
+                    </Badge>
+                  )}
                   {d.due_date && (
                     <span className="text-xs text-ink-3">
                       due {formatDate(d.due_date)}

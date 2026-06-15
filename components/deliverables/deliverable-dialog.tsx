@@ -44,6 +44,7 @@ export type DeliverableRow = {
   preview_url: string | null;
   visible_to_client: boolean;
   file_path: string | null;
+  client_approved_at: string | null;
 };
 
 export function DeliverableDialog({

@@ -38,7 +38,11 @@ export async function sendInviteAction(
       client_id: clientId,
       full_name: v.full_name ?? null,
     },
-    redirectTo: `${siteUrl}/accept-invite`,
+    // Identical to password-reset: route through the prefetch-safe /auth/confirm
+    // interstitial (token verified on a human POST, not a GET) so an email-scanner
+    // can't burn the one-time invite token. The invite email template must use the
+    // token_hash → /auth/confirm form (type=invite, next=/accept-invite).
+    redirectTo: `${siteUrl}/auth/confirm?next=/accept-invite`,
   });
 
   if (error) {
