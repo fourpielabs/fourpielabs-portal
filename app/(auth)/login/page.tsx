@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,7 @@ import { CircleAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AuthError, AuthInput, AuthLabel } from "@/components/auth/auth-frame";
+import { PasswordInput } from "@/components/auth/password-input";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -18,10 +19,13 @@ const schema = z.object({
 });
 type FormValues = z.infer<typeof schema>;
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  const linkExpired = params.get("error") === "link";
   const [submitting, setSubmitting] = useState(false);
   const [authError, setAuthError] = useState(false);
+  const [dismissedLink, setDismissedLink] = useState(false);
   const { register, handleSubmit } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
@@ -39,7 +43,11 @@ export default function LoginPage() {
     router.refresh();
   }
 
-  const clear = () => authError && setAuthError(false);
+  const clear = () => {
+    if (authError) setAuthError(false);
+    if (linkExpired) setDismissedLink(true);
+  };
+  const showLinkError = linkExpired && !dismissedLink && !authError;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
@@ -54,6 +62,12 @@ export default function LoginPage() {
         <AuthError>
           <CircleAlert className="mt-px size-4 shrink-0" />
           <span>That email and password don&apos;t match. Try again, or reset your password.</span>
+        </AuthError>
+      )}
+      {showLinkError && (
+        <AuthError>
+          <CircleAlert className="mt-px size-4 shrink-0" />
+          <span>That link has expired or was already used. Sign in below, or reset your password.</span>
         </AuthError>
       )}
 
@@ -79,9 +93,8 @@ export default function LoginPage() {
               Forgot password?
             </Link>
           </div>
-          <AuthInput
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             placeholder="••••••••"
             aria-invalid={authError}
@@ -93,5 +106,13 @@ export default function LoginPage() {
         </Button>
       </div>
     </form>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

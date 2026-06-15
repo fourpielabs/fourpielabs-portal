@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/format";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Card,
   CardContent,
@@ -10,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, FileText, Video } from "lucide-react";
 
 export default async function ClientCallsNotesPage() {
   await requireRole(["client"]);
@@ -58,7 +59,7 @@ export default async function ClientCallsNotesPage() {
                     </a>
                   </Button>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-ink-3">
                     Reach out to schedule.
                   </p>
                 )}
@@ -74,9 +75,11 @@ export default async function ClientCallsNotesPage() {
         </CardHeader>
         <CardContent>
           {(recordings ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Session recordings will appear here.
-            </p>
+            <EmptyState
+              icon={<Video />}
+              title="No recordings yet"
+              description="Session recordings will appear here."
+            />
           ) : (
             <ul className="divide-y">
               {(recordings ?? []).map((r) => (
@@ -85,13 +88,13 @@ export default async function ClientCallsNotesPage() {
                     <div className="text-sm font-medium">
                       {r.call_type ?? "Call"}
                       {r.call_date && (
-                        <span className="ml-2 text-xs text-muted-foreground">
+                        <span className="ml-2 text-xs text-ink-3">
                           {formatDate(r.call_date)}
                         </span>
                       )}
                     </div>
                     {r.key_topic && (
-                      <div className="text-xs text-muted-foreground">{r.key_topic}</div>
+                      <div className="text-xs text-ink-3">{r.key_topic}</div>
                     )}
                   </div>
                   {r.recording_url && (
@@ -114,16 +117,18 @@ export default async function ClientCallsNotesPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {(notes ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Notes from our sessions will show up here.
-            </p>
+            <EmptyState
+              icon={<FileText />}
+              title="No notes yet"
+              description="Notes from our sessions will show up here."
+            />
           ) : (
             (notes ?? []).map((n) => (
-              <div key={n.id} className="rounded-lg border p-3">
+              <div key={n.id} className="rounded-xl border border-border bg-surface p-3">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{n.title}</span>
                   {n.meeting_date && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-ink-3">
                       {formatDate(n.meeting_date)}
                     </span>
                   )}

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { Banner } from "@/components/ui/banner";
 import { labelOf, PROGRAMS, DELIVERABLE_TYPES } from "@/lib/constants";
 import { formatMetricValue, formatMonthYear } from "@/lib/format";
 import { PersonAvatar } from "@/components/ui/person-avatar";
@@ -44,6 +45,7 @@ export async function ClientDashboard({
     { data: deliverables },
     { data: report },
     { data: updates },
+    { data: needsReview },
   ] = await Promise.all([
     supabase.from("client_clients").select("*").maybeSingle(),
     supabase.from("client_partner").select("*").maybeSingle(),
@@ -77,7 +79,10 @@ export async function ClientDashboard({
       .select("id, title, body, pinned, created_at")
       .order("created_at", { ascending: false })
       .limit(6),
+    supabase.from("deliverables").select("id").eq("status", "needs_review"),
   ]);
+
+  const reviewCount = (needsReview ?? []).length;
 
   // KPIs: latest vs previous month, numeric metrics
   const rows = (metricRows ?? []) as unknown as MetricRow[];
@@ -148,13 +153,32 @@ export async function ClientDashboard({
         </div>
       </div>
 
+      {reviewCount > 0 && (
+        <Banner
+          tone="amber"
+          icon={<Clock />}
+          action={
+            <Button asChild size="sm" variant="amber">
+              <Link href="/deliverables">Review now</Link>
+            </Button>
+          }
+        >
+          <span className="font-semibold">
+            {reviewCount === 1
+              ? "1 deliverable is waiting on your review."
+              : `${reviewCount} deliverables are waiting on your review.`}
+          </span>
+        </Banner>
+      )}
+
       {/* KPIs */}
       {kpis.length > 0 && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {kpis.map((k) => {
             const up = (k.delta ?? 0) > 0;
             return (
-              <Card key={k.label}>
+              <Link key={k.label} href="/performance" className="block">
+              <Card className="h-full transition-shadow hover:shadow-e3">
                 <CardContent className="flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">
@@ -179,6 +203,7 @@ export async function ClientDashboard({
                   </div>
                 </CardContent>
               </Card>
+              </Link>
             );
           })}
         </div>
@@ -235,6 +260,12 @@ export async function ClientDashboard({
                     </div>
                   ))}
                 </div>
+                <Link
+                  href="/program"
+                  className="text-xs font-semibold text-amber-700 hover:text-amber-800"
+                >
+                  View full program →
+                </Link>
               </CardContent>
             </Card>
           )}
@@ -298,7 +329,7 @@ export async function ClientDashboard({
             </div>
             {report && (
               <Link
-                href="/performance"
+                href="/performance#reports"
                 className="inline-flex w-fit items-center gap-1.5 rounded-full bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800"
               >
                 Read report <ArrowUpRight className="size-4" />

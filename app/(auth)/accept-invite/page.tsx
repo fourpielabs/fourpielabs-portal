@@ -7,10 +7,21 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { AuthInput, AuthLabel } from "@/components/auth/auth-frame";
+import { AuthLabel } from "@/components/auth/auth-frame";
+import { PasswordInput } from "@/components/auth/password-input";
+
+/** Map Supabase password errors to human copy (never leak raw SDK strings). */
+function friendlyPwError(msg: string) {
+  const m = msg.toLowerCase();
+  if (m.includes("different")) return "Choose a password you haven't used before.";
+  if (m.includes("least") || m.includes("weak") || m.includes("short") || m.includes("characters"))
+    return "Use a longer, stronger password — at least 12 characters.";
+  return "Please try again, or request a fresh link.";
+}
 
 const schema = z
   .object({
@@ -48,7 +59,9 @@ export default function AcceptInvitePage() {
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
       setSubmitting(false);
-      toast.error("Couldn't set your password", { description: error.message });
+      toast.error("Couldn't set your password", {
+        description: friendlyPwError(error.message),
+      });
       return;
     }
     toast.success("Password set — you're all set!");
@@ -57,22 +70,33 @@ export default function AcceptInvitePage() {
   }
 
   if (checking) {
-    return <p className="text-sm text-dark-ink-2">Loading…</p>;
+    return (
+      <div className="flex min-h-[140px] items-center justify-center text-dark-ink-2">
+        <Loader2 className="size-5 animate-spin" />
+      </div>
+    );
   }
 
   if (!hasSession) {
     return (
       <div className="flex flex-col gap-5">
         <h2 className="font-display text-3xl font-semibold tracking-[-0.015em] text-dark-ink">
-          Link expired
+          Link is invalid or expired
         </h2>
         <p className="text-sm leading-relaxed text-dark-ink-2">
-          This link is invalid or has expired. Ask your 4Pie Labs contact for a
-          fresh invitation, or reset your password.
+          Please ask for a fresh invitation, or reset your password.
         </p>
-        <Button asChild variant="amber" size="lg" className="w-full">
-          <Link href="/forgot-password">Reset password</Link>
-        </Button>
+        <div className="flex flex-col gap-2.5">
+          <Button asChild variant="amber" size="lg" className="w-full">
+            <Link href="/forgot-password">Reset password</Link>
+          </Button>
+          <Link
+            href="/login"
+            className="text-center text-xs font-semibold text-amber-400 hover:text-amber-200"
+          >
+            Back to sign in
+          </Link>
+        </div>
       </div>
     );
   }
@@ -90,9 +114,8 @@ export default function AcceptInvitePage() {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <AuthLabel htmlFor="password">New password</AuthLabel>
-          <AuthInput
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
             aria-invalid={!!errors.password}
             {...register("password")}
@@ -107,9 +130,8 @@ export default function AcceptInvitePage() {
         </div>
         <div className="flex flex-col gap-1.5">
           <AuthLabel htmlFor="confirm">Confirm password</AuthLabel>
-          <AuthInput
+          <PasswordInput
             id="confirm"
-            type="password"
             autoComplete="new-password"
             aria-invalid={!!errors.confirm}
             {...register("confirm")}

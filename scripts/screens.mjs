@@ -69,10 +69,18 @@ for (const vp of viewports) {
       await page.click(args.click).catch(() => {});
       await page.waitForTimeout(500);
     }
+    if (args.scrollTo) {
+      await page
+        .locator(args.scrollTo)
+        .first()
+        .scrollIntoViewIfNeeded()
+        .catch(() => {});
+      await page.waitForTimeout(300);
+    }
     const name = r.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "root";
     await page.screenshot({
       path: `screenshots/${out}/${role}_${name}_${vp.tag}.png`,
-      fullPage: true,
+      fullPage: !args.noFull,
     });
     console.log(`shot: ${role} ${r} @${vp.tag}`);
   }

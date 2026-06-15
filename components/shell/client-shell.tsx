@@ -66,11 +66,11 @@ export function ClientShell({
     <div className="flex min-h-screen flex-col">
       {/* desktop top nav — floating rounded pill (matches fourpielabs.com) */}
       <header className="sticky top-0 z-30 hidden px-4 pt-4 sm:block">
-        <div className="mx-auto flex h-14 w-fit max-w-full items-center gap-5 rounded-full border border-border bg-surface/85 px-5 shadow-e2 backdrop-blur-md">
+        <div className="mx-auto flex h-14 w-fit max-w-full items-center gap-8 rounded-full border border-border bg-surface/85 px-7 shadow-e2 backdrop-blur-md">
           <Link href="/dashboard">
             <BrandLogo className="text-lg" />
           </Link>
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-2">
             {TOP.map((i) => {
               const active = isActive(pathname, i.href);
               return (
@@ -78,7 +78,7 @@ export function ClientShell({
                   key={i.href}
                   href={i.href}
                   className={cn(
-                    "motion-micro rounded-full px-3 py-1.5 text-[13.5px]",
+                    "motion-micro rounded-full px-4 py-1.5 text-[13.5px]",
                     active
                       ? "bg-surface-2 font-semibold text-ink"
                       : "font-medium text-ink-2 hover:bg-bg hover:text-ink",
@@ -102,7 +102,7 @@ export function ClientShell({
         <UserMenu name={name} email={email} avatarUrl={avatarUrl} size="md" />
       </header>
 
-      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pt-6 pb-28 sm:px-8 sm:pt-11 sm:pb-10">
+      <main className="mx-auto w-full max-w-[1280px] flex-1 scroll-pb-36 px-4 pt-6 pb-36 sm:px-8 sm:pt-11 sm:pb-10">
         {children}
       </main>
 

@@ -110,17 +110,16 @@ export function AuthFrame({
   );
 }
 
+/** Shared dark-field styling (reused by AuthInput + PasswordInput). */
+export const authInputClass =
+  "h-12 w-full rounded-xl border border-dark-border bg-[rgba(255,255,255,0.045)] px-4 text-sm text-dark-ink outline-none transition-all placeholder:text-ink-3 focus:border-amber-600 focus:shadow-[0_0_0_3px_rgba(217,119,6,0.22)] aria-[invalid=true]:border-[rgba(248,113,113,0.55)]";
+
 /** Dark field for the auth shell. */
 export const AuthInput = function AuthInput({
   className = "",
   ...props
 }: React.ComponentProps<"input">) {
-  return (
-    <input
-      {...props}
-      className={`h-12 w-full rounded-xl border border-dark-border bg-[rgba(255,255,255,0.045)] px-4 text-sm text-dark-ink outline-none transition-all placeholder:text-ink-3 focus:border-amber-600 focus:shadow-[0_0_0_3px_rgba(217,119,6,0.22)] aria-[invalid=true]:border-[rgba(248,113,113,0.55)] ${className}`}
-    />
-  );
+  return <input {...props} className={`${authInputClass} ${className}`} />;
 };
 
 export function AuthLabel({ children, ...props }: React.ComponentProps<"label">) {

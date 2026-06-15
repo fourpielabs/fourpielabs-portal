@@ -1,12 +1,13 @@
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
-import { DELIVERABLE_STATUSES, DELIVERABLE_TYPES, labelOf } from "@/lib/constants";
+import { DELIVERABLE_TYPES, labelOf } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { DownloadButton } from "@/components/files/download-button";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusChip } from "@/components/ui/status-chip";
-import { ExternalLink } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ExternalLink, Package } from "lucide-react";
 
 export default async function ClientDeliverablesPage() {
   const profile = await requireRole(["client"]);
@@ -22,23 +23,22 @@ export default async function ClientDeliverablesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Deliverables</h1>
-        <p className="text-muted-foreground">Everything we&apos;re creating for you.</p>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {DELIVERABLE_STATUSES.map((s) => (
-          <StatusChip key={s.value} kind="deliverable" value={s.value} />
-        ))}
+        <p className="text-ink-2">Everything we&apos;re creating for you.</p>
       </div>
 
       {(deliverables ?? []).length === 0 ? (
-        <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-          Your deliverables will appear here as we ship them.
-        </div>
+        <EmptyState
+          icon={<Package />}
+          title="Nothing here yet"
+          description="Your deliverables will appear here as we ship them."
+        />
       ) : (
         <ul className="space-y-3">
           {(deliverables ?? []).map((d) => (
-            <li key={d.id} className="rounded-lg border p-4">
+            <li
+              key={d.id}
+              className="rounded-2xl border border-border bg-surface p-4 shadow-e1 transition-shadow hover:shadow-e2"
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -48,15 +48,11 @@ export default async function ClientDeliverablesPage() {
                     </Badge>
                   </div>
                   {d.description && (
-                    <p className="pt-1 text-sm text-muted-foreground">
-                      {d.description}
-                    </p>
+                    <p className="pt-1 text-sm text-ink-2">{d.description}</p>
                   )}
-                  <div className="flex flex-wrap gap-3 pt-1 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap gap-3 pt-1 text-xs text-ink-3">
                     {d.due_date && <span>Due {formatDate(d.due_date)}</span>}
-                    {d.delivered_at && (
-                      <span>Delivered {formatDate(d.delivered_at)}</span>
-                    )}
+                    {d.delivered_at && <span>Delivered {formatDate(d.delivered_at)}</span>}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">

@@ -12,6 +12,13 @@ import {
 } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 
+// echoes the dashboard roadmap's phase-color treatment
+const MS_BORDER: Record<string, string> = {
+  done: "#B45309",
+  in_progress: "#FBBF24",
+  upcoming: "#E7E5E0",
+};
+
 export default async function ClientProgramPage() {
   await requireRole(["client"]);
   const supabase = await createClient();
@@ -60,8 +67,8 @@ export default async function ClientProgramPage() {
         <CardContent>
           <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
             {details.map((d) => (
-              <div key={d.label} className="flex justify-between gap-4 border-b py-1">
-                <dt className="text-sm text-muted-foreground">{d.label}</dt>
+              <div key={d.label} className="flex justify-between gap-4 border-b border-row-divider py-1">
+                <dt className="text-sm text-ink-3">{d.label}</dt>
                 <dd className="text-sm font-medium">{d.value}</dd>
               </div>
             ))}
@@ -76,25 +83,32 @@ export default async function ClientProgramPage() {
         </CardHeader>
         <CardContent>
           {(milestones ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-3">
               Your roadmap will appear here shortly.
             </p>
           ) : (
             <ol className="space-y-3">
               {(milestones ?? []).map((m) => {
                 return (
-                  <li key={m.id} className="flex gap-3 rounded-xl border border-border p-3">
+                  <li
+                    key={m.id}
+                    className="flex gap-3 rounded-xl border border-border p-3"
+                    style={{
+                      borderLeftWidth: 4,
+                      borderLeftColor: MS_BORDER[m.status] ?? "#E7E5E0",
+                    }}
+                  >
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">{m.title}</span>
                         {m.phase_label && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-ink-3">
                             {m.phase_label}
                           </span>
                         )}
                       </div>
                       {m.description && (
-                        <p className="pt-1 text-sm text-muted-foreground">
+                        <p className="pt-1 text-sm text-ink-3">
                           {m.description}
                         </p>
                       )}
@@ -117,7 +131,7 @@ export default async function ClientProgramPage() {
             {client?.whats_included ? (
               <Markdown>{client.whats_included}</Markdown>
             ) : (
-              <p className="text-sm text-muted-foreground">—</p>
+              <p className="text-sm text-ink-3">—</p>
             )}
           </CardContent>
         </Card>
@@ -129,7 +143,7 @@ export default async function ClientProgramPage() {
             {client?.whats_not_included ? (
               <Markdown>{client.whats_not_included}</Markdown>
             ) : (
-              <p className="text-sm text-muted-foreground">—</p>
+              <p className="text-sm text-ink-3">—</p>
             )}
           </CardContent>
         </Card>
@@ -145,7 +159,7 @@ export default async function ClientProgramPage() {
             <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
               {guidelines.map((d) => (
                 <div key={d.label}>
-                  <dt className="text-xs text-muted-foreground">{d.label}</dt>
+                  <dt className="text-xs text-ink-3">{d.label}</dt>
                   <dd className="text-sm">{d.value}</dd>
                 </div>
               ))}

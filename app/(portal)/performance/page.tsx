@@ -129,7 +129,7 @@ export default async function ClientPerformancePage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-3">
+      <div id="reports" className="flex scroll-mt-24 flex-col gap-3">
         <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">Reports</h2>
         <ClientReports clientId={profile.client_id!} reports={(reports ?? []) as ClientReport[]} />
       </div>
