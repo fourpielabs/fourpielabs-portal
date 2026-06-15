@@ -129,7 +129,7 @@ export function DeliverablesList({
                 </div>
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center gap-1">
+              <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-1 sm:w-auto">
                 <Select
                   value={d.status}
                   onValueChange={(s) =>

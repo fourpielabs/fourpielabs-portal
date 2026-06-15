@@ -97,7 +97,7 @@ function KindPanel({
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-ink-3">
           {items.length === 0
             ? "No items yet."
             : `${done}/${items.length} done`}
@@ -124,7 +124,7 @@ function KindPanel({
             aria-expanded={phaseOpen}
             className="motion-micro flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1 text-left hover:bg-surface-2"
           >
-            <span className="text-sm font-medium text-muted-foreground">{g.phase}</span>
+            <span className="text-sm font-medium text-ink-3">{g.phase}</span>
             <span className="flex items-center gap-2">
               <span className="text-xs tabular-nums text-ink-faint">
                 {phaseDone}/{g.items.length}
@@ -142,7 +142,7 @@ function KindPanel({
             }}
           >
            <div className="overflow-hidden">
-          <ul className="divide-y rounded-lg border">
+          <ul className="divide-y divide-row-divider rounded-xl border border-border">
             {g.items.map((it) => (
               <li
                 key={it.id}
@@ -160,14 +160,14 @@ function KindPanel({
                   {it.is_done ? (
                     <CircleCheck className="size-5" />
                   ) : (
-                    <Circle className="size-5 text-muted-foreground" />
+                    <Circle className="size-5 text-ink-3" />
                   )}
                 </button>
 
                 <div className="min-w-0 flex-1">
                   <div
                     className={
-                      it.is_done ? "text-muted-foreground line-through" : ""
+                      it.is_done ? "text-ink-3 line-through" : ""
                     }
                   >
                     {it.title}
@@ -191,7 +191,7 @@ function KindPanel({
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-0.5">
+                <div className="flex w-full shrink-0 items-center justify-end gap-0.5 sm:w-auto">
                   <Button
                     variant="ghost"
                     size="icon"
