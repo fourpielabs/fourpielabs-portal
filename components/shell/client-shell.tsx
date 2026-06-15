@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/shell/user-menu";
+import { BrandLogo } from "@/components/ui/brand-logo";
 
 type Item = { href: string; label: string };
 
@@ -63,13 +64,13 @@ export function ClientShell({
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* desktop top nav — full-bleed white bar */}
-      <header className="sticky top-0 z-30 hidden border-b border-border bg-surface sm:block">
-        <div className="mx-auto flex h-[72px] max-w-[1280px] items-center gap-7 px-8">
-          <Link href="/dashboard" className="font-display text-lg font-bold tracking-tight">
-            4Pie Labs<span className="text-amber-600">.</span>
+      {/* desktop top nav — floating rounded pill (matches fourpielabs.com) */}
+      <header className="sticky top-0 z-30 hidden px-4 pt-4 sm:block">
+        <div className="mx-auto flex h-14 w-fit max-w-full items-center gap-5 rounded-full border border-border bg-surface/85 px-5 shadow-e2 backdrop-blur-md">
+          <Link href="/dashboard">
+            <BrandLogo className="text-lg" />
           </Link>
-          <nav className="flex flex-1 items-center gap-1">
+          <nav className="flex items-center gap-1">
             {TOP.map((i) => {
               const active = isActive(pathname, i.href);
               return (
@@ -77,7 +78,7 @@ export function ClientShell({
                   key={i.href}
                   href={i.href}
                   className={cn(
-                    "rounded-full px-3 py-1.5 text-[13.5px] transition-colors",
+                    "motion-micro rounded-full px-3 py-1.5 text-[13.5px]",
                     active
                       ? "bg-surface-2 font-semibold text-ink"
                       : "font-medium text-ink-2 hover:bg-bg hover:text-ink",
@@ -88,14 +89,15 @@ export function ClientShell({
               );
             })}
           </nav>
+          <span className="h-6 w-px bg-border" />
           <UserMenu name={name} email={email} avatarUrl={avatarUrl} size="md" />
         </div>
       </header>
 
       {/* mobile compact header */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-surface px-4 py-3 sm:hidden">
-        <Link href="/dashboard" className="font-display text-base font-bold tracking-tight">
-          4Pie Labs<span className="text-amber-600">.</span>
+        <Link href="/dashboard">
+          <BrandLogo className="text-base" />
         </Link>
         <UserMenu name={name} email={email} avatarUrl={avatarUrl} size="md" />
       </header>

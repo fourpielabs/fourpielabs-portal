@@ -16,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import {
   deleteChecklistItemAction,
   moveChecklistItemAction,
@@ -86,6 +87,12 @@ function KindPanel({
 
   const done = items.filter((i) => i.is_done).length;
   const groups = groupByPhase([...items].sort((a, b) => a.sort_order - b.sort_order));
+  // accordion: first phase open, the rest collapsed
+  const [openPhases, setOpenPhases] = useState<Record<string, boolean>>(() =>
+    groups[0] ? { [groups[0].phase]: true } : {},
+  );
+  const togglePhase = (phase: string) =>
+    setOpenPhases((p) => ({ ...p, [phase]: !p[phase] }));
 
   return (
     <div className="space-y-5">
@@ -106,9 +113,35 @@ function KindPanel({
         />
       </div>
 
-      {groups.map((g) => (
+      {groups.map((g) => {
+        const phaseOpen = openPhases[g.phase] ?? false;
+        const phaseDone = g.items.filter((i) => i.is_done).length;
+        return (
         <div key={g.phase} className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground">{g.phase}</h3>
+          <button
+            type="button"
+            onClick={() => togglePhase(g.phase)}
+            aria-expanded={phaseOpen}
+            className="motion-micro flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1 text-left hover:bg-surface-2"
+          >
+            <span className="text-sm font-medium text-muted-foreground">{g.phase}</span>
+            <span className="flex items-center gap-2">
+              <span className="text-xs tabular-nums text-ink-faint">
+                {phaseDone}/{g.items.length}
+              </span>
+              <ChevronDown
+                className={cn("motion-state size-4 text-ink-3", phaseOpen && "rotate-180")}
+              />
+            </span>
+          </button>
+          <div
+            className="grid"
+            style={{
+              gridTemplateRows: phaseOpen ? "1fr" : "0fr",
+              transition: "grid-template-rows var(--duration-med) var(--ease-in-out)",
+            }}
+          >
+           <div className="overflow-hidden">
           <ul className="divide-y rounded-lg border">
             {g.items.map((it) => (
               <li
@@ -239,8 +272,11 @@ function KindPanel({
               </li>
             ))}
           </ul>
+           </div>
+          </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -267,6 +303,7 @@ export function ChecklistEditor({
         onValueChange={setKind}
       />
       <KindPanel
+        key={kind}
         clientId={clientId}
         kind={kind}
         items={kind === "onboarding" ? onboarding : offboarding}

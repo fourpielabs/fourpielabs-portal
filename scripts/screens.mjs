@@ -11,7 +11,11 @@ const EMAIL = {
   client: "demo-client@example.com",
 };
 const args = Object.fromEntries(
-  process.argv.slice(2).map((a) => a.replace(/^--/, "").split("=")),
+  process.argv.slice(2).map((a) => {
+    const s = a.replace(/^--/, "");
+    const i = s.indexOf("=");
+    return i === -1 ? [s, true] : [s.slice(0, i), s.slice(i + 1)];
+  }),
 );
 const BASE = args.base || "http://localhost:3001";
 const role = args.role || "admin";
@@ -61,6 +65,10 @@ for (const vp of viewports) {
     const r = rRaw.replace("{id}", clientId ?? "_");
     await page.goto(`${BASE}${r}`, { waitUntil: "networkidle" }).catch(() => {});
     await page.waitForTimeout(800);
+    if (args.click) {
+      await page.click(args.click).catch(() => {});
+      await page.waitForTimeout(500);
+    }
     const name = r.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "root";
     await page.screenshot({
       path: `screenshots/${out}/${role}_${name}_${vp.tag}.png`,

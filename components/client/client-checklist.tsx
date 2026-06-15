@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Users } from "lucide-react";
+import { Check, ChevronDown, Users } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -44,6 +45,12 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
   const complete = total > 0 && done === total;
   const [expanded, setExpanded] = useState(!complete);
   const groups = groupByPhase(items);
+  // accordion: first phase open, the rest collapsed
+  const [openPhases, setOpenPhases] = useState<Record<string, boolean>>(() =>
+    groups[0] ? { [groups[0].phase]: true } : {},
+  );
+  const togglePhase = (phase: string) =>
+    setOpenPhases((p) => ({ ...p, [phase]: !p[phase] }));
 
   async function toggle(id: string) {
     setPending(id);
@@ -105,11 +112,41 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
         </div>
       </div>
 
-      {groups.map((g) => (
-        <div key={g.phase} className="flex flex-col gap-1">
-          <h3 className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">
-            {g.phase}
-          </h3>
+      {groups.map((g) => {
+        const phaseOpen = openPhases[g.phase] ?? false;
+        const phaseDone = g.items.filter(isRowDone).length;
+        return (
+        <div key={g.phase} className="flex flex-col">
+          <button
+            type="button"
+            onClick={() => togglePhase(g.phase)}
+            aria-expanded={phaseOpen}
+            className="motion-micro -mx-2 flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-surface-2"
+          >
+            <span className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">
+              {g.phase}
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="text-[11px] tabular-nums text-ink-faint">
+                {phaseDone}/{g.items.length}
+              </span>
+              <ChevronDown
+                className={cn(
+                  "motion-state size-4 text-ink-3",
+                  phaseOpen && "rotate-180",
+                )}
+              />
+            </span>
+          </button>
+          <div
+            className="grid"
+            style={{
+              gridTemplateRows: phaseOpen ? "1fr" : "0fr",
+              transition: "grid-template-rows var(--duration-med) var(--ease-in-out)",
+            }}
+          >
+           <div className="overflow-hidden">
+            <div className="flex flex-col gap-1 pt-1">
           {g.items.map((it) => {
             const team = it.assignee === "team";
             const checked = isRowDone(it);
@@ -164,8 +201,12 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
               </div>
             );
           })}
+            </div>
+           </div>
+          </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

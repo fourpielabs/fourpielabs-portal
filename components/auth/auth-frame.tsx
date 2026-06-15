@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { BrandLogo } from "@/components/ui/brand-logo";
+
 /**
  * Dark split-screen auth shell (K1). Form panel holds `children`; the brand
  * panel (amber glow + statement) shows on desktop. `brand={false}` renders a
@@ -39,8 +41,8 @@ export function AuthFrame({
                   "radial-gradient(140% 100% at 85% 0%, rgba(217,119,6,0.26), rgba(217,119,6,0.05) 55%, transparent 80%), #101012",
               }}
             >
-              <div className="relative font-display text-[17px] font-bold tracking-tight text-dark-ink">
-                4Pie Labs<span className="text-amber-400">.</span>
+              <div className="relative text-[17px] text-dark-ink">
+                <BrandLogo dark />
               </div>
               <div className="relative mt-3.5 max-w-[300px] font-display text-2xl leading-[1.15] font-semibold tracking-[-0.015em] text-dark-ink">
                 Every number, deliverable, and win — in one place.
@@ -51,9 +53,9 @@ export function AuthFrame({
           <div className="flex flex-1 flex-col gap-10 p-8 sm:p-12 lg:min-h-[660px]">
             <Link
               href="/login"
-              className={`font-display text-[19px] font-bold tracking-tight text-dark-ink ${brand ? "hidden lg:block" : ""}`}
+              className={`text-[19px] text-dark-ink ${brand ? "hidden lg:block" : ""}`}
             >
-              4Pie Labs<span className="text-amber-400">.</span>
+              <BrandLogo dark />
             </Link>
             <div className="flex flex-1 flex-col justify-center">{children}</div>
             <p className="text-[12.5px] text-ink-3">

@@ -12,8 +12,9 @@ const buttonVariants = cva(
       variant: {
         // charcoal — the workhorse primary
         default: "bg-ink text-white hover:bg-charcoal-hover",
-        // amber CTA — white on amber-700, hover amber-800 (contrast rule)
-        amber: "bg-amber-700 text-white hover:bg-amber-800",
+        // amber CTA — depth gradient over amber-700 base (white text = AA), hover amber-800
+        amber:
+          "bg-amber-700 bg-[image:var(--amber-cta)] text-white shadow-[var(--shadow-amber)] hover:bg-amber-800 hover:bg-[image:var(--amber-cta-hover)]",
         outline:
           "border border-border-strong bg-surface text-ink hover:border-ink hover:bg-bg",
         secondary: "bg-surface-2 text-ink hover:bg-border",
