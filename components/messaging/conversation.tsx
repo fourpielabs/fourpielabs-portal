@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Lock, Eye, Send } from "lucide-react";
+import { Lock, Eye, Paperclip, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -10,13 +10,17 @@ import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageTaskButton } from "@/components/tasks/message-task-button";
+import { MessageAttachment } from "@/components/messaging/message-attachment";
 import type { TaskMember } from "@/lib/tasks";
 import {
   postMessageAction,
   getThreadMessagesAction,
   markThreadViewedAction,
+  getThreadParticipantsAction,
   type ThreadMessage,
+  type ThreadParticipant,
 } from "@/lib/actions/messages";
+import { uploadMessageAttachmentAction } from "@/lib/actions/message-attachments";
 
 export type ConversationTaskContext = {
   role: "client" | "staff";
@@ -46,9 +50,53 @@ export function Conversation({
   const [sending, setSending] = useState(false);
   const [, startTransition] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+
+  // @mentions: thread participants (RLS-gated; internal → staff only, never the
+  // client), the users mentioned so far, and the active "@query" for the dropdown.
+  const [participants, setParticipants] = useState<ThreadParticipant[]>([]);
+  const [mentions, setMentions] = useState<ThreadParticipant[]>([]);
+  const [mention, setMention] = useState<{ query: string; at: number } | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const refetch = () =>
     getThreadMessagesAction(threadId).then(setMessages).catch(() => {});
+
+  useEffect(() => {
+    getThreadParticipantsAction(threadId).then(setParticipants).catch(() => {});
+  }, [threadId]);
+
+  function detectMention(value: string, caret: number) {
+    const at = value.slice(0, caret).lastIndexOf("@");
+    if (at < 0) return null;
+    if (at > 0 && !/\s/.test(value[at - 1])) return null; // @ must start a word
+    const token = value.slice(at + 1, caret);
+    if (/\s/.test(token)) return null; // a space closes the token
+    return { query: token, at };
+  }
+  function onBodyChange(value: string, caret: number) {
+    setBody(value);
+    setMention(detectMention(value, caret));
+  }
+  function pickMention(p: ThreadParticipant) {
+    if (!mention) return;
+    const caret = taRef.current?.selectionStart ?? body.length;
+    const before = body.slice(0, mention.at);
+    const insert = `@${p.name} `;
+    const next = `${before}${insert}${body.slice(caret)}`;
+    setBody(next);
+    setMentions((xs) => (xs.some((m) => m.id === p.id) ? xs : [...xs, p]));
+    setMention(null);
+    requestAnimationFrame(() => {
+      const pos = before.length + insert.length;
+      taRef.current?.focus();
+      taRef.current?.setSelectionRange(pos, pos);
+    });
+  }
+  const mentionMatches = mention
+    ? participants.filter((p) => p.name.toLowerCase().includes(mention.query.toLowerCase())).slice(0, 6)
+    : [];
 
   // mark viewed on open → clears the bell's message notifications for THIS thread
   useEffect(() => {
@@ -90,8 +138,26 @@ export function Conversation({
 
   async function send() {
     const text = body.trim();
-    if (!text || sending) return;
+    if ((!text && !file) || sending) return;
     setSending(true);
+    // mentions still present in the text (deleting the @name removes the mention)
+    const mentionedIds = mentions.filter((m) => text.includes(`@${m.name}`)).map((m) => m.id);
+
+    // upload the attachment first (RLS-gated; service-role write) — then post
+    let attachmentPath: string | undefined;
+    let attachmentName: string | undefined;
+    if (file) {
+      const fd = new FormData();
+      fd.append("file", file);
+      const up = await uploadMessageAttachmentAction(threadId, fd);
+      if (!up.ok) {
+        setSending(false);
+        return toast.error("Attachment failed", { description: up.error });
+      }
+      attachmentPath = up.path;
+      attachmentName = up.name;
+    }
+
     // optimistic append — only ever YOUR OWN message
     const tmp: ThreadMessage = {
       id: `tmp-${Date.now()}`,
@@ -100,16 +166,20 @@ export function Conversation({
       authorName: currentUserName,
       authorRole: null,
       createdAt: new Date().toISOString(),
+      attachmentName: attachmentName ?? null,
     };
     setMessages((xs) => [...xs, tmp]);
     setBody("");
-    const res = await postMessageAction(threadId, text);
+    setMention(null);
+    setFile(null);
+    const res = await postMessageAction(threadId, text, mentionedIds, attachmentPath, attachmentName);
     setSending(false);
     if (!res.ok) {
       setMessages((xs) => xs.filter((m) => m.id !== tmp.id));
       setBody(text);
       return toast.error("Message not sent", { description: res.error });
     }
+    setMentions([]);
     refetch();
   }
 
@@ -156,7 +226,15 @@ export function Conversation({
                       />
                     )}
                   </div>
-                  <Markdown className="text-[14px]">{m.body}</Markdown>
+                  {m.body && <Markdown className="text-[14px]">{m.body}</Markdown>}
+                  {m.attachmentName &&
+                    (m.id.startsWith("tmp-") ? (
+                      <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-ink-3">
+                        <Paperclip className="size-3.5" /> {m.attachmentName}
+                      </span>
+                    ) : (
+                      <MessageAttachment messageId={m.id} name={m.attachmentName} />
+                    ))}
                 </div>
               </div>
             );
@@ -167,24 +245,80 @@ export function Conversation({
 
       {/* composer — the who-can-see-this indicator is unmissable for BOTH audiences */}
       <div className="border-t border-border p-3">
-        <div className={cn("mb-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold", banner.cls)}>
-          {banner.icon} {banner.label}
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <div className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold", banner.cls)}>
+            {banner.icon} {banner.label}
+          </div>
+          {file && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium text-ink">
+              <Paperclip className="size-3" />
+              <span className="max-w-[160px] truncate">{file.name}</span>
+              <button type="button" onClick={() => setFile(null)} aria-label="Remove attachment" className="text-ink-3 hover:text-ink">
+                <X className="size-3" />
+              </button>
+            </span>
+          )}
         </div>
-        <div className="flex items-end gap-2">
+        <input
+          ref={fileRef}
+          type="file"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0] ?? null;
+            setFile(f);
+            e.target.value = "";
+          }}
+        />
+        <div className="relative flex items-end gap-2">
+          {mention && mentionMatches.length > 0 && (
+            <div className="absolute bottom-full left-0 mb-1 w-64 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-e2">
+              {mentionMatches.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  data-mention-option
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    pickMention(p);
+                  }}
+                  className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-sm hover:bg-surface-2"
+                >
+                  <span className="text-ink-3">@</span>
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          )}
           <Textarea
+            ref={taRef}
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) => onBodyChange(e.target.value, e.target.selectionStart ?? e.target.value.length)}
+            onKeyUp={(e) => setMention(detectMention(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length))}
+            onClick={(e) => setMention(detectMention(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length))}
+            onBlur={() => setTimeout(() => setMention(null), 150)}
             onKeyDown={(e) => {
+              if (e.key === "Escape") setMention(null);
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
                 void send();
               }
             }}
             rows={2}
-            placeholder="Write a message… (markdown supported · ⌘↵ to send)"
+            placeholder="Write a message… (markdown · @ to mention · ⌘↵ to send)"
             className="resize-none"
           />
-          <Button onClick={() => void send()} loading={sending} disabled={!body.trim()}>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => fileRef.current?.click()}
+            disabled={sending}
+            aria-label="Attach a file"
+            title="Attach a file"
+          >
+            <Paperclip className="size-4" />
+          </Button>
+          <Button onClick={() => void send()} loading={sending} disabled={!body.trim() && !file}>
             <Send className="size-4" /> {internal ? "Post internal" : "Send"}
           </Button>
         </div>

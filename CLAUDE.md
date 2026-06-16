@@ -317,6 +317,62 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 >
 > **✅ PHASE 4 (Communication + Notifications) COMPLETE — 4a · 4b · 4c · 4d · 4e all shipped.**
 >
+> **Phase 5 (Tasks + Chat enhancements) COMPLETE (2026-06-16) — 5a · 5b · 5c · 5d shipped.**
+> A shared to-do system (staff↔client, both directions) + @mentions + message attachments,
+> all carrying the proven internal-thread boundary onto the new surfaces. The internal
+> boundary now holds across **six** surfaces: reads · notifications · realtime · email ·
+> **tasks · attachments**.
+>
+> **5a — Tasks data layer.** Migration `20260616123701_tasks_5a.sql`: `tasks` (id, client_id,
+> title, description, `task_status` enum `todo|in_progress|done`, assignee_id [staff OR client],
+> due_date, **`visible_to_client`** [the boundary gate, default true], source_message_id [FK
+> messages, on delete set null], created_by). RLS = admin all / team assigned / client own +
+> `visible_to_client` (the deliverables shape). **No direct client write policy** — two
+> SECURITY DEFINER RPCs: `create_task` (assignee constrained to the client's CIRCLE = own
+> users / admins / assigned team — never arbitrary; source_message_id restricted to the
+> client's own `client_shared` message — internal boundary at the source) and
+> `update_task_status` (own-client + visible only; internal/staff-only tasks untouchable).
+> `test:rls` **185** (+19 tasks checks: assignee-circle rejection, direct INSERT/UPDATE denied,
+> cross-client + invisible status RAISES, etc.).
+>
+> **5b — Tasks UI both sides.** Client `/tasks` nav page (program AND project clients) + staff
+> `/clients/[id]/tasks` tab. Staff write via `lib/actions/tasks.ts` (direct table, requireClientAccess,
+> assignee re-validated to the circle, audit `task.*`); clients via `lib/actions/tasks-client.ts`
+> (the RPCs). Circle resolver `lib/tasks.ts#getAssignableMembers` (reuses 4b clientUserIds/
+> staffUserIds). `StatusChip` gains a `task` kind. E2E `verify-tasks.mjs` **6/6** (staff→client
+> task visible; client status change; **staff-only task hidden from the client**).
+>
+> **5c — Create-task-from-message bridge (no migration).** A "Create task" control on every
+> message (`components/tasks/message-task-button.tsx`); Conversation gains `taskContext`. Client
+> creates on their shared thread (RPC, source = that message); staff on both. **Internal
+> boundary:** a staff task from an INTERNAL message is forced `visible_to_client=false` — the
+> action re-reads the message's real `thread_type` server-side (un-spoofable). A client creating
+> a task notifies staff (reuses the `message` notification type — no new enum/pref). E2E
+> `verify-task-from-message.mjs` **6/6** (linked + staff notified; internal-source task hidden
+> from the client).
+>
+> **5d — @mentions + attachments.** Migration `20260616144138_messaging_attachments_5d.sql`:
+> `messages.attachment_path` + `attachment_name`; `post_message` dropped + recreated as
+> `(uuid,text,text,text)` (new params default null → existing 2-arg callers unbroken; body OR
+> attachment required). **Mentions (no schema):** composer `@`-autocomplete →
+> `getThreadParticipantsAction` (RLS-gated: internal → staff only, a client can never read an
+> internal thread → can't be offered/mentioned in); `postMessageAction(threadId, body,
+> mentionedIds?)` re-validates each mention against the REAL thread's participant set
+> server-side + fires a de-duped "mentioned you" notification (reuses `message`). **Attachments:**
+> **no new bucket, no new storage policy** (clients still have none) — `uploadMessageAttachmentAction`
+> (RLS-scoped thread read = authorization, then service-role upload) +
+> `getMessageAttachmentUrlAction` (**RLS-scoped MESSAGE read = authorization** → a client reading
+> an internal message gets nothing → DENIED, then service-role signs a 60s URL). `test:rls`
+> **186** (+1: client can't read an internal message's `attachment_path`). E2E `verify-chat-enh.mjs`
+> **6/6** — **internal attachment → client DENIED** (the sixth surface), shared attachment
+> downloadable by the client, staff download both, @mention notifies, internal mention picker
+> excludes the client, internal activity never notifies the client.
+>
+> **The 4e "Email notifications" toggle report was a stale deploy, not a bug** — confirmed
+> rendering for all three roles on the current build (admin 3 / team 3 / client 4).
+>
+> **✅ PHASE 5 COMPLETE.**
+>
 > **Current status:** P1 + P2 + P3 COMPLETE. Migrations on the linked Tokyo
 > project (`frmukrgjkhlpxplhzeqj`); auth + demo seed (P1); admin workspace (P2);
 > team workspace core (P3): per-client layout with assignment-scoped guard

@@ -18,6 +18,7 @@ export type ThreadMessage = {
   authorName: string;
   authorRole: "admin" | "team" | "client" | null;
   createdAt: string;
+  attachmentName: string | null;
 };
 
 type PostedMessage = {
@@ -40,6 +41,9 @@ type PostedMessage = {
 export async function postMessageAction(
   threadId: string,
   body: string,
+  mentionedIds?: string[],
+  attachmentPath?: string | null,
+  attachmentName?: string | null,
 ): Promise<Result<{ id: string }>> {
   const me = await requireProfile();
   const supabase = await createClient();
@@ -47,6 +51,8 @@ export async function postMessageAction(
   const { data, error } = await supabase.rpc("post_message", {
     p_thread_id: threadId,
     p_body: body,
+    p_attachment_path: attachmentPath ?? null,
+    p_attachment_name: attachmentName ?? null,
   });
   if (error) return { ok: false, error: error.message };
 
@@ -82,10 +88,73 @@ export async function postMessageAction(
       clientId: msg.client_id,
       threadId,
     });
+
+    // @mentions — notify mentioned users who AREN'T already in the message
+    // recipients (same-side mentions). The valid-participant set is recomputed
+    // from the REAL thread type: internal → staff ONLY, so a client id passed as
+    // a mention into an internal thread is filtered out (the boundary, server-
+    // enforced, never trusting the caller's list).
+    const valid = new Set(msg.thread_type === "internal" ? staff : [...clients, ...staff]);
+    const mentionExtra = [...new Set(mentionedIds ?? [])].filter(
+      (id) => valid.has(id) && id !== me.id && !recipients.includes(id),
+    );
+    if (mentionExtra.length) {
+      await notify({
+        recipients: mentionExtra,
+        excludeUserId: me.id,
+        type: "message",
+        title: `${me.full_name ?? "Someone"} mentioned you`,
+        body: body.trim().slice(0, 140),
+        link,
+        clientId: msg.client_id,
+        threadId,
+      });
+    }
   }
 
   revalidatePath("/dashboard");
   return { ok: true, data: msg ? { id: msg.id } : undefined };
+}
+
+export type ThreadParticipant = { id: string; name: string };
+
+/**
+ * The users who can be @mentioned in a thread = its participants, RLS-gated.
+ * The thread is read through the USER client, so a client calling this for an
+ * INTERNAL thread reads nothing (threads_client_select is shared-only) → []. For
+ * a shared thread: the client's users + staff; for internal: staff ONLY (clients
+ * are never staff). So a client can never be offered — nor mentioned — into
+ * internal content (the same boundary the post action re-enforces).
+ */
+export async function getThreadParticipantsAction(threadId: string): Promise<ThreadParticipant[]> {
+  const me = await requireProfile();
+  const supabase = await createClient();
+  const { data: thread } = await supabase
+    .from("threads")
+    .select("client_id, type")
+    .eq("id", threadId)
+    .maybeSingle();
+  if (!thread) return [];
+  const clientId = thread.client_id as string;
+  const type = thread.type as "client_shared" | "internal";
+
+  const [clients, staff] = await Promise.all([
+    type === "internal" ? Promise.resolve<string[]>([]) : clientUserIds(clientId),
+    staffUserIds(clientId),
+  ]);
+  const targets = [...new Set([...clients, ...staff])].filter((id) => id !== me.id);
+  if (targets.length === 0) return [];
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("profiles")
+    .select("id, full_name, email")
+    .in("id", targets)
+    .eq("is_active", true);
+  return (data ?? []).map((p) => ({
+    id: p.id as string,
+    name: (p.full_name as string) ?? (p.email as string) ?? "Unknown",
+  }));
 }
 
 /**
@@ -100,7 +169,7 @@ export async function getThreadMessagesAction(threadId: string): Promise<ThreadM
   const supabase = await createClient();
   const { data } = await supabase
     .from("messages")
-    .select("id, body, author_id, created_at")
+    .select("id, body, author_id, created_at, attachment_name")
     .eq("thread_id", threadId)
     .order("created_at", { ascending: true });
   const msgs = data ?? [];
@@ -121,6 +190,7 @@ export async function getThreadMessagesAction(threadId: string): Promise<ThreadM
       authorName: a?.name ?? "Removed user",
       authorRole: a?.role ?? null,
       createdAt: m.created_at as string,
+      attachmentName: (m.attachment_name as string | null) ?? null,
     };
   });
 }

@@ -184,7 +184,7 @@ async function main() {
   await admin.from("messages").delete().eq("client_id", premierId).like("body", "RLS%");
   await admin.from("messages").insert([
     { thread_id: premierShared, client_id: premierId, thread_type: "client_shared", body: "RLSMSG-shared" },
-    { thread_id: premierInternal, client_id: premierId, thread_type: "internal", body: "RLSMSG-internal" },
+    { thread_id: premierInternal, client_id: premierId, thread_type: "internal", body: "RLSMSG-internal", attachment_path: `${premierId}/rls-internal.bin`, attachment_name: "rls-internal.bin" },
   ]);
 
   // --- notifications fixtures (service-role insert; no insert policy) --------
@@ -370,6 +370,10 @@ async function main() {
     const bodies = (cMsgs ?? []).map((m) => m.body);
     rec("messaging", "client reads shared-thread messages", bodies.includes("RLSMSG-shared"), "");
     rec("messaging", "client CANNOT read internal-thread messages", !bodies.includes("RLSMSG-internal"), "");
+    // 5d: a client can't read an INTERNAL message's attachment_path (the columns
+    // inherit the row's RLS — messages_client_select is shared-only)
+    const cAtt = await client.from("messages").select("attachment_path").eq("id", internalMsgId);
+    rec("messaging", "client CANNOT read internal message attachment_path", (cAtt.data?.length ?? 0) === 0, `${cAtt.data?.length ?? 0} rows`);
     const { data: cxMsg } = await client.from("messages").select("id").eq("client_id", pulseId);
     rec("messaging", "client cross-client messages 0", (cxMsg?.length ?? 0) === 0, `${cxMsg?.length ?? 0} rows`);
 
