@@ -40,11 +40,13 @@ export async function verifyEmailOtpAction(formData: FormData): Promise<void> {
   // impossible — even from a stale/misconfigured invite email still in an inbox.
   // `next` (relative-only, open-redirect guarded) is honored for other types.
   const dest =
-    type === "invite" || type === "recovery"
-      ? "/accept-invite"
-      : next.startsWith("/")
-        ? next
-        : "/dashboard";
+    type === "invite"
+      ? "/accept-invite?mode=welcome"
+      : type === "recovery"
+        ? "/accept-invite?mode=reset"
+        : next.startsWith("/")
+          ? next
+          : "/dashboard";
   redirect(dest);
 }
 

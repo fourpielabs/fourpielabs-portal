@@ -34,11 +34,33 @@ const schema = z
   });
 type FormValues = z.infer<typeof schema>;
 
+// invite vs recovery differ ONLY in copy — the set-password mechanism is identical.
+// `mode` is read from the URL (verifyEmailOtpAction stamps ?mode=welcome|reset); a
+// user flipping the param just sees different words. No-mode → neutral default.
+const COPY = {
+  welcome: {
+    heading: "Welcome to 4Pie Labs",
+    sub: "Create your password to finish setting up your account.",
+    button: "Create password & continue",
+  },
+  reset: {
+    heading: "Reset your password",
+    sub: "Choose a new password for your account.",
+    button: "Reset password & continue",
+  },
+  default: {
+    heading: "Set your password",
+    sub: "Choose a password to finish setting up your account.",
+    button: "Set password & continue",
+  },
+} as const;
+
 export default function AcceptInvitePage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [hasSession, setHasSession] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [mode, setMode] = useState<keyof typeof COPY>("default");
   const {
     register,
     handleSubmit,
@@ -46,12 +68,16 @@ export default function AcceptInvitePage() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   useEffect(() => {
+    const m = new URLSearchParams(window.location.search).get("mode");
+    setMode(m === "welcome" || m === "reset" ? m : "default");
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       setHasSession(!!session);
       setChecking(false);
     });
   }, []);
+
+  const copy = COPY[mode];
 
   async function onSubmit({ password }: FormValues) {
     setSubmitting(true);
@@ -105,11 +131,9 @@ export default function AcceptInvitePage() {
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <h2 className="font-display text-3xl font-semibold tracking-[-0.015em] text-dark-ink">
-          Set your password
+          {copy.heading}
         </h2>
-        <p className="text-sm text-dark-ink-2">
-          Choose a password to finish setting up your account.
-        </p>
+        <p className="text-sm text-dark-ink-2">{copy.sub}</p>
       </div>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
@@ -141,7 +165,7 @@ export default function AcceptInvitePage() {
           )}
         </div>
         <Button type="submit" variant="amber" size="lg" className="w-full" loading={submitting}>
-          {submitting ? "Saving…" : "Set password & continue"}
+          {submitting ? "Saving…" : copy.button}
         </Button>
       </div>
     </form>

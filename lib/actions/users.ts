@@ -7,6 +7,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { logAudit } from "@/lib/audit";
 import { inviteSchema, type InviteValues } from "@/lib/schemas";
 import { mapEmailSendError } from "@/lib/auth/email-errors";
+import { checkUserDeletable } from "@/lib/user-delete-guard";
 
 type Result<T = undefined> =
   | { ok: true; data?: T }
@@ -186,6 +187,64 @@ export async function revokeInviteAction(userId: string): Promise<Result> {
     entityId: userId,
     metadata: { email },
   });
+  revalidatePath("/admin/users");
+  return { ok: true };
+}
+
+/**
+ * HARD-delete a user (irreversible). Deactivate is the gentle default; this
+ * permanently removes the auth user via the service role, which cascades the
+ * profile + their personal state (notifications, prefs, thread_reads,
+ * assignments). Everything they AUTHORED survives un-attributed ("Removed user"
+ * — created_by/author_id/uploaded_by/assignee_id are SET NULL), and the audit
+ * trail is preserved (actor_id SET NULL). Admin only. Guards (the system can't be
+ * locked out): no self-delete, no deleting the last ACTIVE admin — enforced by the
+ * pure checkUserDeletable. The UI gates this behind a type-the-name confirm dialog.
+ */
+export async function deleteUserAction(userId: string): Promise<Result> {
+  const me = await requireRole(["admin"]);
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+
+  const { data: got } = await adminClient.auth.admin.getUserById(userId);
+  if (!got?.user) return { ok: false, error: "User not found." };
+
+  const { data: target } = await supabase
+    .from("profiles")
+    .select("role, email, full_name, is_active")
+    .eq("id", userId)
+    .single();
+  if (!target) return { ok: false, error: "User not found." };
+
+  // count currently-active admins (includes the target if they're an active admin)
+  const { count } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("role", "admin")
+    .eq("is_active", true);
+
+  const guard = checkUserDeletable({
+    targetId: userId,
+    callerId: me.id,
+    targetRole: target.role,
+    targetActive: target.is_active,
+    activeAdminCount: count ?? 0,
+  });
+  if (!guard.ok) return { ok: false, error: guard.error };
+
+  // audit BEFORE the delete — capture the vanishing identity; the row survives
+  // (actor_id = me/admin; entity_id is plain text with no FK).
+  await logAudit({
+    actorId: me.id,
+    action: "user.deleted",
+    entity: "profile",
+    entityId: userId,
+    metadata: { email: target.email, full_name: target.full_name, role: target.role },
+  });
+
+  const { error } = await adminClient.auth.admin.deleteUser(userId);
+  if (error) return { ok: false, error: error.message };
+
   revalidatePath("/admin/users");
   return { ok: true };
 }

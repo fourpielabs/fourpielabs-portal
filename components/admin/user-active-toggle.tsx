@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { setUserActiveAction } from "@/lib/actions/users";
+import { setUserActiveAction, deleteUserAction } from "@/lib/actions/users";
 import { Button } from "@/components/ui/button";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,45 +39,75 @@ export function UserActiveToggle({ userId, isActive, isSelf, label }: Props) {
     router.refresh();
   }
 
+  // self: no controls (can't deactivate or delete yourself — the action re-checks too)
   if (isSelf) {
     return <span className="text-xs text-muted-foreground">You</span>;
   }
 
-  if (isActive) {
-    return (
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button variant="outline" size="sm" disabled={pending}>
-            Deactivate
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate {label}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              They&apos;ll be signed out and blocked at the login gate on their
-              next request. You can reactivate them anytime.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => apply(false)}>
-              Deactivate
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    );
-  }
+  const deleteBtn = (
+    <ConfirmDeleteDialog
+      trigger={
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={pending}
+          className="border-danger-border text-danger-text hover:border-danger-border hover:bg-danger-bg"
+        >
+          Delete
+        </Button>
+      }
+      title={`Delete ${label}?`}
+      confirmPhrase={label}
+      confirmLabel="Delete permanently"
+      successMessage="User deleted."
+      onConfirm={() => deleteUserAction(userId)}
+      description={
+        <>
+          <p>
+            This <span className="font-semibold text-ink">permanently deletes</span> their
+            account. It can&apos;t be undone — use Deactivate if you just want to block access.
+          </p>
+          <p>
+            Their notifications, preferences, and client assignments are erased. Anything they
+            created (deliverables, messages, reports, files…) is kept but shown as
+            &ldquo;Removed user&rdquo;. The audit log is preserved.
+          </p>
+        </>
+      }
+    />
+  );
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={pending}
-      onClick={() => apply(true)}
-    >
-      Reactivate
-    </Button>
+    <div className="flex items-center justify-end gap-1">
+      {isActive ? (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm" disabled={pending}>
+              Deactivate
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deactivate {label}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                They&apos;ll be signed out and blocked at the login gate on their
+                next request. You can reactivate them anytime.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" onClick={() => apply(false)}>
+                Deactivate
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : (
+        <Button variant="outline" size="sm" disabled={pending} onClick={() => apply(true)}>
+          Reactivate
+        </Button>
+      )}
+      {deleteBtn}
+    </div>
   );
 }

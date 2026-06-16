@@ -17,6 +17,7 @@ export const AUDIT_ACTION_GROUPS = {
     "user.invite_revoked",
     "user.reactivated",
     "user.deactivated",
+    "user.deleted",
     "assignment.created",
     "assignment.removed",
   ],

@@ -31,7 +31,7 @@ const page = await ctx.newPage();
 // Walk one email link exactly as a recipient would: GET the /auth/confirm
 // interstitial with the real token_hash, click Continue (POST verify), then
 // assert we land on the set-password form — NOT /dashboard.
-async function walk(label, tokenHash, type, nextParam = "/accept-invite") {
+async function walk(label, tokenHash, type, nextParam = "/accept-invite", expectHeading = null) {
   await ctx.clearCookies();
   await page.goto(`${BASE}/auth/confirm?token_hash=${tokenHash}&type=${type}&next=${nextParam}`, { waitUntil: "domcontentloaded" });
   await page.click('button:has-text("Continue")');
@@ -39,13 +39,18 @@ async function walk(label, tokenHash, type, nextParam = "/accept-invite") {
   await page.waitForTimeout(1200);
   const url = page.url();
   const onAccept = url.includes("/accept-invite");
-  const formVisible = await page.getByText("Set your password").isVisible().catch(() => false);
+  // mode-agnostic form detection (the heading text now varies by mode)
+  const formVisible = await page.locator("#password").isVisible().catch(() => false);
   const onDashboard = url.includes("/dashboard");
   rec(`${label}: lands on SET-PASSWORD FORM (not /dashboard)`, onAccept && formVisible, onDashboard ? "LANDED ON /dashboard — the bug" : url);
+  if (expectHeading) {
+    const headingOk = await page.getByText(expectHeading, { exact: true }).first().isVisible().catch(() => false);
+    rec(`${label}: heading reads "${expectHeading}"`, headingOk, "");
+  }
   if (onAccept && formVisible) {
     await page.fill("#password", NEWPASS);
     await page.fill("#confirm", NEWPASS);
-    await page.click('button:has-text("Set password")');
+    await page.click('button[type="submit"]'); // mode-agnostic (label varies by mode)
     await page.waitForURL("**/dashboard", { timeout: 15000 }).catch(() => {});
     rec(`${label}: after setting password → /dashboard`, page.url().includes("/dashboard"), page.url());
   }
@@ -66,7 +71,7 @@ try {
     options: { data: { role: "team", client_id: null, full_name: "E2E Invite" } },
   });
   if (inv.error) throw new Error(`invite generateLink: ${inv.error.message}`);
-  await walk("INVITE", inv.data.properties.hashed_token, "invite");
+  await walk("INVITE", inv.data.properties.hashed_token, "invite", "/accept-invite", "Welcome to 4Pie Labs");
 
   // RECOVERY: needs an existing user with a password first
   const cu = await admin.auth.admin.createUser({
@@ -76,7 +81,7 @@ try {
   if (cu.error) throw new Error(`createUser: ${cu.error.message}`);
   const rec_ = await admin.auth.admin.generateLink({ type: "recovery", email: recoveryEmail });
   if (rec_.error) throw new Error(`recovery generateLink: ${rec_.error.message}`);
-  await walk("RECOVERY", rec_.data.properties.hashed_token, "recovery");
+  await walk("RECOVERY", rec_.data.properties.hashed_token, "recovery", "/accept-invite", "Reset your password");
 
   // HARDENING PROOF: a STALE invite link carrying next=/dashboard must STILL land on
   // the set-password form (the verifyEmailOtpAction override). Without the hardening
@@ -86,7 +91,7 @@ try {
     options: { data: { role: "team", client_id: null, full_name: "E2E Stale" } },
   });
   if (stale.error) throw new Error(`stale generateLink: ${stale.error.message}`);
-  await walk("INVITE (stale next=/dashboard)", stale.data.properties.hashed_token, "invite", "/dashboard");
+  await walk("INVITE (stale next=/dashboard)", stale.data.properties.hashed_token, "invite", "/dashboard", "Welcome to 4Pie Labs");
 } catch (e) {
   rec("UNCAUGHT ERROR", false, String(e?.message ?? e));
 } finally {
