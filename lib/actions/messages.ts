@@ -177,8 +177,20 @@ export async function getThreadMessagesAction(threadId: string, after?: string):
     .eq("thread_id", threadId);
   if (after) q = q.gt("created_at", after);
   const { data } = await q.order("created_at", { ascending: true });
-  const msgs = data ?? [];
+  return hydrateMessages((data ?? []) as RawMessage[]);
+}
 
+type RawMessage = {
+  id: string;
+  body: string;
+  author_id: string | null;
+  created_at: string;
+  attachment_name: string | null;
+  edited_at: string | null;
+};
+
+/** Resolve author names (service-role; the caller can already see these rows) + map. */
+async function hydrateMessages(msgs: RawMessage[]): Promise<ThreadMessage[]> {
   const authorIds = [...new Set(msgs.map((m) => m.author_id).filter(Boolean))] as string[];
   const nameById = new Map<string, { name: string; role: ThreadMessage["authorRole"] }>();
   if (authorIds.length) {
@@ -189,16 +201,38 @@ export async function getThreadMessagesAction(threadId: string, after?: string):
   return msgs.map((m) => {
     const a = m.author_id ? nameById.get(m.author_id) : null;
     return {
-      id: m.id as string,
-      body: m.body as string,
-      authorId: (m.author_id as string | null) ?? null,
+      id: m.id,
+      body: m.body,
+      authorId: m.author_id ?? null,
       authorName: a?.name ?? "Removed user",
       authorRole: a?.role ?? null,
-      createdAt: m.created_at as string,
-      attachmentName: (m.attachment_name as string | null) ?? null,
-      editedAt: (m.edited_at as string | null) ?? null,
+      createdAt: m.created_at,
+      attachmentName: m.attachment_name ?? null,
+      editedAt: m.edited_at ?? null,
     };
   });
+}
+
+/**
+ * Search within a thread — RLS-scoped: a client searches ONLY their own shared
+ * thread (the messages_client_select policy is shared-only + non-deleted), staff
+ * search the threads they can access. The same SELECT policy as the thread read, so
+ * the internal boundary holds (a client gets nothing for an internal thread id).
+ */
+export async function searchThreadMessagesAction(threadId: string, query: string): Promise<ThreadMessage[]> {
+  await requireProfile();
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const esc = q.replace(/[%_\\]/g, (c) => `\\${c}`); // literal — escape ILIKE wildcards
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("messages")
+    .select("id, body, author_id, created_at, attachment_name, edited_at")
+    .eq("thread_id", threadId)
+    .ilike("body", `%${esc}%`)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  return hydrateMessages((data ?? []) as RawMessage[]);
 }
 
 /**

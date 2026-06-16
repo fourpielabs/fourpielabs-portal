@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Lock, Eye, Paperclip, Pencil, Send, Trash2, X } from "lucide-react";
+import { Bold, Italic, Lock, Eye, Paperclip, Pencil, Search, Send, Smile, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -19,9 +19,15 @@ import {
   getThreadParticipantsAction,
   editMessageAction,
   deleteMessageAction,
+  searchThreadMessagesAction,
   type ThreadMessage,
   type ThreadParticipant,
 } from "@/lib/actions/messages";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { uploadMessageAttachmentAction } from "@/lib/actions/message-attachments";
 import {
   AlertDialog,
@@ -40,6 +46,13 @@ export type ConversationTaskContext = {
   clientId: string;
   members: TaskMember[];
 };
+
+// curated set — no emoji-picker dependency (keeps the bundle lean, post-Batch-1.5)
+const EMOJIS = [
+  "👍", "🙏", "🎉", "🔥", "✅", "👀", "💪", "😄", "🙌", "❤️", "🚀", "💡",
+  "📈", "⭐", "👏", "🤝", "✨", "📝", "⏰", "💬", "🎯", "👋", "🤔", "😊",
+  "💯", "🆗", "📌", "⚡", "🥳", "😅", "🙂", "🫶",
+];
 
 export function Conversation({
   threadId,
@@ -74,6 +87,8 @@ export function Conversation({
   const fileRef = useRef<HTMLInputElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<ThreadMessage[] | null>(null);
 
   // keep a ref to the current messages so the realtime callback computes "after"
   // from fresh state (its closure would otherwise be stale).
@@ -153,9 +168,46 @@ export function Conversation({
     }
   }
 
+  // composer helpers (emoji insert + markdown formatting) — operate at the cursor
+  function insertAtCursor(text: string) {
+    const ta = taRef.current;
+    const start = ta?.selectionStart ?? body.length;
+    const end = ta?.selectionEnd ?? body.length;
+    setBody(body.slice(0, start) + text + body.slice(end));
+    requestAnimationFrame(() => {
+      const pos = start + text.length;
+      ta?.focus();
+      ta?.setSelectionRange(pos, pos);
+    });
+  }
+  function wrapSelection(marker: string) {
+    const ta = taRef.current;
+    const start = ta?.selectionStart ?? body.length;
+    const end = ta?.selectionEnd ?? body.length;
+    const sel = body.slice(start, end) || "text";
+    setBody(body.slice(0, start) + marker + sel + marker + body.slice(end));
+    requestAnimationFrame(() => {
+      ta?.focus();
+      ta?.setSelectionRange(start + marker.length, start + marker.length + sel.length);
+    });
+  }
+
   useEffect(() => {
     getThreadParticipantsAction(threadId).then(setParticipants).catch(() => {});
   }, [threadId]);
+
+  // in-thread search — RLS-scoped action (a client searches ONLY their shared thread)
+  useEffect(() => {
+    const q = search.trim();
+    if (q.length < 2) {
+      setSearchResults(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      searchThreadMessagesAction(threadId, q).then(setSearchResults).catch(() => setSearchResults(null));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search, threadId]);
 
   function detectMention(value: string, caret: number) {
     const at = value.slice(0, caret).lastIndexOf("@");
@@ -286,6 +338,41 @@ export function Conversation({
 
   return (
     <div className="flex h-[70vh] min-h-[440px] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-e1">
+      {/* in-thread search (RLS-scoped — a client searches only their shared thread) */}
+      <div className="relative border-b border-border p-2">
+        <div className="flex items-center gap-2 rounded-lg bg-surface-2 px-2.5 py-1.5">
+          <Search className="size-3.5 shrink-0 text-ink-3" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search this conversation…"
+            className="w-full bg-transparent text-[13px] outline-none placeholder:text-ink-3"
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch("")} aria-label="Clear search" className="shrink-0 text-ink-3 hover:text-ink">
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+        {searchResults !== null && (
+          <div className="absolute inset-x-2 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border bg-surface shadow-e2">
+            {searchResults.length === 0 ? (
+              <p className="px-3 py-4 text-center text-xs text-ink-3">No matches in this conversation.</p>
+            ) : (
+              searchResults.map((r) => (
+                <div key={r.id} className="border-b border-row-divider px-3 py-2 last:border-0">
+                  <div className="flex items-center gap-2 text-[11px] text-ink-3">
+                    <span className="font-semibold text-ink-2">{r.authorId === currentUserId ? "You" : r.authorName}</span>
+                    <span className="tabular-nums">{formatRelative(r.createdAt)}</span>
+                  </div>
+                  <p className="line-clamp-2 text-[13px] text-ink">{r.body}</p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
       {/* message list */}
       <div className={cn("flex-1 space-y-3 overflow-y-auto p-4", internal && "bg-amber-50/30")}>
         {messages.length === 0 ? (
@@ -421,6 +508,53 @@ export function Conversation({
               </button>
             </span>
           )}
+          {/* formatting toolbar — emoji picker + markdown helpers (insert at the cursor) */}
+          <div className="ml-auto flex items-center gap-0.5">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Insert emoji"
+                  title="Emoji"
+                  className="inline-flex size-7 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink"
+                >
+                  <Smile className="size-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto p-2">
+                <div className="grid grid-cols-8 gap-0.5">
+                  {EMOJIS.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => insertAtCursor(e)}
+                      className="rounded p-1 text-lg leading-none hover:bg-surface-2"
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <button
+              type="button"
+              onClick={() => wrapSelection("**")}
+              aria-label="Bold (markdown **)"
+              title="Bold"
+              className="inline-flex size-7 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink"
+            >
+              <Bold className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => wrapSelection("*")}
+              aria-label="Italic (markdown *)"
+              title="Italic"
+              className="inline-flex size-7 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink"
+            >
+              <Italic className="size-3.5" />
+            </button>
+          </div>
         </div>
         <input
           ref={fileRef}
