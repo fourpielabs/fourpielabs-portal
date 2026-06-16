@@ -1,6 +1,8 @@
 import { requireProfile } from "@/lib/auth/guards";
+import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { AvatarUpload } from "@/components/settings/avatar-upload";
+import { EmailPreferences } from "@/components/settings/email-preferences";
 import {
   Card,
   CardContent,
@@ -11,6 +13,13 @@ import {
 
 export default async function SettingsPage() {
   const me = await requireProfile();
+  // RLS exposes only the caller's own row; absence → the UI defaults all toggles on.
+  const supabase = await createClient();
+  const { data: prefs } = await supabase
+    .from("notification_preferences")
+    .select("*")
+    .eq("user_id", me.id)
+    .maybeSingle();
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -32,6 +41,8 @@ export default async function SettingsPage() {
       </Card>
 
       <ProfileForm fullName={me.full_name} email={me.email} role={me.role} />
+
+      <EmailPreferences role={me.role} current={(prefs ?? {}) as Record<string, boolean | null>} />
     </div>
   );
 }

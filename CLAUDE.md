@@ -285,6 +285,26 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > "Send Email" hook (flagged, not blocking); email logo swap. **Next:** 4e (per-user
 > notification email preferences — has a migration).
 >
+> **Phase 4e (Per-user email preferences) COMPLETE (2026-06-16) — PHASE 4 FULLY DONE.**
+> Migration `20260616022443_notification_preferences_4e.sql` (pushed): one row per user,
+> a boolean column per notification type, **every column `default true`** (opt-out baked
+> in). RLS = self-manage **own** (select/insert/update `user_id = auth.uid()`, no delete) —
+> per-user personal state, the notifications/profiles precedent; rows are seeded **lazily on
+> first Save** (no `handle_new_user` change). **Absence-of-row = all-on** lives in both the
+> send logic and the settings UI, so a user who never opens Settings stays fully notified.
+> `notify()`'s EMAIL step gains an **email-only** gate: it fetches the candidates' pref rows
+> and drops only those whose type column is explicitly `false` (`sendIds = emailIds.filter(id
+> => !optedOut.has(id))` — **no row stays in → SEND**); the in-app bell row always inserts.
+> Type↔column map + per-role receivability in `lib/notification-prefs.ts` (client sees 4
+> toggles, staff 3). Settings UI: `components/settings/email-preferences.tsx` (role-filtered
+> `Switch`es) on `/settings` for all three roles; `updateEmailPreferencesAction` upserts own.
+> Tests: `test:rls` **166/166** (new `notif_prefs` group: read-own / cross-user 0 / upsert-own
+> / cross-user update+insert denied / anon denied); `scripts/verify-prefs.mjs` **6/6** —
+> **DEFAULT (no row) → client EMAILED** (the absence-of-row=send guard, so new users aren't
+> silently muted), OFF → suppressed but bell still inserts, ON → resumes, + settings-save smoke.
+>
+> **✅ PHASE 4 (Communication + Notifications) COMPLETE — 4a · 4b · 4c · 4d · 4e all shipped.**
+>
 > **Current status:** P1 + P2 + P3 COMPLETE. Migrations on the linked Tokyo
 > project (`frmukrgjkhlpxplhzeqj`); auth + demo seed (P1); admin workspace (P2);
 > team workspace core (P3): per-client layout with assignment-scoped guard

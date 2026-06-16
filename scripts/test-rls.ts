@@ -196,6 +196,10 @@ async function main() {
   const clientNoteId = cNote!.id as string;
   const teamNoteId = tNote!.id as string;
 
+  // --- notification_preferences fixtures (4e) -------------------------------
+  await admin.from("notification_preferences").delete().in("user_id", [clientProfileId, teamUid]);
+  await admin.from("notification_preferences").insert({ user_id: teamUid, email_message: false });
+
   // ====================== AS CLIENT (demo-client / premier) =================
   const client = createClient(url, anonKey, { auth: { persistSession: false } });
   await client.auth.signInWithPassword({ email: "demo-client@example.com", password: PW });
@@ -393,6 +397,21 @@ async function main() {
     rec("notifications", "client direct-INSERT notifications DENIED", !!di.error || (di.data?.length ?? 0) === 0, di.error?.code ?? `${di.data?.length ?? 0} rows`);
   }
 
+  // --- notification_preferences (4e): self-manage own only ------------------
+  {
+    const { data: own } = await client.from("notification_preferences").select("user_id");
+    rec("notif_prefs", "client reads OWN prefs only (team row invisible)", (own ?? []).every((r) => r.user_id === clientUid), `${own?.length ?? 0} row(s)`);
+    const xr = await client.from("notification_preferences").select("user_id").eq("user_id", teamUid);
+    rec("notif_prefs", "client cross-user prefs read 0", (xr.data?.length ?? 0) === 0, `${xr.data?.length ?? 0} rows`);
+
+    const ins = await client.from("notification_preferences").upsert({ user_id: clientUid, email_message: false }, { onConflict: "user_id" }).select("user_id");
+    rec("notif_prefs", "client upserts OWN prefs (insert/update)", !ins.error && (ins.data?.length ?? 0) === 1, ins.error?.code ?? `${ins.data?.length ?? 0} rows`);
+    const xu = await client.from("notification_preferences").update({ email_message: true }).eq("user_id", teamUid).select("user_id");
+    rec("notif_prefs", "client cannot UPDATE another user's prefs", !!xu.error || (xu.data?.length ?? 0) === 0, xu.error?.code ?? `${xu.data?.length ?? 0} rows`);
+    const xi = await client.from("notification_preferences").insert({ user_id: teamUid, email_message: true }).select("user_id");
+    rec("notif_prefs", "client cannot INSERT prefs for another user", !!xi.error || (xi.data?.length ?? 0) === 0, xi.error?.code ?? `${xi.data?.length ?? 0} rows`);
+  }
+
   // ====================== AS TEAM (demo-team, unassigned client) ============
   const team = createClient(url, anonKey, { auth: { persistSession: false } });
   await team.auth.signInWithPassword({ email: "demo-team@example.com", password: PW });
@@ -491,6 +510,10 @@ async function main() {
     rec("anon", "read notifications 0", (anNotes.data?.length ?? 0) === 0, `${anNotes.data?.length ?? 0} rows`);
     const anUpd = await anon.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", clientNoteId).select("id");
     rec("anon", "update notifications denied", !!anUpd.error || (anUpd.data?.length ?? 0) === 0, anUpd.error?.code ?? `${anUpd.data?.length ?? 0} rows`);
+    const anPref = await anon.from("notification_preferences").select("user_id");
+    rec("anon", "read notification_preferences 0", (anPref.data?.length ?? 0) === 0, `${anPref.data?.length ?? 0} rows`);
+    const anPrefIns = await anon.from("notification_preferences").insert({ user_id: clientProfileId, email_message: false }).select("user_id");
+    rec("anon", "insert notification_preferences denied", !!anPrefIns.error || (anPrefIns.data?.length ?? 0) === 0, anPrefIns.error?.code ?? `${anPrefIns.data?.length ?? 0} rows`);
   }
 
   // ====================== SEED GATING =======================================
@@ -529,6 +552,7 @@ async function main() {
   }
 
   // --- cleanup --------------------------------------------------------------
+  await admin.from("notification_preferences").delete().in("user_id", [clientProfileId, teamUid]);
   await admin.from("notifications").delete().like("title", "RLSNOTE%");
   await admin.from("messages").delete().eq("client_id", premierId).like("body", "RLS%");
   await admin.from("thread_reads").delete().eq("thread_id", premierShared);

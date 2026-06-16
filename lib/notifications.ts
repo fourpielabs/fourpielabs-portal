@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildNotificationEmail, sendNotificationEmail } from "@/lib/email";
+import { emailPrefColumn } from "@/lib/notification-prefs";
 
 export type NotificationType =
   | "message"
@@ -97,8 +98,26 @@ export async function notify(input: {
   // recipient list is the SAME as the in-app one, so the internal-thread boundary
   // (client never in the internal recipient set) holds in email too.
   if (emailIds.length > 0) {
+    // 4e EMAIL-ONLY preference gate: a recipient whose per-type column is FALSE opts
+    // out of this email. **No row → SEND** (the opt-out default — a missing pref must
+    // never silently skip). The in-app rows above are unaffected by preferences.
+    let sendIds = emailIds;
+    const column = emailPrefColumn(input.type);
+    if (column) {
+      const res = await admin
+        .from("notification_preferences")
+        .select(`user_id, ${column}`)
+        .in("user_id", emailIds);
+      const prefs = (res.data ?? []) as unknown as Array<Record<string, unknown>>;
+      const optedOut = new Set(
+        prefs.filter((p) => p[column] === false).map((p) => p.user_id as string),
+      );
+      sendIds = emailIds.filter((id) => !optedOut.has(id)); // absence-of-row stays in → sends
+    }
+    if (sendIds.length === 0) return;
+
     const [{ data: profs }, clientName] = await Promise.all([
-      admin.from("profiles").select("id, email").in("id", emailIds).eq("is_active", true),
+      admin.from("profiles").select("id, email").in("id", sendIds).eq("is_active", true),
       input.clientId
         ? admin.from("clients").select("name").eq("id", input.clientId).maybeSingle().then((r) => r.data?.name ?? null)
         : Promise.resolve(null),
