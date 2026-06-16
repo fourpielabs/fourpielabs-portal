@@ -128,7 +128,10 @@ export async function resendInviteAction(userId: string): Promise<Result> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const { error } = await adminClient.auth.admin.inviteUserByEmail(email, {
     data: { role, client_id: clientId, full_name: prof?.full_name ?? null },
-    redirectTo: `${siteUrl}/accept-invite`,
+    // route through the prefetch-safe /auth/confirm interstitial, like the other
+    // invite actions (the custom token_hash template drives the link, but keep this
+    // consistent so it's correct if the template ever switches to .ConfirmationURL).
+    redirectTo: `${siteUrl}/auth/confirm?next=/accept-invite`,
   });
   if (error) {
     const status = (error as { status?: number }).status;

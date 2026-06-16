@@ -34,8 +34,18 @@ export async function verifyEmailOtpAction(formData: FormData): Promise<void> {
     redirect("/login?error=link");
   }
 
-  // only relative redirects (open-redirect guard)
-  redirect(next.startsWith("/") ? next : "/dashboard");
+  // invite + recovery are password-SETTING flows: ALWAYS land on the set-password
+  // form, regardless of the `next` the email link carried. This makes the
+  // "invited user lands on /dashboard with no password" symptom structurally
+  // impossible — even from a stale/misconfigured invite email still in an inbox.
+  // `next` (relative-only, open-redirect guarded) is honored for other types.
+  const dest =
+    type === "invite" || type === "recovery"
+      ? "/accept-invite"
+      : next.startsWith("/")
+        ? next
+        : "/dashboard";
+  redirect(dest);
 }
 
 const schema = z.object({ email: z.string().trim().email("Enter a valid email") });
