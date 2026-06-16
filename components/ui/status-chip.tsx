@@ -61,6 +61,11 @@ export const STATUS_MAP: Record<string, Record<string, Recipe>> = {
     in_review: { label: "In review", text: "#1D4ED8", bg: "#DBEAFE", border: "#BFDBFE", dot: "#2563EB" },
     complete: { label: "Complete", text: "#166534", bg: "#DCFCE7", border: "#BBF7D0", dot: "#15803D" },
   },
+  task: {
+    todo: { label: "To do", text: G, bg: N_BG, border: N_BD, dot: N_DOT },
+    in_progress: { label: "In progress", text: "#92400E", bg: "#FEF3C7", border: "#FDE68A", dot: "#D97706" },
+    done: { label: "Done", text: "#166534", bg: "#DCFCE7", border: "#BBF7D0", dot: "#15803D" },
+  },
 };
 
 export function StatusChip({

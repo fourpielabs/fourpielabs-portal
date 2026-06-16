@@ -31,6 +31,7 @@ export function ClientTabs({ clientId, isAdmin, clientType = "program" }: Props)
         { href: `${base}/messages`, label: "Messages" },
         { href: `${base}/projects`, label: "Projects" },
         { href: `${base}/deliverables`, label: "Deliverables" },
+        { href: `${base}/tasks`, label: "Tasks" },
         { href: `${base}/calls`, label: "Calls" },
       ]
     : [
@@ -42,6 +43,7 @@ export function ClientTabs({ clientId, isAdmin, clientType = "program" }: Props)
         { href: `${base}/metrics`, label: "Metrics" },
         { href: `${base}/competitors`, label: "Competitors" },
         { href: `${base}/deliverables`, label: "Deliverables" },
+        { href: `${base}/tasks`, label: "Tasks" },
         { href: `${base}/calls`, label: "Calls" },
       ];
   const more: Tab[] = [

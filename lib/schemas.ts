@@ -92,6 +92,33 @@ export const projectStaffSchema = z.object({
 });
 export type ProjectStaffValues = z.infer<typeof projectStaffSchema>;
 
+// --- Tasks (5a) — staff direct writes + client RPCs (create_task/update_task_status) --
+const optionalUuid = z.string().uuid().or(z.literal("")).optional().nullable();
+
+// Client write path (create_task RPC): no status (always starts 'todo'), no visibility
+// (client tasks are always client-visible). assignee/source validated by the RPC.
+export const taskClientCreateSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  description: z.string().trim().optional(),
+  assignee_id: optionalUuid,
+  due_date: optionalDate,
+  source_message_id: optionalUuid,
+});
+export type TaskClientCreateValues = z.infer<typeof taskClientCreateSchema>;
+
+// Staff write path (direct table under the tasks for-all policies). Staff set
+// status + visibility; assignee is re-validated to the client's circle in the action.
+export const taskStaffSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  description: z.string().trim().optional(),
+  status: z.enum(["todo", "in_progress", "done"]),
+  assignee_id: optionalUuid,
+  due_date: optionalDate,
+  visible_to_client: z.boolean(),
+  source_message_id: optionalUuid,
+});
+export type TaskStaffValues = z.infer<typeof taskStaffSchema>;
+
 export const setActiveSchema = z.object({
   userId: z.string().uuid(),
   isActive: z.boolean(),

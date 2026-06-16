@@ -40,6 +40,12 @@ export const PROJECT_STATUSES = [
   { value: "complete", label: "Complete" },
 ] as const;
 
+export const TASK_STATUSES = [
+  { value: "todo", label: "To do" },
+  { value: "in_progress", label: "In progress" },
+  { value: "done", label: "Done" },
+] as const;
+
 export const DELIVERABLE_TYPES = [
   { value: "blog_post", label: "Blog post" },
   { value: "landing_page", label: "Landing page" },

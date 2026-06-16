@@ -8,6 +8,7 @@ import {
   CalendarDays,
   FileText,
   Home,
+  ListChecks,
   Megaphone,
   MessageSquare,
   MoreHorizontal,
@@ -30,6 +31,7 @@ const TOP: Item[] = [
   { href: "/content", label: "Content" },
   { href: "/performance", label: "Performance" },
   { href: "/deliverables", label: "Deliverables" },
+  { href: "/tasks", label: "Tasks" },
   { href: "/calls-notes", label: "Calls & Notes" },
   { href: "/documents", label: "Documents" },
 ];
@@ -44,6 +46,7 @@ const BOTTOM = [
 const MORE: { href: string; label: string; icon: typeof Package }[] = [
   { href: "/messages", label: "Messages", icon: MessageSquare },
   { href: "/deliverables", label: "Deliverables", icon: Package },
+  { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/calls-notes", label: "Calls & Notes", icon: Phone },
   { href: "/documents", label: "Documents", icon: FileText },
 ];
@@ -56,6 +59,7 @@ const BOTTOM_PROJECT: { href: string; label: string; icon: typeof Package }[] = 
   { href: "/calls-notes", label: "Calls", icon: Phone },
 ];
 const MORE_PROJECT: { href: string; label: string; icon: typeof Package }[] = [
+  { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/documents", label: "Documents", icon: FileText },
 ];
 
