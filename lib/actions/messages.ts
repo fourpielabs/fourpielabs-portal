@@ -19,6 +19,7 @@ export type ThreadMessage = {
   authorRole: "admin" | "team" | "client" | null;
   createdAt: string;
   attachmentName: string | null;
+  editedAt: string | null;
 };
 
 type PostedMessage = {
@@ -172,7 +173,7 @@ export async function getThreadMessagesAction(threadId: string, after?: string):
   // RLS-scoped (the boundary holds — we never render the raw realtime payload).
   let q = supabase
     .from("messages")
-    .select("id, body, author_id, created_at, attachment_name")
+    .select("id, body, author_id, created_at, attachment_name, edited_at")
     .eq("thread_id", threadId);
   if (after) q = q.gt("created_at", after);
   const { data } = await q.order("created_at", { ascending: true });
@@ -195,6 +196,7 @@ export async function getThreadMessagesAction(threadId: string, after?: string):
       authorRole: a?.role ?? null,
       createdAt: m.created_at as string,
       attachmentName: (m.attachment_name as string | null) ?? null,
+      editedAt: (m.edited_at as string | null) ?? null,
     };
   });
 }
@@ -215,5 +217,28 @@ export async function markThreadViewedAction(threadId: string, notifLink: string
     .eq("type", "message")
     .eq("link", notifLink)
     .is("read_at", null);
+  return { ok: true };
+}
+
+/**
+ * Edit / soft-delete a message via the SECURITY DEFINER RPCs (the sole write path
+ * — no direct client UPDATE policy). The RPCs enforce author-only + can_access_thread,
+ * so the internal boundary holds: a client can never edit/delete an internal-thread
+ * message or another author's message. Soft-delete preserves history; deleted rows
+ * vanish from every read (RLS `deleted_at is null`).
+ */
+export async function editMessageAction(messageId: string, body: string): Promise<Result> {
+  await requireProfile();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("edit_message", { p_message_id: messageId, p_body: body });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function deleteMessageAction(messageId: string): Promise<Result> {
+  await requireProfile();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_message", { p_message_id: messageId });
+  if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

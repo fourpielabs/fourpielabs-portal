@@ -222,6 +222,18 @@ async function main() {
   const sharedMsgId = sharedMsg!.id as string;
   const internalMsgId = internalMsg!.id as string;
 
+  // --- edit/delete fixtures (Batch 2) --------------------------------------
+  // messages with KNOWN authors: client-authored shared (edit + delete), a
+  // staff-authored shared (author-only checks), and a staff-authored internal
+  // (the boundary). Service-role insert bypasses RLS.
+  await admin.from("messages").delete().eq("client_id", premierId).like("body", "RLSED-%");
+  const seedMsg = async (thread: string, type: string, author: string, body: string) =>
+    (await admin.from("messages").insert({ thread_id: thread, client_id: premierId, thread_type: type, author_id: author, body }).select("id").single()).data!.id as string;
+  const mClientEdit = await seedMsg(premierShared, "client_shared", clientProfileId, "RLSED-client-edit");
+  const mClientDel = await seedMsg(premierShared, "client_shared", clientProfileId, "RLSED-client-del");
+  const mStaffShared = await seedMsg(premierShared, "client_shared", teamUid, "RLSED-staff-shared");
+  const mIntMsg = await seedMsg(premierInternal, "internal", teamUid, "RLSED-internal");
+
   // ====================== AS CLIENT (demo-client / premier) =================
   const client = createClient(url, anonKey, { auth: { persistSession: false } });
   await client.auth.signInWithPassword({ email: "demo-client@example.com", password: PW });
@@ -385,6 +397,24 @@ async function main() {
     const pCross = await client.rpc("post_message", { p_thread_id: pulseShared, p_body: "RLSPOST-cross" });
     rec("messaging", "client post to CROSS-CLIENT thread DENIED", !!pCross.error, pCross.error?.message ?? "");
 
+    // edit/delete (Batch 2): author-only + the internal boundary, BOTH ways
+    const eInt = await client.rpc("edit_message", { p_message_id: mIntMsg, p_body: "hijack" });
+    rec("messaging", "client edit INTERNAL message DENIED (boundary)", !!eInt.error, eInt.error?.message ?? "");
+    const dInt = await client.rpc("delete_message", { p_message_id: mIntMsg });
+    rec("messaging", "client delete INTERNAL message DENIED (boundary)", !!dInt.error, dInt.error?.message ?? "");
+    const eOther = await client.rpc("edit_message", { p_message_id: mStaffShared, p_body: "hijack" });
+    rec("messaging", "client edit ANOTHER author's message DENIED", !!eOther.error, eOther.error?.message ?? "");
+    const dOther = await client.rpc("delete_message", { p_message_id: mStaffShared });
+    rec("messaging", "client delete ANOTHER author's message DENIED", !!dOther.error, dOther.error?.message ?? "");
+    const eOwn = await client.rpc("edit_message", { p_message_id: mClientEdit, p_body: "RLSED-client-edit (edited)" });
+    rec("messaging", "client edits OWN shared message allowed", !eOwn.error, eOwn.error?.message ?? "");
+    const dOwn = await client.rpc("delete_message", { p_message_id: mClientDel });
+    rec("messaging", "client deletes OWN shared message allowed", !dOwn.error, dOwn.error?.message ?? "");
+    const cGone = await client.from("messages").select("id").eq("id", mClientDel);
+    rec("messaging", "soft-deleted message absent from CLIENT read", (cGone.data?.length ?? 0) === 0, `${cGone.data?.length ?? 0} rows`);
+    const edu = await client.from("messages").update({ body: "x" }).eq("id", mStaffShared).select("id");
+    rec("messaging", "client direct UPDATE messages still DENIED", !!edu.error || (edu.data?.length ?? 0) === 0, edu.error?.code ?? `${edu.data?.length ?? 0} rows`);
+
     // direct writes denied (no client write policy on any of these)
     const di = await client.from("messages").insert({ thread_id: premierShared, client_id: premierId, thread_type: "client_shared", body: "RLSDIRECT" }).select("id");
     rec("messaging", "client direct-INSERT messages DENIED", !!di.error || (di.data?.length ?? 0) === 0, di.error?.code ?? `${di.data?.length ?? 0} rows`);
@@ -530,6 +560,16 @@ async function main() {
     rec("team→assigned", "post to shared thread allowed", !tShared.error, tShared.error?.message ?? "");
     const tInternal = await team.rpc("post_message", { p_thread_id: premierInternal, p_body: "RLS team internal" });
     rec("team→assigned", "post to internal thread allowed", !tInternal.error, tInternal.error?.message ?? "");
+
+    // edit/delete (Batch 2): the client's soft-deleted message must be absent from
+    // STAFF reads too (proves the policy change vanishes it everywhere AND that the
+    // staff is_assigned scoping still works); staff are author-only as well.
+    const tGone = await team.from("messages").select("id").eq("id", mClientDel);
+    rec("team→assigned", "soft-deleted message absent from STAFF read (vanish + scoping intact)", (tGone.data?.length ?? 0) === 0, `${tGone.data?.length ?? 0} rows`);
+    const tEditOwn = await team.rpc("edit_message", { p_message_id: mStaffShared, p_body: "RLSED-staff-shared (edited)" });
+    rec("team→assigned", "staff edits OWN message allowed", !tEditOwn.error, tEditOwn.error?.message ?? "");
+    const tEditOther = await team.rpc("edit_message", { p_message_id: mClientEdit, p_body: "hijack" });
+    rec("team→assigned", "staff edit ANOTHER author's message DENIED (author-only)", !!tEditOther.error, tEditOther.error?.message ?? "");
   }
   // messaging: UNASSIGNED team — no read, no post, no mark
   {
@@ -584,6 +624,10 @@ async function main() {
     rec("anon", "post_message denied", !!anPost.error);
     const anMark = await anon.rpc("mark_thread_read", { p_thread_id: premierShared });
     rec("anon", "mark_thread_read denied", !!anMark.error);
+    const anEdit = await anon.rpc("edit_message", { p_message_id: mClientEdit, p_body: "x" });
+    rec("anon", "edit_message denied", !!anEdit.error);
+    const anDel = await anon.rpc("delete_message", { p_message_id: mClientEdit });
+    rec("anon", "delete_message denied", !!anDel.error);
     const anNotes = await anon.from("notifications").select("id");
     rec("anon", "read notifications 0", (anNotes.data?.length ?? 0) === 0, `${anNotes.data?.length ?? 0} rows`);
     const anUpd = await anon.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", clientNoteId).select("id");

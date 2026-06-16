@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Lock, Eye, Paperclip, Send, X } from "lucide-react";
+import { Lock, Eye, Paperclip, Pencil, Send, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -17,10 +17,23 @@ import {
   getThreadMessagesAction,
   markThreadViewedAction,
   getThreadParticipantsAction,
+  editMessageAction,
+  deleteMessageAction,
   type ThreadMessage,
   type ThreadParticipant,
 } from "@/lib/actions/messages";
 import { uploadMessageAttachmentAction } from "@/lib/actions/message-attachments";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export type ConversationTaskContext = {
   role: "client" | "staff";
@@ -59,6 +72,8 @@ export function Conversation({
   const [mention, setMention] = useState<{ query: string; at: number } | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState("");
 
   // keep a ref to the current messages so the realtime callback computes "after"
   // from fresh state (its closure would otherwise be stale).
@@ -66,6 +81,10 @@ export function Conversation({
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+  // ids the user optimistically deleted — kept filtered out of ANY refetch until the
+  // server confirms, so a concurrent refetch (e.g. an edit's UPDATE echo) can't
+  // resurrect a message we just removed.
+  const removedRef = useRef<Set<string>>(new Set());
 
   // Incremental sync: fetch only messages AFTER our latest real one (RLS-scoped —
   // never the raw realtime payload, so the internal boundary holds), then append:
@@ -80,7 +99,7 @@ export function Conversation({
     if (!fresh.length) return;
     setMessages((prev) => {
       const ids = new Set(prev.map((m) => m.id));
-      const add = fresh.filter((m) => !ids.has(m.id));
+      const add = fresh.filter((m) => !ids.has(m.id) && !removedRef.current.has(m.id));
       if (!add.length) return prev;
       const mineBodies = new Set(
         add.filter((m) => m.authorId === currentUserId).map((m) => m.body.trim()),
@@ -91,6 +110,48 @@ export function Conversation({
       return [...cleaned, ...add];
     });
   };
+
+  // Full re-fetch (RLS-scoped) for UPDATE events — reflects an edit's new body and
+  // drops a now-soft-deleted message (RLS excludes deleted). Edits/deletes are rare,
+  // so the full fetch is fine; new messages still use the incremental syncNew above.
+  const fullRefetch = () =>
+    getThreadMessagesAction(threadId)
+      .then((msgs) => setMessages(msgs.filter((m) => !removedRef.current.has(m.id))))
+      .catch(() => {});
+
+  function startEdit(m: ThreadMessage) {
+    setEditingId(m.id);
+    setEditBody(m.body);
+  }
+  function cancelEdit() {
+    setEditingId(null);
+    setEditBody("");
+  }
+  async function saveEdit(m: ThreadMessage) {
+    const text = editBody.trim();
+    if (!text) return;
+    const prevBody = m.body;
+    const prevEdited = m.editedAt;
+    setMessages((xs) => xs.map((x) => (x.id === m.id ? { ...x, body: text, editedAt: new Date().toISOString() } : x)));
+    setEditingId(null);
+    setEditBody("");
+    const res = await editMessageAction(m.id, text);
+    if (!res.ok) {
+      setMessages((xs) => xs.map((x) => (x.id === m.id ? { ...x, body: prevBody, editedAt: prevEdited } : x)));
+      toast.error("Couldn't edit", { description: res.error });
+    }
+  }
+  async function deleteMessage(m: ThreadMessage) {
+    removedRef.current.add(m.id);
+    const snapshot = messagesRef.current;
+    setMessages((xs) => xs.filter((x) => x.id !== m.id)); // optimistic removal
+    const res = await deleteMessageAction(m.id);
+    if (!res.ok) {
+      removedRef.current.delete(m.id);
+      setMessages(snapshot);
+      toast.error("Couldn't delete", { description: res.error });
+    }
+  }
 
   useEffect(() => {
     getThreadParticipantsAction(threadId).then(setParticipants).catch(() => {});
@@ -153,6 +214,11 @@ export function Conversation({
             void markThreadViewedAction(threadId, notifLink);
           },
         )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "messages", filter: `thread_id=eq.${threadId}` },
+          () => void fullRefetch(), // an edit or soft-delete by the other party
+        )
         .subscribe();
     });
     return () => {
@@ -196,6 +262,7 @@ export function Conversation({
       authorRole: null,
       createdAt: new Date().toISOString(),
       attachmentName: attachmentName ?? null,
+      editedAt: null,
     };
     setMessages((xs) => [...xs, tmp]);
     setBody("");
@@ -244,6 +311,7 @@ export function Conversation({
                       </span>
                     )}
                     <span className="tabular-nums">{formatRelative(m.createdAt)}</span>
+                    {m.editedAt && <span className="text-ink-faint">· edited</span>}
                     {taskContext && !m.id.startsWith("tmp-") && (
                       <MessageTaskButton
                         messageId={m.id}
@@ -254,16 +322,82 @@ export function Conversation({
                         audience={audience}
                       />
                     )}
+                    {mine && !m.id.startsWith("tmp-") && editingId !== m.id && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => startEdit(m)}
+                          aria-label="Edit message"
+                          className="motion-micro inline-flex size-5 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink"
+                        >
+                          <Pencil className="size-3" />
+                        </button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label="Delete message"
+                              className="motion-micro inline-flex size-5 items-center justify-center rounded-full text-ink-3 hover:bg-danger-bg hover:text-danger-text"
+                            >
+                              <Trash2 className="size-3" />
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this message?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                It will be removed for everyone. This can&apos;t be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction variant="destructive" onClick={() => deleteMessage(m)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
+                    )}
                   </div>
-                  {m.body && <Markdown className="text-[14px]">{m.body}</Markdown>}
-                  {m.attachmentName &&
-                    (m.id.startsWith("tmp-") ? (
-                      <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-ink-3">
-                        <Paperclip className="size-3.5" /> {m.attachmentName}
-                      </span>
-                    ) : (
-                      <MessageAttachment messageId={m.id} name={m.attachmentName} />
-                    ))}
+                  {editingId === m.id ? (
+                    <div className="mt-1 flex flex-col gap-1.5">
+                      <Textarea
+                        value={editBody}
+                        onChange={(e) => setEditBody(e.target.value)}
+                        rows={2}
+                        autoFocus
+                        className="resize-none text-[14px]"
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") cancelEdit();
+                          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                            e.preventDefault();
+                            void saveEdit(m);
+                          }
+                        }}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" onClick={() => void saveEdit(m)} disabled={!editBody.trim()}>
+                          Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {m.body && <Markdown className="text-[14px]">{m.body}</Markdown>}
+                      {m.attachmentName &&
+                        (m.id.startsWith("tmp-") ? (
+                          <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-ink-3">
+                            <Paperclip className="size-3.5" /> {m.attachmentName}
+                          </span>
+                        ) : (
+                          <MessageAttachment messageId={m.id} name={m.attachmentName} />
+                        ))}
+                    </>
+                  )}
                 </div>
               </div>
             );
