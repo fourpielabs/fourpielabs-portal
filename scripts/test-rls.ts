@@ -187,6 +187,15 @@ async function main() {
     { thread_id: premierInternal, client_id: premierId, thread_type: "internal", body: "RLSMSG-internal" },
   ]);
 
+  // --- notifications fixtures (service-role insert; no insert policy) --------
+  const { data: clientProf } = await admin.from("profiles").select("id").eq("email", "demo-client@example.com").single();
+  const clientProfileId = clientProf!.id as string;
+  await admin.from("notifications").delete().like("title", "RLSNOTE%");
+  const { data: cNote } = await admin.from("notifications").insert({ user_id: clientProfileId, type: "message", title: "RLSNOTE-client" }).select("id").single();
+  const { data: tNote } = await admin.from("notifications").insert({ user_id: teamUid, type: "message", title: "RLSNOTE-team" }).select("id").single();
+  const clientNoteId = cNote!.id as string;
+  const teamNoteId = tNote!.id as string;
+
   // ====================== AS CLIENT (demo-client / premier) =================
   const client = createClient(url, anonKey, { auth: { persistSession: false } });
   await client.auth.signInWithPassword({ email: "demo-client@example.com", password: PW });
@@ -369,6 +378,21 @@ async function main() {
     rec("messaging", "client reads OWN thread_reads only", onlyOwn, `${trRows?.length ?? 0} row(s)`);
   }
 
+  // --- notifications: client (own-only read/update; no direct insert) -------
+  {
+    const { data: own } = await client.from("notifications").select("title, user_id");
+    const ownOnly = (own ?? []).length >= 1 && (own ?? []).every((n) => n.user_id === clientUid);
+    rec("notifications", "client reads ONLY own notifications", ownOnly, `${own?.length ?? 0} row(s)`);
+    rec("notifications", "client cannot read another user's notification", !(own ?? []).some((n) => n.title === "RLSNOTE-team"), "");
+
+    const mr = await client.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", clientNoteId).select("id");
+    rec("notifications", "client marks OWN notification read", !mr.error && (mr.data?.length ?? 0) === 1, mr.error?.code ?? `${mr.data?.length ?? 0} rows`);
+    const mrx = await client.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", teamNoteId).select("id");
+    rec("notifications", "client cannot mark another user's read", !!mrx.error || (mrx.data?.length ?? 0) === 0, mrx.error?.code ?? `${mrx.data?.length ?? 0} rows`);
+    const di = await client.from("notifications").insert({ user_id: clientUid, type: "message", title: "RLSNOTE-direct" }).select("id");
+    rec("notifications", "client direct-INSERT notifications DENIED", !!di.error || (di.data?.length ?? 0) === 0, di.error?.code ?? `${di.data?.length ?? 0} rows`);
+  }
+
   // ====================== AS TEAM (demo-team, unassigned client) ============
   const team = createClient(url, anonKey, { auth: { persistSession: false } });
   await team.auth.signInWithPassword({ email: "demo-team@example.com", password: PW });
@@ -463,6 +487,10 @@ async function main() {
     rec("anon", "post_message denied", !!anPost.error);
     const anMark = await anon.rpc("mark_thread_read", { p_thread_id: premierShared });
     rec("anon", "mark_thread_read denied", !!anMark.error);
+    const anNotes = await anon.from("notifications").select("id");
+    rec("anon", "read notifications 0", (anNotes.data?.length ?? 0) === 0, `${anNotes.data?.length ?? 0} rows`);
+    const anUpd = await anon.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", clientNoteId).select("id");
+    rec("anon", "update notifications denied", !!anUpd.error || (anUpd.data?.length ?? 0) === 0, anUpd.error?.code ?? `${anUpd.data?.length ?? 0} rows`);
   }
 
   // ====================== SEED GATING =======================================
@@ -501,6 +529,7 @@ async function main() {
   }
 
   // --- cleanup --------------------------------------------------------------
+  await admin.from("notifications").delete().like("title", "RLSNOTE%");
   await admin.from("messages").delete().eq("client_id", premierId).like("body", "RLS%");
   await admin.from("thread_reads").delete().eq("thread_id", premierShared);
   await admin.from("projects").delete().eq("client_id", premierId).like("title", "RLS%");

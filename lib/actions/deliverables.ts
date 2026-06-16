@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess, requireProfile } from "@/lib/auth/guards";
 import { logAudit } from "@/lib/audit";
+import { notify, clientUserIds, staffUserIds } from "@/lib/notifications";
 import { deliverableSchema, type DeliverableValues } from "@/lib/schemas";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -105,7 +106,7 @@ export async function updateDeliverableAction(
 
   const { data: current } = await supabase
     .from("deliverables")
-    .select("delivered_at")
+    .select("delivered_at, status")
     .eq("id", id)
     .eq("client_id", clientId)
     .single();
@@ -149,6 +150,16 @@ export async function updateDeliverableAction(
     clientId,
     metadata: { status: v.status },
   });
+  if (v.status === "delivered" && current?.status !== "delivered" && v.visible_to_client) {
+    await notify({
+      recipients: await clientUserIds(clientId),
+      excludeUserId: me.id,
+      type: "deliverable_delivered",
+      title: "Deliverable delivered",
+      body: v.title,
+      link: "/deliverables",
+    });
+  }
   revalidate(clientId);
   return { ok: true };
 }
@@ -163,7 +174,7 @@ export async function setDeliverableStatusAction(
 
   const { data: current } = await supabase
     .from("deliverables")
-    .select("delivered_at")
+    .select("delivered_at, status, visible_to_client, title")
     .eq("id", id)
     .eq("client_id", clientId)
     .single();
@@ -187,6 +198,17 @@ export async function setDeliverableStatusAction(
     clientId,
     metadata: { status },
   });
+  // notify the client only on the transition INTO delivered, and only if visible
+  if (status === "delivered" && current?.status !== "delivered" && current?.visible_to_client) {
+    await notify({
+      recipients: await clientUserIds(clientId),
+      excludeUserId: me.id,
+      type: "deliverable_delivered",
+      title: "Deliverable delivered",
+      body: current?.title ?? null,
+      link: "/deliverables",
+    });
+  }
   revalidate(clientId);
   return { ok: true };
 }
@@ -267,7 +289,7 @@ export async function setDeliverableApprovalAction(
     return { ok: false, error: "Not allowed" };
   }
   const supabase = await createClient();
-  const { error } = await supabase.rpc("set_deliverable_approval", {
+  const { data, error } = await supabase.rpc("set_deliverable_approval", {
     deliverable_id: deliverableId,
     approved,
   });
@@ -281,6 +303,18 @@ export async function setDeliverableApprovalAction(
     clientId: me.client_id,
     metadata: { approved },
   });
+  // notify assigned staff when the client APPROVES (the 4a client-write path)
+  if (approved) {
+    const row = (Array.isArray(data) ? data[0] : data) as { title?: string } | null;
+    await notify({
+      recipients: await staffUserIds(me.client_id),
+      excludeUserId: me.id,
+      type: "deliverable_approved",
+      title: "Deliverable approved by client",
+      body: row?.title ?? null,
+      link: `/clients/${me.client_id}/deliverables`,
+    });
+  }
   revalidatePath("/deliverables");
   revalidatePath("/dashboard");
   return { ok: true };

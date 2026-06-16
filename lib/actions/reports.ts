@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
 import { logAudit } from "@/lib/audit";
+import { notify, clientUserIds } from "@/lib/notifications";
 import { reportSchema, type ReportValues } from "@/lib/schemas";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -92,14 +93,16 @@ export async function setReportPublishedAction(
 ): Promise<Result> {
   const me = await requireClientAccess(clientId);
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("reports")
     .update({
       published,
       published_at: published ? new Date().toISOString() : null,
     })
     .eq("id", id)
-    .eq("client_id", clientId);
+    .eq("client_id", clientId)
+    .select("title")
+    .single();
   if (error) return { ok: false, error: error.message };
   await logAudit({
     actorId: me.id,
@@ -108,6 +111,16 @@ export async function setReportPublishedAction(
     entityId: id,
     clientId,
   });
+  if (published) {
+    await notify({
+      recipients: await clientUserIds(clientId),
+      excludeUserId: me.id,
+      type: "report_published",
+      title: "New report published",
+      body: data?.title ?? null,
+      link: "/performance#reports",
+    });
+  }
   revalidate(clientId);
   return { ok: true };
 }

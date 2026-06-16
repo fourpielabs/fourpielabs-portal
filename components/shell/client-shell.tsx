@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/shell/user-menu";
+import { NotificationBell } from "@/components/shell/notification-bell";
 import { BrandLogo } from "@/components/ui/brand-logo";
+import type { NotificationItem } from "@/lib/actions/notifications";
 
 type Item = { href: string; label: string };
 
@@ -64,12 +66,16 @@ export function ClientShell({
   email,
   avatarUrl = null,
   clientType = "program",
+  notifUnread = 0,
+  notifItems = [],
   children,
 }: {
   name: string | null;
   email: string | null;
   avatarUrl?: string | null;
   clientType?: "program" | "project";
+  notifUnread?: number;
+  notifItems?: NotificationItem[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -109,6 +115,7 @@ export function ClientShell({
             })}
           </nav>
           <span className="h-6 w-px bg-border" />
+          <NotificationBell initialUnread={notifUnread} initialItems={notifItems} />
           <UserMenu name={name} email={email} avatarUrl={avatarUrl} size="md" />
         </div>
       </header>
@@ -118,7 +125,10 @@ export function ClientShell({
         <Link href="/dashboard">
           <BrandLogo className="text-base" />
         </Link>
-        <UserMenu name={name} email={email} avatarUrl={avatarUrl} size="md" />
+        <div className="flex items-center gap-1">
+          <NotificationBell initialUnread={notifUnread} initialItems={notifItems} />
+          <UserMenu name={name} email={email} avatarUrl={avatarUrl} size="md" />
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-[1280px] flex-1 scroll-pb-36 px-4 pt-6 pb-36 sm:px-8 sm:pt-11 sm:pb-10">

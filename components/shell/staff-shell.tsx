@@ -17,7 +17,9 @@ import {
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 import { UserMenu } from "@/components/shell/user-menu";
+import { NotificationBell } from "@/components/shell/notification-bell";
 import { BrandLogo } from "@/components/ui/brand-logo";
+import type { NotificationItem } from "@/lib/actions/notifications";
 import {
   Tooltip,
   TooltipContent,
@@ -101,6 +103,7 @@ function SidebarInner({
   onNavigate,
   collapsed = false,
   onToggleCollapse,
+  bell,
 }: {
   role: string;
   name: string | null;
@@ -111,15 +114,16 @@ function SidebarInner({
   onNavigate?: () => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  bell?: React.ReactNode;
 }) {
   const nav = navFor(role);
   return (
     <div className="flex h-full flex-col gap-4 p-3">
-      {/* brand + collapse toggle */}
+      {/* brand + bell + collapse toggle */}
       <div
         className={cn(
-          "flex items-center pt-2",
-          collapsed ? "justify-center" : "gap-2 px-2",
+          "flex pt-2",
+          collapsed ? "flex-col items-center gap-1" : "items-center gap-2 px-2",
         )}
       >
         {!collapsed && (
@@ -127,6 +131,7 @@ function SidebarInner({
             <BrandLogo dark className="text-lg text-dark-ink" />
           </Link>
         )}
+        {bell}
         {onToggleCollapse && (
           <button
             type="button"
@@ -206,6 +211,8 @@ export function StaffShell({
   email,
   avatarUrl = null,
   clients,
+  notifUnread = 0,
+  notifItems = [],
   children,
 }: {
   role: string;
@@ -213,6 +220,8 @@ export function StaffShell({
   email: string | null;
   avatarUrl?: string | null;
   clients: ClientOption[];
+  notifUnread?: number;
+  notifItems?: NotificationItem[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -239,6 +248,13 @@ export function StaffShell({
             pathname={pathname}
             collapsed={collapsed}
             onToggleCollapse={() => setCollapsed((v) => !v)}
+            bell={
+              <NotificationBell
+                tone="dark"
+                initialUnread={notifUnread}
+                initialItems={notifItems}
+              />
+            }
           />
         </aside>
 
@@ -256,6 +272,9 @@ export function StaffShell({
             <Link href="/dashboard">
               <BrandLogo className="text-base" />
             </Link>
+            <div className="ml-auto">
+              <NotificationBell initialUnread={notifUnread} initialItems={notifItems} />
+            </div>
           </header>
 
           <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, requireClientAccess } from "@/lib/auth/guards";
 import { logAudit } from "@/lib/audit";
+import { notify, clientUserIds, staffUserIds } from "@/lib/notifications";
+import { PROJECT_STATUSES, labelOf } from "@/lib/constants";
 import {
   projectCreateSchema,
   projectUpdateSchema,
@@ -99,6 +101,15 @@ export async function updateProjectAction(
     metadata: { title: v.title, status: v.status },
   });
 
+  // client edited their own project (incl. status) → notify assigned staff
+  await notify({
+    recipients: await staffUserIds(profile.client_id),
+    excludeUserId: profile.id,
+    type: "project_status",
+    title: "Client updated a project",
+    body: `${v.title} → ${labelOf(PROJECT_STATUSES, v.status)}`,
+    link: `/clients/${profile.client_id}/projects`,
+  });
   revalidatePath("/dashboard");
   return { ok: true };
 }
@@ -193,11 +204,13 @@ export async function staffSetProjectStatusAction(
 ): Promise<Result> {
   const me = await requireClientAccess(clientId);
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("projects")
     .update({ status })
     .eq("id", id)
-    .eq("client_id", clientId);
+    .eq("client_id", clientId)
+    .select("title")
+    .single();
   if (error) return { ok: false, error: error.message };
 
   await logAudit({
@@ -207,6 +220,15 @@ export async function staffSetProjectStatusAction(
     entityId: id,
     clientId,
     metadata: { status },
+  });
+  // staff changed the status → notify the client
+  await notify({
+    recipients: await clientUserIds(clientId),
+    excludeUserId: me.id,
+    type: "project_status",
+    title: "Project status updated",
+    body: `${data?.title ?? "Project"} → ${labelOf(PROJECT_STATUSES, status)}`,
+    link: "/dashboard",
   });
   revalidateStaffProject(clientId);
   return { ok: true };

@@ -213,6 +213,27 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > 4b–4d (PHASE4_COMMUNICATION_BLUEPRINT.md to be re-shared; it fell out of the repo
 > during compaction).
 >
+> **Phase 4b (Notifications + bell) COMPLETE (2026-06-16).** Migration
+> `20260615232217_notifications_4b.sql` (pushed): `notifications` table — per-USER
+> rows (each recipient gets their own row + `read_at`), RLS read/update-OWN only
+> (`user_id = auth.uid()`), NO insert/delete policy (service-role inserts on events,
+> the audit_log precedent). Event generation in `lib/notifications.ts` (`notify`
+> de-dupes + excludes the author; `clientUserIds`/`staffUserIds`) wired into the
+> existing actions: deliverable delivered→client (on the visible transition),
+> approved→staff, report published→client, project status→the other side; plus
+> `postMessageAction` (new — wraps the 4a `post_message` RPC). The
+> **internal-thread-never-notifies-client** rule + author-exclusion live in the pure
+> `lib/notification-recipients.ts#messageRecipientIds()` (single source of truth),
+> derived from the RPC-stamped `msg.thread_type` (the real thread, not caller input).
+> Bell: `components/shell/notification-bell.tsx` on all three shells (unread badge,
+> dropdown, mark-read single/all, deep-link), fetch-on-load + on-navigation (NO
+> realtime — that's 4c). Tests: `test:rls` **159/159** (new `notifications` group);
+> `scripts/test-notify.ts` **10/10** (recipient logic); `scripts/verify-messages-notify.ts`
+> **9/9** (internal boundary: ZERO for ALL client users + staff notified + author
+> excluded; shared both ways); `scripts/verify-notifications.mjs` **4/4** (approve→
+> staff-notified/client-not + bell). Blueprint restored at the repo root. Remaining:
+> **4c** (messaging UI + Supabase Realtime) · **4d** (Resend email w/ throttle).
+>
 > **Current status:** P1 + P2 + P3 COMPLETE. Migrations on the linked Tokyo
 > project (`frmukrgjkhlpxplhzeqj`); auth + demo seed (P1); admin workspace (P2);
 > team workspace core (P3): per-client layout with assignment-scoped guard

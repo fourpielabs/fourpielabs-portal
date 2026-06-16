@@ -1,5 +1,6 @@
 import { requireProfile } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
+import { getNotificationsAction } from "@/lib/actions/notifications";
 import { ClientShell } from "@/components/shell/client-shell";
 import { StaffShell, type ClientOption } from "@/components/shell/staff-shell";
 
@@ -9,6 +10,7 @@ export default async function PortalLayout({
   children: React.ReactNode;
 }) {
   const profile = await requireProfile();
+  const notif = await getNotificationsAction(); // initial bell snapshot (refetches on nav)
 
   if (profile.role === "client") {
     // client_type drives which top-level tabs render (project clients don't get
@@ -24,6 +26,8 @@ export default async function PortalLayout({
         email={profile.email}
         avatarUrl={profile.avatar_url}
         clientType={(c?.client_type as "program" | "project") ?? "program"}
+        notifUnread={notif.unread}
+        notifItems={notif.items}
       >
         {children}
       </ClientShell>
@@ -44,6 +48,8 @@ export default async function PortalLayout({
       email={profile.email}
       avatarUrl={profile.avatar_url}
       clients={(clients ?? []) as ClientOption[]}
+      notifUnread={notif.unread}
+      notifItems={notif.items}
     >
       {children}
     </StaffShell>
