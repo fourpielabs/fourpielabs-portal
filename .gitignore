@@ -56,3 +56,5 @@ screenshots/
 
 # 4d email-capture test sink (EMAIL_CAPTURE mode)
 .email-capture.jsonl
+
+.email-shots/

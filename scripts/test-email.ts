@@ -17,7 +17,7 @@ const SECRET = "SENSITIVE-MESSAGE-BODY-do-not-leak";
 {
   const e = buildNotificationEmail({ type: "message", title: "New message from Casey", clientName: "Premier Painting", link: "/messages" });
   check("message: subject = sender + client, no content", e.subject.includes("New message from Casey") && e.subject.includes("Premier Painting"));
-  check("message: html links to portal (View in portal)", /View in portal/i.test(e.html) && e.html.includes("/messages"));
+  check("message: html links to portal + per-type CTA", /Open the conversation/i.test(e.html) && e.html.includes("/messages"));
   check("message: email carries NO message body (no body param exists)", !e.html.includes(SECRET) && !e.text.includes(SECRET));
   check("message: branded with the 4Pie Labs wordmark", /4Pie(&nbsp;|\s)*Labs/i.test(e.html));
 }
@@ -30,7 +30,7 @@ const SECRET = "SENSITIVE-MESSAGE-BODY-do-not-leak";
 // absolute link passthrough (prod deep-link)
 {
   const e = buildNotificationEmail({ type: "message", title: "x", link: "https://portal.fourpielabs.com/messages" });
-  check("absolute link preserved (not double-prefixed)", e.html.includes("https://portal.fourpielabs.com/messages") && !e.html.includes("localhost"));
+  check("absolute link preserved (not double-prefixed)", e.html.includes('href="https://portal.fourpielabs.com/messages"'));
 }
 
 console.log(`\n${pass}/${pass + fail} email-content checks passed.`);

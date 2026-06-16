@@ -1,4 +1,5 @@
 import { appendFileSync } from "node:fs";
+import { renderEmail } from "./email-template";
 
 // from = the auth-mail domain (approved). reply-to routes client replies to the team
 // (otherwise a reply goes into a void). NOTE: AUTH emails (invite/recovery) are sent by
@@ -19,10 +20,20 @@ export function emailBrand(): string {
   return `<span style="font-family:Inter,Arial,sans-serif;font-weight:700;font-size:18px;color:#1c1917">4Pie&nbsp;Labs<span style="color:#d97706">.</span></span>`;
 }
 
+// Per-type CTA label (the look only — still NO message body in the email).
+const CTA_BY_TYPE: Record<string, string> = {
+  message: "Open the conversation",
+  deliverable_delivered: "View deliverable",
+  deliverable_approved: "View deliverable",
+  report_published: "View report",
+  project_status: "View project",
+};
+
 /**
  * Build a notification email — CONTENT-LEAKAGE rule: there is NO `body` parameter, so the
  * message text (or any sensitive body) can never leave the portal. The email carries only
  * the safe `title` (sender / event name), the client context, and a link back to the portal.
+ * The branded shell comes from the shared renderEmail() (real logo, amber CTA, table layout).
  */
 export function buildNotificationEmail(input: {
   type: string;
@@ -33,20 +44,21 @@ export function buildNotificationEmail(input: {
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const url = input.link.startsWith("http") ? input.link : `${site}${input.link}`;
   const subject = input.clientName ? `${input.title} · ${input.clientName}` : input.title;
+  const ctaLabel = CTA_BY_TYPE[input.type] ?? "Open in portal";
 
-  const html = `<!doctype html><html><body style="margin:0;background:#faf9f7;font-family:Inter,Arial,sans-serif;color:#1c1917">
-  <div style="max-width:480px;margin:0 auto;padding:28px 20px">
-    <div style="padding-bottom:18px">${emailBrand()}</div>
-    <div style="background:#ffffff;border:1px solid #e7e5e0;border-radius:16px;padding:24px">
-      <p style="margin:0 0 6px;font-size:16px;font-weight:600">${escapeHtml(input.title)}</p>
-      ${input.clientName ? `<p style="margin:0 0 16px;font-size:13px;color:#78716c">on ${escapeHtml(input.clientName)}</p>` : ""}
-      <p style="margin:0 0 20px;font-size:14px;color:#57534e">Open it in your 4Pie Labs portal.</p>
-      <a href="${url}" style="display:inline-block;background:#d97706;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 18px;border-radius:10px">View in portal</a>
-    </div>
-    <p style="margin:18px 0 0;font-size:11px;color:#a8a29e">You're receiving this because you have a 4Pie Labs portal account.</p>
-  </div></body></html>`;
+  // bodyHtml carries NO message text — only the safe client context + a nudge.
+  const bodyHtml = `${input.clientName ? `<p style="margin:0 0 14px;">on <strong style="color:#1c1917;">${escapeHtml(input.clientName)}</strong></p>` : ""}<p style="margin:0;">Open it in your 4Pie&nbsp;Labs portal to see the details.</p>`;
 
-  const text = `${input.title}${input.clientName ? ` · ${input.clientName}` : ""}\n\nOpen it in your 4Pie Labs portal:\n${url}`;
+  const html = renderEmail({
+    heading: input.title,
+    bodyHtml,
+    ctaLabel,
+    ctaUrl: url,
+    footerNote: "You're receiving this because you have a 4Pie Labs portal account.",
+    preheader: input.title,
+  });
+
+  const text = `${input.title}${input.clientName ? ` · ${input.clientName}` : ""}\n\nOpen it in your 4Pie Labs portal:\n${url}\n\n— 4Pie Labs`;
   return { subject, html, text };
 }
 
