@@ -9,12 +9,20 @@ import { formatRelative } from "@/lib/format";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { MessageTaskButton } from "@/components/tasks/message-task-button";
+import type { TaskMember } from "@/lib/tasks";
 import {
   postMessageAction,
   getThreadMessagesAction,
   markThreadViewedAction,
   type ThreadMessage,
 } from "@/lib/actions/messages";
+
+export type ConversationTaskContext = {
+  role: "client" | "staff";
+  clientId: string;
+  members: TaskMember[];
+};
 
 export function Conversation({
   threadId,
@@ -23,6 +31,7 @@ export function Conversation({
   currentUserName,
   initialMessages,
   audience,
+  taskContext,
 }: {
   threadId: string;
   notifLink: string;
@@ -30,6 +39,7 @@ export function Conversation({
   currentUserName: string;
   initialMessages: ThreadMessage[];
   audience: "shared" | "internal";
+  taskContext?: ConversationTaskContext;
 }) {
   const [messages, setMessages] = useState<ThreadMessage[]>(initialMessages);
   const [body, setBody] = useState("");
@@ -135,6 +145,16 @@ export function Conversation({
                       </span>
                     )}
                     <span className="tabular-nums">{formatRelative(m.createdAt)}</span>
+                    {taskContext && !m.id.startsWith("tmp-") && (
+                      <MessageTaskButton
+                        messageId={m.id}
+                        messageBody={m.body}
+                        role={taskContext.role}
+                        clientId={taskContext.clientId}
+                        members={taskContext.members}
+                        audience={audience}
+                      />
+                    )}
                   </div>
                   <Markdown className="text-[14px]">{m.body}</Markdown>
                 </div>

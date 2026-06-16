@@ -2,6 +2,7 @@ import { MessageSquare } from "lucide-react";
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { getThreadMessagesAction } from "@/lib/actions/messages";
+import { getAssignableMembers } from "@/lib/tasks";
 import { Conversation } from "@/components/messaging/conversation";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -16,6 +17,8 @@ export default async function ClientMessagesPage() {
     .select("id")
     .eq("type", "client_shared")
     .maybeSingle();
+
+  const members = me.client_id ? await getAssignableMembers(me.client_id) : [];
 
   return (
     <div className="space-y-5">
@@ -37,6 +40,7 @@ export default async function ClientMessagesPage() {
           currentUserName={me.full_name ?? "You"}
           initialMessages={await getThreadMessagesAction(thread.id)}
           audience="shared"
+          taskContext={{ role: "client", clientId: me.client_id ?? "", members }}
         />
       )}
     </div>

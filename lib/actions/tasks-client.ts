@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/guards";
 import { logAudit } from "@/lib/audit";
+import { notify, staffUserIds } from "@/lib/notifications";
 import { taskClientCreateSchema, type TaskClientCreateValues } from "@/lib/schemas";
 
 type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
@@ -46,8 +47,23 @@ export async function createTaskAction(
     entity: "task",
     entityId: row?.id,
     clientId: profile.client_id,
-    metadata: { title: v.title, by: "client" },
+    metadata: { title: v.title, by: "client", fromMessage: Boolean(v.source_message_id) },
   });
+
+  // the client created a task (incl. the chat→task bridge) → notify their staff.
+  // Reuses the `message` notification type (no new enum/pref) — the title makes it
+  // clear it's a task; the internal boundary is irrelevant here (a client task is
+  // always client-visible and only ever notifies STAFF).
+  await notify({
+    recipients: await staffUserIds(profile.client_id),
+    excludeUserId: profile.id,
+    type: "message",
+    title: v.source_message_id ? "Client added a task from a message" : "Client added a task",
+    body: v.title,
+    link: `/clients/${profile.client_id}/tasks`,
+    clientId: profile.client_id,
+  });
+
   revalidatePath("/tasks");
   return { ok: true, data: row ? { id: row.id } : undefined };
 }

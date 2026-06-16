@@ -3,6 +3,7 @@ import { Eye, Lock } from "lucide-react";
 import { requireClientAccess } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { getThreadMessagesAction } from "@/lib/actions/messages";
+import { getAssignableMembers } from "@/lib/tasks";
 import { Conversation } from "@/components/messaging/conversation";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ export default async function StaffMessagesPage({
   const isInternal = tab === "internal";
   const active = isInternal ? internal : shared;
   const base = `/clients/${clientId}/messages`;
+  const members = await getAssignableMembers(clientId);
 
   const tabCls = (on: boolean, internalTab: boolean) =>
     cn(
@@ -66,6 +68,7 @@ export default async function StaffMessagesPage({
           currentUserName={me.full_name ?? "You"}
           initialMessages={await getThreadMessagesAction(active.id)}
           audience={isInternal ? "internal" : "shared"}
+          taskContext={{ role: "staff", clientId, members }}
         />
       ) : (
         <p className="text-sm text-ink-3">Thread not found.</p>
