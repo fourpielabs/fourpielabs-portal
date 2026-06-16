@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Bold, Italic, Lock, Eye, Paperclip, Pencil, Search, Send, Smile, Trash2, X } from "lucide-react";
+import { Bold, Italic, ListPlus, Lock, Eye, Paperclip, Pencil, Search, Send, Smile, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,7 @@ import { formatRelative } from "@/lib/format";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageTaskButton } from "@/components/tasks/message-task-button";
+import { TaskCreateDialog } from "@/components/tasks/task-create-dialog";
 import { MessageAttachment } from "@/components/messaging/message-attachment";
 import type { TaskMember } from "@/lib/tasks";
 import {
@@ -89,6 +89,7 @@ export function Conversation({
   const [editBody, setEditBody] = useState("");
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<ThreadMessage[] | null>(null);
+  const [taskOpen, setTaskOpen] = useState(false);
 
   // keep a ref to the current messages so the realtime callback computes "after"
   // from fresh state (its closure would otherwise be stale).
@@ -180,15 +181,24 @@ export function Conversation({
       ta?.setSelectionRange(pos, pos);
     });
   }
+  // Standard editor behavior: wrap the SELECTION in the markers (and keep it selected so it
+  // reads naturally); with NOTHING selected, insert the paired markers and drop the caret
+  // BETWEEN them so what the user types next is inside the formatting.
   function wrapSelection(marker: string) {
     const ta = taRef.current;
     const start = ta?.selectionStart ?? body.length;
     const end = ta?.selectionEnd ?? body.length;
-    const sel = body.slice(start, end) || "text";
+    const hasSel = end > start;
+    const sel = body.slice(start, end);
     setBody(body.slice(0, start) + marker + sel + marker + body.slice(end));
     requestAnimationFrame(() => {
       ta?.focus();
-      ta?.setSelectionRange(start + marker.length, start + marker.length + sel.length);
+      if (hasSel) {
+        ta?.setSelectionRange(start + marker.length, start + marker.length + sel.length);
+      } else {
+        const caret = start + marker.length;
+        ta?.setSelectionRange(caret, caret);
+      }
     });
   }
 
@@ -332,6 +342,9 @@ export function Conversation({
   }
 
   const internal = audience === "internal";
+  // The who-can-see chip exists to stop STAFF posting to the wrong thread (two threads).
+  // On the client side (one thread, obviously theirs) it's noise — hide it.
+  const isClient = taskContext?.role === "client";
   const banner = internal
     ? { cls: "border-amber-300 bg-amber-50 text-amber-900", icon: <Lock className="size-3.5" />, label: "Internal — the client cannot see this" }
     : { cls: "border-emerald-300 bg-emerald-50 text-emerald-900", icon: <Eye className="size-3.5" />, label: "Visible to the client" };
@@ -399,16 +412,6 @@ export function Conversation({
                     )}
                     <span className="tabular-nums">{formatRelative(m.createdAt)}</span>
                     {m.editedAt && <span className="text-ink-faint">· edited</span>}
-                    {taskContext && !m.id.startsWith("tmp-") && (
-                      <MessageTaskButton
-                        messageId={m.id}
-                        messageBody={m.body}
-                        role={taskContext.role}
-                        clientId={taskContext.clientId}
-                        members={taskContext.members}
-                        audience={audience}
-                      />
-                    )}
                     {mine && !m.id.startsWith("tmp-") && editingId !== m.id && (
                       <>
                         <button
@@ -496,9 +499,11 @@ export function Conversation({
       {/* composer — the who-can-see-this indicator is unmissable for BOTH audiences */}
       <div className="border-t border-border p-3">
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <div className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold", banner.cls)}>
-            {banner.icon} {banner.label}
-          </div>
+          {!isClient && (
+            <div className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold", banner.cls)}>
+              {banner.icon} {banner.label}
+            </div>
+          )}
           {file && (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium text-ink">
               <Paperclip className="size-3" />
@@ -554,8 +559,30 @@ export function Conversation({
             >
               <Italic className="size-3.5" />
             </button>
+            {taskContext && (
+              <button
+                type="button"
+                onClick={() => setTaskOpen(true)}
+                aria-label="Create a task"
+                title="Create a task"
+                className="inline-flex size-7 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink"
+              >
+                <ListPlus className="size-4" />
+              </button>
+            )}
           </div>
         </div>
+        {taskContext && (
+          <TaskCreateDialog
+            open={taskOpen}
+            onOpenChange={setTaskOpen}
+            role={taskContext.role}
+            clientId={taskContext.clientId}
+            members={taskContext.members}
+            audience={audience}
+            initialTitle={body.trim()}
+          />
+        )}
         <input
           ref={fileRef}
           type="file"

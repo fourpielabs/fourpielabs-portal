@@ -68,7 +68,7 @@ try {
   const c1 = await page.locator("body").innerText();
   rec("client sees shared message", c1.includes(sharedBody), "");
   rec("client does NOT see internal message", !c1.includes(internalBody), "");
-  rec("client composer marked 'Visible to the client'", /Visible to the client/i.test(c1), "");
+  rec("client composer HIDES the visibility chip (Batch 4 — noise on a single thread)", !/Visible to the client/i.test(c1), "");
 
   await page.fill("textarea", clientMsg);
   await page.click('button:has-text("Send")');
