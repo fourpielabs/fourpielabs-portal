@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/format";
+import { createClient } from "@/lib/supabase/client";
 import {
   getNotificationsAction,
   markNotificationReadAction,
@@ -32,7 +33,15 @@ export function NotificationBell({
   const [items, setItems] = useState<NotificationItem[]>(initialItems);
   const [, startTransition] = useTransition();
 
-  // No realtime in 4b — refetch on navigation (fetch-on-load + on-nav).
+  const refresh = () =>
+    getNotificationsAction()
+      .then((r) => {
+        setUnread(r.unread);
+        setItems(r.items);
+      })
+      .catch(() => {});
+
+  // refetch on navigation (fetch-on-load + on-nav)
   useEffect(() => {
     let active = true;
     getNotificationsAction()
@@ -46,6 +55,32 @@ export function NotificationBell({
       active = false;
     };
   }, [pathname]);
+
+  // 4c Realtime: a new own-notification INSERT (RLS-enforced → only the caller's
+  // own rows) → refetch live, so the bell updates without navigating.
+  useEffect(() => {
+    const supabase = createClient();
+    // Unique channel name per subscription — the bell renders twice (sidebar +
+    // mobile bar), and StrictMode double-mounts; a shared name collides ("cannot
+    // add postgres_changes callbacks after subscribe()").
+    const name = `bell-${Math.random().toString(36).slice(2)}`;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) supabase.realtime.setAuth(data.session.access_token);
+      channel = supabase
+        .channel(name)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "notifications" },
+          () => void refresh(),
+        )
+        .subscribe();
+    });
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function onItem(n: NotificationItem) {
     if (n.read_at) return;

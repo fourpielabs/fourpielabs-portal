@@ -9,6 +9,7 @@ import {
   FileText,
   Home,
   Megaphone,
+  MessageSquare,
   MoreHorizontal,
   Package,
   Phone,
@@ -24,6 +25,7 @@ type Item = { href: string; label: string };
 
 const TOP: Item[] = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/messages", label: "Messages" },
   { href: "/program", label: "Program" },
   { href: "/content", label: "Content" },
   { href: "/performance", label: "Performance" },
@@ -40,17 +42,21 @@ const BOTTOM = [
 ] as const;
 
 const MORE: { href: string; label: string; icon: typeof Package }[] = [
+  { href: "/messages", label: "Messages", icon: MessageSquare },
   { href: "/deliverables", label: "Deliverables", icon: Package },
   { href: "/calls-notes", label: "Calls & Notes", icon: Phone },
   { href: "/documents", label: "Documents", icon: FileText },
 ];
 
-// Project clients' mobile bar — only their applicable tabs (no overflow needed).
+// Project clients' mobile bar — only their applicable tabs.
 const BOTTOM_PROJECT: { href: string; label: string; icon: typeof Package }[] = [
   { href: "/dashboard", label: "Home", icon: Home },
+  { href: "/messages", label: "Messages", icon: MessageSquare },
   { href: "/deliverables", label: "Deliverables", icon: Package },
   { href: "/calls-notes", label: "Calls", icon: Phone },
-  { href: "/documents", label: "Docs", icon: FileText },
+];
+const MORE_PROJECT: { href: string; label: string; icon: typeof Package }[] = [
+  { href: "/documents", label: "Documents", icon: FileText },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -84,7 +90,7 @@ export function ClientShell({
   const isProject = clientType === "project";
   const top = isProject ? TOP.filter((i) => !PROGRAM_ONLY.has(i.href)) : TOP;
   const bottom = isProject ? BOTTOM_PROJECT : BOTTOM;
-  const more = isProject ? [] : MORE;
+  const more = isProject ? MORE_PROJECT : MORE;
   const moreActive = more.some((m) => isActive(pathname, m.href));
 
   return (

@@ -234,6 +234,36 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > staff-notified/client-not + bell). Blueprint restored at the repo root. Remaining:
 > **4c** (messaging UI + Supabase Realtime) · **4d** (Resend email w/ throttle).
 >
+> **Phase 4c (Messaging UI + Realtime) COMPLETE (2026-06-16).** Migration
+> `20260616002055_messaging_realtime_4c.sql` (pushed) — **publication membership
+> only**: `alter publication supabase_realtime add table messages, notifications`
+> (no RLS/table change; `test:rls` stays 159). Client surface: `/messages` route +
+> nav (program AND project) — the client sees ONLY their own `client_shared` thread
+> (RLS; no internal surface anywhere). Staff surface: a **Messages** tab on the
+> per-client workspace (both client types) with **Client** (shared) + **Internal**
+> (`?tab=internal`) sub-threads; the Internal tab/composer/button are amber-warning-
+> toned and BOTH composers carry an unmissable who-can-see indicator —
+> **"Visible to the client"** (emerald) vs **"Internal — the client cannot see this"**
+> (amber lock) — the human-error guardrail (wrong-thread posting cuts both ways).
+> Shared `<Conversation>` (`components/messaging/conversation.tsx`): markdown bodies
+> (reuses `components/markdown.tsx`), own-vs-other bubbles, composer →
+> `postMessageAction`, **optimistic own-message append**. Server actions (extend
+> `lib/actions/messages.ts`): `getThreadMessagesAction` (RLS-scoped; author names via
+> service role) + `markThreadViewedAction` (mark_thread_read RPC + clears the bell's
+> `message` notifications for THAT thread via the `link`). **Realtime** = Supabase
+> `postgres_changes` (RLS-enforced per subscriber) — **triple boundary**: (1) RLS at
+> the realtime layer, (2) subscription filtered to the open `thread_id`, (3) events
+> only TRIGGER a refetch via the RLS-scoped action (never render the raw payload), so
+> a stray payload is inert. Bell subscribes to `notifications` changes → live updates.
+> **Channel names are unique per subscription** (the bell renders twice — sidebar +
+> mobile — and StrictMode double-mounts; a shared name collides). Tests:
+> `verify-realtime.ts` **2/2** (BLOCKER — a client subscription gets ZERO internal
+> messages, DOES get shared); `verify-messaging.mjs` **9/9** (client shared-only +
+> posts; staff dual-thread with the distinct Internal treatment; internal never
+> reaches the client) + screenshots @1440/390; `test:rls` **159**. The 4b message
+> deep-links (`/messages`, `/clients/{id}/messages?tab=internal`) now resolve.
+> Remaining: **4d** (Resend email notifications with throttle/batch).
+>
 > **Current status:** P1 + P2 + P3 COMPLETE. Migrations on the linked Tokyo
 > project (`frmukrgjkhlpxplhzeqj`); auth + demo seed (P1); admin workspace (P2);
 > team workspace core (P3): per-client layout with assignment-scoped guard

@@ -28,12 +28,14 @@ export function ClientTabs({ clientId, isAdmin, clientType = "program" }: Props)
   const primary: Tab[] = isProject
     ? [
         { href: base, label: "Overview", exact: true },
+        { href: `${base}/messages`, label: "Messages" },
         { href: `${base}/projects`, label: "Projects" },
         { href: `${base}/deliverables`, label: "Deliverables" },
         { href: `${base}/calls`, label: "Calls" },
       ]
     : [
         { href: base, label: "Overview", exact: true },
+        { href: `${base}/messages`, label: "Messages" },
         { href: `${base}/checklist`, label: "Checklist" },
         { href: `${base}/program`, label: "Program" },
         { href: `${base}/content`, label: "Content" },
