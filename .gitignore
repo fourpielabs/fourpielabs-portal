@@ -53,3 +53,6 @@ Thumbs.db
 
 # dev-only visual verification artifacts
 screenshots/
+
+# 4d email-capture test sink (EMAIL_CAPTURE mode)
+.email-capture.jsonl

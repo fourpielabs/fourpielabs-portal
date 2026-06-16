@@ -79,6 +79,8 @@ export async function postMessageAction(
       title: `New message from ${me.full_name ?? (me.role === "client" ? "your client" : "your team")}`,
       body: body.trim().slice(0, 140),
       link,
+      clientId: msg.client_id,
+      threadId,
     });
   }
 

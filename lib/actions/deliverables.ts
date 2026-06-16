@@ -158,6 +158,7 @@ export async function updateDeliverableAction(
       title: "Deliverable delivered",
       body: v.title,
       link: "/deliverables",
+      clientId,
     });
   }
   revalidate(clientId);
@@ -207,6 +208,7 @@ export async function setDeliverableStatusAction(
       title: "Deliverable delivered",
       body: current?.title ?? null,
       link: "/deliverables",
+      clientId,
     });
   }
   revalidate(clientId);
@@ -313,6 +315,7 @@ export async function setDeliverableApprovalAction(
       title: "Deliverable approved by client",
       body: row?.title ?? null,
       link: `/clients/${me.client_id}/deliverables`,
+      clientId: me.client_id,
     });
   }
   revalidatePath("/deliverables");

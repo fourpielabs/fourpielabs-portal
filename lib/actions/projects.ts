@@ -109,6 +109,7 @@ export async function updateProjectAction(
     title: "Client updated a project",
     body: `${v.title} → ${labelOf(PROJECT_STATUSES, v.status)}`,
     link: `/clients/${profile.client_id}/projects`,
+    clientId: profile.client_id,
   });
   revalidatePath("/dashboard");
   return { ok: true };
@@ -229,6 +230,7 @@ export async function staffSetProjectStatusAction(
     title: "Project status updated",
     body: `${data?.title ?? "Project"} → ${labelOf(PROJECT_STATUSES, status)}`,
     link: "/dashboard",
+    clientId,
   });
   revalidateStaffProject(clientId);
   return { ok: true };

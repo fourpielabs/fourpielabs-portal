@@ -56,6 +56,22 @@ members — useless for inviting real clients.
 5. **Test:** after step 4 below, invite yourself at a real address from the live app and
    confirm delivery + that the link works.
 
+## 3b. Notification emails (4d — app-sent via the Resend HTTP API)
+Separate from the auth/SMTP path above: the app sends new-message + event notification
+emails itself (Resend HTTP API via `fetch` in `lib/email.ts`), NOT through Supabase's mailer.
+1. **`RESEND_API_KEY`** — add the SAME Resend API key from §3.2 as an env var on **Vercel**
+   (and `.env.local` locally). Without it, notification emails are a **logged no-op** (the app
+   never breaks; nothing sends). Optional `RESEND_FROM` (default
+   `4Pie Labs <noreply@mail.fourpielabs.com>`).
+2. **Reply-to:** notification emails set `reply_to: team@fourpielabs.com` in code, so a client
+   replying reaches the team. ⚠️ The **AUTH emails (§3, invite/recovery) do NOT get this** —
+   they're Supabase-managed and Supabase SMTP has no reply-to field. Giving auth emails a team
+   reply-to requires routing them through a Supabase **Auth "Send Email" hook** (custom code).
+   DECISION (not blocking): leave auth emails replying to the noreply box, or add the hook later.
+3. **Email logo:** templates use `emailBrand()` (`lib/email.ts`) — the text wordmark mirroring
+   `BrandLogo`. Swap the real logo there + in `components/ui/brand-logo.tsx` (the existing
+   logo-swap blocker covers both).
+
 ## 4. Auth URL configuration + email templates  (Supabase → Authentication)
 ### 4a. URL configuration (Authentication → URL Configuration)
 - **Site URL:** `https://fourpielabs-portal.vercel.app`

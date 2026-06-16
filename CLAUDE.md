@@ -264,6 +264,27 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
 > deep-links (`/messages`, `/clients/{id}/messages?tab=internal`) now resolve.
 > Remaining: **4d** (Resend email notifications with throttle/batch).
 >
+> **Phase 4d (Email notifications via Resend) COMPLETE (2026-06-16) — Phase 4 DONE.**
+> NO migration (throttle reuses `notifications` timestamps; `test:rls` stays 159). The
+> app sends notification emails itself via the **Resend HTTP API (`fetch`, `lib/email.ts`)**
+> — not SMTP, no new package (SMTP stays Supabase's auth-mail path). `notify()`
+> (`lib/notifications.ts`) now, after inserting the in-app rows, **emails the SAME recipient
+> list** — so the internal-thread boundary holds in email too (a client is never in the
+> internal recipient set → never emailed; the FOURTH channel). **Content-leakage rule:**
+> `buildNotificationEmail()` has **NO `body` param** — emails carry only the safe title
+> (sender/event) + client + a portal link; message text never leaves the portal.
+> **Throttle:** leading-edge, 1 message-email per recipient/thread per 5 min (derived from
+> notification timestamps, no table) + skip if the recipient viewed the thread <2 min ago
+> (`thread_reads`). Emails set **`reply_to: team@fourpielabs.com`** (from
+> `noreply@mail.fourpielabs.com`); brand via `emailBrand()` (text wordmark mirroring
+> `BrandLogo` — logo swap is one change, the logged blocker). Missing `RESEND_API_KEY` → a
+> **logged no-op** (app never breaks). Tests: `test-email.ts` **7/7** (no-body/content
+> rules); `scripts/verify-email.mjs` **7/7** (EMAIL_CAPTURE sink: internal→staff/NEVER
+> client, no body, throttle cap 3→1, deliverable approved→staff). **Launch items
+> (LAUNCH.md §3b):** add `RESEND_API_KEY` to Vercel; auth-email reply-to needs a Supabase
+> "Send Email" hook (flagged, not blocking); email logo swap. **Next:** 4e (per-user
+> notification email preferences — has a migration).
+>
 > **Current status:** P1 + P2 + P3 COMPLETE. Migrations on the linked Tokyo
 > project (`frmukrgjkhlpxplhzeqj`); auth + demo seed (P1); admin workspace (P2);
 > team workspace core (P3): per-client layout with assignment-scoped guard

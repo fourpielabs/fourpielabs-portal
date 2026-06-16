@@ -119,6 +119,7 @@ export async function setReportPublishedAction(
       title: "New report published",
       body: data?.title ?? null,
       link: "/performance#reports",
+      clientId,
     });
   }
   revalidate(clientId);
