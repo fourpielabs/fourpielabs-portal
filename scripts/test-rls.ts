@@ -200,6 +200,28 @@ async function main() {
   await admin.from("notification_preferences").delete().in("user_id", [clientProfileId, teamUid]);
   await admin.from("notification_preferences").insert({ user_id: teamUid, email_message: false });
 
+  // --- tasks fixtures (5a) --------------------------------------------------
+  // a VISIBLE task on premier (demo-client's own), a HIDDEN (staff-only) one, and
+  // a cross-client task on pulse. Plus an "arbitrary" user OUTSIDE premier's circle
+  // (the project client's own user) and the premier shared/internal message ids
+  // (for the create_task source-message boundary guard).
+  await admin.from("tasks").delete().like("title", "RLSTASK%");
+  const { data: visTask } = await admin.from("tasks")
+    .insert({ client_id: premierId, title: "RLSTASK-visible", visible_to_client: true }).select("id").single();
+  const visTaskId = visTask!.id as string;
+  const { data: hidTask } = await admin.from("tasks")
+    .insert({ client_id: premierId, title: "RLSTASK-hidden", visible_to_client: false }).select("id").single();
+  const hidTaskId = hidTask!.id as string;
+  const { data: xcTask } = await admin.from("tasks")
+    .insert({ client_id: pulseId, title: "RLSTASK-cross", visible_to_client: true }).select("id").single();
+  const xcTaskId = xcTask!.id as string;
+  const { data: arbProf } = await admin.from("profiles").select("id").eq("email", projEmail).single();
+  const arbitraryUid = arbProf!.id as string; // belongs to the project client → NOT in premier's circle
+  const { data: sharedMsg } = await admin.from("messages").select("id").eq("client_id", premierId).eq("body", "RLSMSG-shared").single();
+  const { data: internalMsg } = await admin.from("messages").select("id").eq("client_id", premierId).eq("body", "RLSMSG-internal").single();
+  const sharedMsgId = sharedMsg!.id as string;
+  const internalMsgId = internalMsg!.id as string;
+
   // ====================== AS CLIENT (demo-client / premier) =================
   const client = createClient(url, anonKey, { auth: { persistSession: false } });
   await client.auth.signInWithPassword({ email: "demo-client@example.com", password: PW });
@@ -412,6 +434,44 @@ async function main() {
     rec("notif_prefs", "client cannot INSERT prefs for another user", !!xi.error || (xi.data?.length ?? 0) === 0, xi.error?.code ?? `${xi.data?.length ?? 0} rows`);
   }
 
+  // --- tasks (5a): client write path (create_task / update_task_status RPCs) -
+  {
+    // reads OWN-client VISIBLE tasks only — hidden (staff-only) invisible; cross-client 0
+    const { data: cTasks } = await client.from("tasks").select("title");
+    const titles = (cTasks ?? []).map((t) => t.title);
+    rec("tasks", "client reads OWN-client visible tasks only", titles.includes("RLSTASK-visible") && !titles.includes("RLSTASK-hidden") && !titles.includes("RLSTASK-cross"), `${cTasks?.length ?? 0} row(s)`);
+    const xr = await client.from("tasks").select("id").eq("client_id", pulseId);
+    rec("tasks", "client cross-client tasks read 0", (xr.data?.length ?? 0) === 0, `${xr.data?.length ?? 0} rows`);
+
+    // direct writes denied — no client INSERT/UPDATE policy
+    const di = await client.from("tasks").insert({ client_id: premierId, title: "RLSTASK-direct" }).select("id");
+    rec("tasks", "client direct INSERT tasks DENIED (42501)", !!di.error || (di.data?.length ?? 0) === 0, di.error?.code ?? `${di.data?.length ?? 0} rows`);
+    if (di.data?.[0]?.id) await admin.from("tasks").delete().eq("id", di.data[0].id);
+    const du = await client.from("tasks").update({ status: "done" }).eq("id", visTaskId).select("id");
+    rec("tasks", "client direct UPDATE tasks denied", !!du.error || (du.data?.length ?? 0) === 0, du.error?.code ?? `${du.data?.length ?? 0} rows`);
+
+    // create_task: own client, assignee = SELF (in circle) → allowed
+    const crSelf = await client.rpc("create_task", { p_title: "RLSTASK-own", p_assignee: clientUid });
+    rec("tasks", "create_task own-client (assign to self) allowed", !crSelf.error, crSelf.error?.message ?? "");
+    // create_task: arbitrary NON-CIRCLE assignee → RAISES  ← the key proof
+    const crArb = await client.rpc("create_task", { p_title: "RLSTASK-arb", p_assignee: arbitraryUid });
+    rec("tasks", "create_task arbitrary non-circle assignee RAISES", !!crArb.error, crArb.error?.message ?? "");
+    // create_task: source = INTERNAL message → RAISES (boundary at task source)
+    const crInt = await client.rpc("create_task", { p_title: "RLSTASK-srcint", p_source_message_id: internalMsgId });
+    rec("tasks", "create_task source=INTERNAL message RAISES (boundary)", !!crInt.error, crInt.error?.message ?? "");
+    // create_task: source = own SHARED message → allowed
+    const crShr = await client.rpc("create_task", { p_title: "RLSTASK-srcshared", p_source_message_id: sharedMsgId });
+    rec("tasks", "create_task source=own shared message allowed", !crShr.error, crShr.error?.message ?? "");
+
+    // update_task_status: own VISIBLE allowed; cross-client RAISES; invisible RAISES
+    const usOk = await client.rpc("update_task_status", { p_task_id: visTaskId, p_status: "in_progress" });
+    rec("tasks", "update_task_status own visible task allowed", !usOk.error, usOk.error?.message ?? "");
+    const usXc = await client.rpc("update_task_status", { p_task_id: xcTaskId, p_status: "done" });
+    rec("tasks", "update_task_status CROSS-CLIENT task RAISES", !!usXc.error, usXc.error?.message ?? "");
+    const usHid = await client.rpc("update_task_status", { p_task_id: hidTaskId, p_status: "done" });
+    rec("tasks", "update_task_status INVISIBLE (staff-only) task RAISES", !!usHid.error, usHid.error?.message ?? "");
+  }
+
   // ====================== AS TEAM (demo-team, unassigned client) ============
   const team = createClient(url, anonKey, { auth: { persistSession: false } });
   await team.auth.signInWithPassword({ email: "demo-team@example.com", password: PW });
@@ -476,6 +536,20 @@ async function main() {
     const tunMark = await team.rpc("mark_thread_read", { p_thread_id: unShared });
     rec("team→unassigned", "mark_thread_read denied", !!tunMark.error, tunMark.error?.message ?? "");
   }
+  // tasks: ASSIGNED team reads + writes premier's; UNASSIGNED team neither
+  {
+    const ttr = await team.from("tasks").select("id").eq("client_id", premierId);
+    rec("team→assigned", "read premier tasks allowed", !ttr.error && (ttr.data?.length ?? 0) >= 1, `${ttr.data?.length ?? 0} rows`);
+    const tti = await team.from("tasks").insert({ client_id: premierId, title: "RLSTASK-team" }).select("id");
+    rec("team→assigned", "write premier task allowed", !tti.error && (tti.data?.length ?? 0) === 1, tti.error?.code ?? `${tti.data?.length ?? 0} rows`);
+    if (tti.data?.[0]?.id) await admin.from("tasks").delete().eq("id", tti.data[0].id);
+
+    const tun = await team.from("tasks").select("id").eq("client_id", unId);
+    rec("team→unassigned", "read tasks 0", (tun.data?.length ?? 0) === 0, `${tun.data?.length ?? 0} rows`);
+    const tunI = await team.from("tasks").insert({ client_id: unId, title: "RLSTASK-teamun" }).select("id");
+    rec("team→unassigned", "write tasks denied", !!tunI.error || (tunI.data?.length ?? 0) === 0, tunI.error?.code ?? `${tunI.data?.length ?? 0} rows`);
+    if (tunI.data?.[0]?.id) await admin.from("tasks").delete().eq("id", tunI.data[0].id);
+  }
 
   // ====================== AS ANON ===========================================
   const anon = createClient(url, anonKey, { auth: { persistSession: false } });
@@ -514,6 +588,15 @@ async function main() {
     rec("anon", "read notification_preferences 0", (anPref.data?.length ?? 0) === 0, `${anPref.data?.length ?? 0} rows`);
     const anPrefIns = await anon.from("notification_preferences").insert({ user_id: clientProfileId, email_message: false }).select("user_id");
     rec("anon", "insert notification_preferences denied", !!anPrefIns.error || (anPrefIns.data?.length ?? 0) === 0, anPrefIns.error?.code ?? `${anPrefIns.data?.length ?? 0} rows`);
+    const atr = await anon.from("tasks").select("id");
+    rec("anon", "read tasks 0", (atr.data?.length ?? 0) === 0, `${atr.data?.length ?? 0} rows`);
+    const ati = await anon.from("tasks").insert({ client_id: premierId, title: "RLSTASK-anon" }).select("id");
+    rec("anon", "write tasks denied", !!ati.error || (ati.data?.length ?? 0) === 0, ati.error?.code ?? `${ati.data?.length ?? 0} rows`);
+    if (ati.data?.[0]?.id) await admin.from("tasks").delete().eq("id", ati.data[0].id);
+    const act = await anon.rpc("create_task", { p_title: "x" });
+    rec("anon", "create_task RPC denied", !!act.error);
+    const aut = await anon.rpc("update_task_status", { p_task_id: visTaskId, p_status: "done" });
+    rec("anon", "update_task_status RPC denied", !!aut.error);
   }
 
   // ====================== SEED GATING =======================================
@@ -553,6 +636,7 @@ async function main() {
 
   // --- cleanup --------------------------------------------------------------
   await admin.from("notification_preferences").delete().in("user_id", [clientProfileId, teamUid]);
+  await admin.from("tasks").delete().like("title", "RLSTASK%");
   await admin.from("notifications").delete().like("title", "RLSNOTE%");
   await admin.from("messages").delete().eq("client_id", premierId).like("body", "RLS%");
   await admin.from("thread_reads").delete().eq("thread_id", premierShared);

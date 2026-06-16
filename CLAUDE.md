@@ -91,6 +91,18 @@ Calls & Notes · Documents. Zero edit affordances beyond the onboarding checklis
   widen RLS to match a mockup. Example: the staff client-overview "activity feed" is a
   derived read of deliverables/updates/reports (works for team), **not** a raw
   `audit_log` read (admin-only).
+- **⚠️ FLAGGED ISSUE (discovered Phase 5 planning, NOT yet fixed — decide separately):**
+  the **client-facing `/documents` download is likely broken**. The client documents page
+  ([app/(portal)/documents/page.tsx](app/(portal)/documents/page.tsx)) wires `DownloadButton`
+  → `getSignedUrlAction` ([lib/actions/storage.ts](lib/actions/storage.ts)), but that action
+  (a) calls `requireClientAccess`, which **redirects clients** to `/dashboard`, and (b) mints
+  the signed URL via the user-scoped Supabase client, yet **clients have NO `storage.objects`
+  policy** (by standing rule — `20260610010006_storage.sql`), so `createSignedUrl` would fail
+  for a client anyway. So that path is **staff-functional only**. The correct fix is the
+  **service-role-after-RLS pattern** (verify the client may read the row via RLS, then mint the
+  signed URL with the service-role admin client) — which is exactly what the new Phase-5d
+  message-attachment download uses. **Do NOT fold a `/documents` fix into Phase 5** (out of
+  scope); flagged here to decide on its own.
 - **UI Excellence Pass — DONE (closes the UI phase):** the seven per-client staff
   editor tabs (Program/milestones, Competitors, Notes, Reports, Updates, Files,
   client Settings) were **lifted from accepted-B `rounded-lg` list rows to D2 Card
