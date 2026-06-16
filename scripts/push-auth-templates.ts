@@ -47,7 +47,34 @@ async function main() {
     return;
   }
 
-  console.error(`Unknown mode "${mode}" (use --print or --push)`);
+  if (mode === "--verify") {
+    const token = process.env.SUPABASE_ACCESS_TOKEN;
+    const ref = process.env.SUPABASE_PROJECT_REF ?? "frmukrgjkhlpxplhzeqj";
+    if (!token) {
+      console.error("Missing SUPABASE_ACCESS_TOKEN in env.");
+      process.exit(1);
+    }
+    const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/config/auth`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      console.error("read-back failed:", res.status, await res.text());
+      process.exit(1);
+    }
+    const cfg = (await res.json()) as Record<string, string>;
+    const checks: [string, boolean][] = [
+      ["invite subject", cfg.mailer_subjects_invite === inv.subject],
+      ["invite html", cfg.mailer_templates_invite_content === inv.html],
+      ["recovery subject", cfg.mailer_subjects_recovery === rec.subject],
+      ["recovery html", cfg.mailer_templates_recovery_content === rec.html],
+    ];
+    for (const [n, ok] of checks) console.log(`${ok ? "✓" : "✗"} live ${n} matches what we pushed`);
+    if (checks.some(([, ok]) => !ok)) process.exit(1);
+    console.log("Live auth templates match the approved HTML byte-for-byte. ✓");
+    return;
+  }
+
+  console.error(`Unknown mode "${mode}" (use --print, --push, or --verify)`);
   process.exit(1);
 }
 
