@@ -60,8 +60,37 @@ export function Conversation({
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const refetch = () =>
-    getThreadMessagesAction(threadId).then(setMessages).catch(() => {});
+  // keep a ref to the current messages so the realtime callback computes "after"
+  // from fresh state (its closure would otherwise be stale).
+  const messagesRef = useRef(initialMessages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  // Incremental sync: fetch only messages AFTER our latest real one (RLS-scoped —
+  // never the raw realtime payload, so the internal boundary holds), then append:
+  // dedup by id + drop the optimistic twin of our own just-confirmed message.
+  // Replaces the old "refetch the whole thread on every event".
+  const syncNew = async () => {
+    const cur = messagesRef.current;
+    const lastReal = [...cur].reverse().find((m) => !m.id.startsWith("tmp-"));
+    const fresh = await getThreadMessagesAction(threadId, lastReal?.createdAt).catch(
+      () => [] as ThreadMessage[],
+    );
+    if (!fresh.length) return;
+    setMessages((prev) => {
+      const ids = new Set(prev.map((m) => m.id));
+      const add = fresh.filter((m) => !ids.has(m.id));
+      if (!add.length) return prev;
+      const mineBodies = new Set(
+        add.filter((m) => m.authorId === currentUserId).map((m) => m.body.trim()),
+      );
+      const cleaned = mineBodies.size
+        ? prev.filter((m) => !(m.id.startsWith("tmp-") && mineBodies.has(m.body.trim())))
+        : prev;
+      return [...cleaned, ...add];
+    });
+  };
 
   useEffect(() => {
     getThreadParticipantsAction(threadId).then(setParticipants).catch(() => {});
@@ -120,7 +149,7 @@ export function Conversation({
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "messages", filter: `thread_id=eq.${threadId}` },
           () => {
-            refetch();
+            void syncNew();
             void markThreadViewedAction(threadId, notifLink);
           },
         )
@@ -180,7 +209,7 @@ export function Conversation({
       return toast.error("Message not sent", { description: res.error });
     }
     setMentions([]);
-    refetch();
+    void syncNew(); // reconcile our optimistic tmp → the real row (incremental)
   }
 
   const internal = audience === "internal";

@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Check, ChevronDown, Users } from "lucide-react";
 
@@ -32,8 +31,14 @@ function groupByPhase(items: ClientChecklistItem[]) {
   return groups;
 }
 
-export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
-  const router = useRouter();
+export function ClientChecklist({
+  items: initialItems,
+}: {
+  items: ClientChecklistItem[];
+}) {
+  // local copy → the checkbox flips INSTANTLY; the server prop re-syncs on refresh.
+  const [items, setItems] = useState(initialItems);
+  useEffect(() => setItems(initialItems), [initialItems]);
   const [pending, setPending] = useState<string | null>(null);
 
   // team rows always count as done (the agency handles them) — design spec
@@ -52,13 +57,19 @@ export function ClientChecklist({ items }: { items: ClientChecklistItem[] }) {
   const togglePhase = (phase: string) =>
     setOpenPhases((p) => ({ ...p, [phase]: !p[phase] }));
 
+  const flip = (id: string) =>
+    setItems((xs) => xs.map((it) => (it.id === id ? { ...it, is_done: !it.is_done } : it)));
+
   async function toggle(id: string) {
     setPending(id);
+    flip(id); // optimistic — instant checkbox
     const supabase = createClient();
     const { error } = await supabase.rpc("toggle_checklist_item", { item_id: id });
     setPending(null);
-    if (error) return toast.error("Couldn't update", { description: error.message });
-    router.refresh();
+    if (error) {
+      flip(id); // revert
+      toast.error("Couldn't update", { description: error.message });
+    }
   }
 
   if (total === 0) {

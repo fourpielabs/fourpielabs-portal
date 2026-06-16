@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -29,12 +29,20 @@ type Props = {
 export function UserActiveToggle({ userId, isActive, isSelf, label }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  // optimistic: the button flips Deactivate↔Reactivate instantly; router.refresh
+  // then reconciles the row styling. Revert on error.
+  const [active, setActive] = useState(isActive);
+  useEffect(() => setActive(isActive), [isActive]);
 
   async function apply(next: boolean) {
     setPending(true);
+    setActive(next);
     const res = await setUserActiveAction(userId, next);
     setPending(false);
-    if (!res.ok) return toast.error("Couldn't update", { description: res.error });
+    if (!res.ok) {
+      setActive(!next);
+      return toast.error("Couldn't update", { description: res.error });
+    }
     toast.success(next ? "User reactivated." : "User deactivated.");
     router.refresh();
   }
@@ -79,7 +87,7 @@ export function UserActiveToggle({ userId, isActive, isSelf, label }: Props) {
 
   return (
     <div className="flex items-center justify-end gap-1">
-      {isActive ? (
+      {active ? (
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="outline" size="sm" disabled={pending}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ListChecks, MessageSquare, Plus, User } from "lucide-react";
@@ -34,18 +34,25 @@ export type ClientTaskRow = {
 };
 
 export function ClientTaskBoard({
-  tasks,
+  tasks: initialTasks,
   members,
 }: {
   tasks: ClientTaskRow[];
   members: TaskMember[];
 }) {
-  const router = useRouter();
+  // local copy so a status change paints INSTANTLY (optimistic); the server prop
+  // re-syncs on any real refresh/navigation. Reconcile/revert on error.
+  const [tasks, setTasks] = useState(initialTasks);
+  useEffect(() => setTasks(initialTasks), [initialTasks]);
 
   async function setStatus(id: string, status: ClientTaskRow["status"]) {
+    const prev = tasks;
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, status } : t))); // <100ms
     const res = await setTaskStatusAction(id, status);
-    if (!res.ok) return toast.error("Couldn't update", { description: res.error });
-    router.refresh();
+    if (!res.ok) {
+      setTasks(prev); // revert
+      toast.error("Couldn't update", { description: res.error });
+    }
   }
 
   const addBtn = (

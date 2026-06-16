@@ -164,14 +164,18 @@ export async function getThreadParticipantsAction(threadId: string): Promise<Thr
  * RLS-denied here even if a stray event arrived). Author display names are
  * resolved via the service role (the caller can already see these messages).
  */
-export async function getThreadMessagesAction(threadId: string): Promise<ThreadMessage[]> {
+export async function getThreadMessagesAction(threadId: string, after?: string): Promise<ThreadMessage[]> {
   await requireProfile();
   const supabase = await createClient();
-  const { data } = await supabase
+  // `after` → incremental fetch (only messages newer than the caller's latest), so
+  // a realtime event appends ~1 row instead of re-loading the whole thread. Still
+  // RLS-scoped (the boundary holds — we never render the raw realtime payload).
+  let q = supabase
     .from("messages")
     .select("id, body, author_id, created_at, attachment_name")
-    .eq("thread_id", threadId)
-    .order("created_at", { ascending: true });
+    .eq("thread_id", threadId);
+  if (after) q = q.gt("created_at", after);
+  const { data } = await q.order("created_at", { ascending: true });
   const msgs = data ?? [];
 
   const authorIds = [...new Set(msgs.map((m) => m.author_id).filter(Boolean))] as string[];

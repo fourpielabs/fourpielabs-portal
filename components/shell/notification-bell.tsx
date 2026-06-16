@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/format";
@@ -28,7 +27,6 @@ export function NotificationBell({
   initialItems?: NotificationItem[];
   tone?: "light" | "dark";
 }) {
-  const pathname = usePathname();
   const [unread, setUnread] = useState(initialUnread);
   const [items, setItems] = useState<NotificationItem[]>(initialItems);
   const [, startTransition] = useTransition();
@@ -41,20 +39,9 @@ export function NotificationBell({
       })
       .catch(() => {});
 
-  // refetch on navigation (fetch-on-load + on-nav)
-  useEffect(() => {
-    let active = true;
-    getNotificationsAction()
-      .then((r) => {
-        if (!active) return;
-        setUnread(r.unread);
-        setItems(r.items);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [pathname]);
+  // No per-navigation refetch: the badge stays live via the realtime subscription
+  // below (new notifications) + the server-provided initial items; the list
+  // reconciles when the user actually OPENS the bell (onOpenChange → refresh).
 
   // 4c Realtime: a new own-notification INSERT (RLS-enforced → only the caller's
   // own rows) → refetch live, so the bell updates without navigating.
@@ -104,7 +91,7 @@ export function NotificationBell({
       : "text-ink-2 hover:bg-surface-2 hover:text-ink";
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => open && void refresh()}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"

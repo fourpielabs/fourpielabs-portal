@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ListChecks, Lock, MessageSquare, Pencil, Plus, Trash2, User } from "lucide-react";
@@ -37,22 +36,35 @@ export type StaffTask = StaffTaskRow & { assigneeName: string | null };
 
 export function StaffTasksManager({
   clientId,
-  tasks,
+  tasks: initialTasks,
   members,
 }: {
   clientId: string;
   tasks: StaffTask[];
   members: TaskMember[];
 }) {
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
+  // local copy → status changes + deletes paint INSTANTLY; the server prop
+  // re-syncs on refresh/navigation (and after edits/creates via the dialog).
+  const [tasks, setTasks] = useState(initialTasks);
+  useEffect(() => setTasks(initialTasks), [initialTasks]);
 
-  async function run(p: Promise<{ ok: boolean; error?: string }>) {
-    setPending(true);
-    const res = await p;
-    setPending(false);
-    if (!res.ok) return toast.error("Action failed", { description: res.error });
-    router.refresh();
+  async function changeStatus(id: string, status: StaffTaskRow["status"]) {
+    const prev = tasks;
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, status } : t))); // <100ms
+    const res = await staffSetTaskStatusAction(clientId, id, status);
+    if (!res.ok) {
+      setTasks(prev);
+      toast.error("Couldn't update", { description: res.error });
+    }
+  }
+  async function deleteTask(id: string) {
+    const prev = tasks;
+    setTasks((ts) => ts.filter((t) => t.id !== id)); // row vanishes instantly
+    const res = await staffDeleteTaskAction(clientId, id);
+    if (!res.ok) {
+      setTasks(prev);
+      toast.error("Couldn't delete", { description: res.error });
+    }
   }
 
   const newBtn = (
@@ -122,9 +134,7 @@ export function StaffTasksManager({
                 <div className="flex shrink-0 items-center gap-1">
                   <Select
                     value={t.status}
-                    onValueChange={(s) =>
-                      run(staffSetTaskStatusAction(clientId, t.id, s as StaffTaskRow["status"]))
-                    }
+                    onValueChange={(s) => changeStatus(t.id, s as StaffTaskRow["status"])}
                   >
                     <SelectTrigger size="sm" className="w-[8.5rem]" aria-label={`Status for ${t.title}`}>
                       <SelectValue />
@@ -149,7 +159,7 @@ export function StaffTasksManager({
                   />
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" aria-label="Delete" disabled={pending}>
+                      <Button variant="ghost" size="icon" aria-label="Delete">
                         <Trash2 className="size-4" />
                       </Button>
                     </AlertDialogTrigger>
@@ -162,7 +172,7 @@ export function StaffTasksManager({
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => run(staffDeleteTaskAction(clientId, t.id))}>
+                        <AlertDialogAction onClick={() => deleteTask(t.id)}>
                           Delete
                         </AlertDialogAction>
                       </AlertDialogFooter>
