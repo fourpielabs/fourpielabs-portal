@@ -1,19 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Area,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import dynamic from "next/dynamic";
 
 import { formatMonthShort, monthsBetween } from "@/lib/format";
+
+// Recharts loads only when the chart actually renders (client-only), off the route's
+// initial JS. The skeleton holds the chart's space while the chunk arrives.
+const MetricsLineChart = dynamic(
+  () => import("./metrics-line-chart").then((m) => m.MetricsLineChart),
+  { ssr: false, loading: () => <div className="h-full w-full animate-pulse rounded bg-surface-2" /> },
+);
 import {
   Select,
   SelectContent,
@@ -115,63 +112,7 @@ export function MetricsCharts({
           </div>
         ) : (
           <div className="h-72 w-full rounded-lg border p-3">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
-                <defs>
-                  <linearGradient id="k3-amberfill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#D97706" stopOpacity={0.22} />
-                    <stop offset="100%" stopColor="#D97706" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} stroke="#F4F4F0" />
-                <XAxis
-                  dataKey="period"
-                  tick={{ fontSize: 11, fill: "#8E8B84" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "#8E8B84" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={36}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "#18181B",
-                    border: "none",
-                    borderRadius: 10,
-                    color: "#fff",
-                    fontSize: 12,
-                  }}
-                  labelStyle={{ color: "#A8A8A3" }}
-                  itemStyle={{ color: "#FBBF24" }}
-                />
-                <ReferenceLine
-                  x={chartData[chartData.length - 1]?.period}
-                  stroke="#D6D3CD"
-                  strokeDasharray="3 3"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="none"
-                  fill="url(#k3-amberfill)"
-                  connectNulls
-                  isAnimationActive={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#D97706"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  dot={{ r: 4, fill: "#fff", stroke: "#D97706", strokeWidth: 2 }}
-                  activeDot={{ r: 5, fill: "#D97706", stroke: "#fff", strokeWidth: 2 }}
-                  connectNulls
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
+            <MetricsLineChart data={chartData} />
           </div>
         )}
       </div>

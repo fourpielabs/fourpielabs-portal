@@ -7,14 +7,15 @@ export default async function MyTasksPage() {
   const profile = await requireRole(["client"]);
   const supabase = await createClient();
 
-  // RLS scopes to the client's own client_id AND visible_to_client (internal/
-  // staff-only tasks never reach here — the boundary).
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("id, title, description, status, assignee_id, due_date, source_message_id")
-    .order("created_at", { ascending: false });
-
-  const members = profile.client_id ? await getAssignableMembers(profile.client_id) : [];
+  // tasks + the assignee circle in parallel (members no longer adds to the critical
+  // path). RLS scopes tasks to the client's own client_id AND visible_to_client.
+  const [{ data: tasks }, members] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select("id, title, description, status, assignee_id, due_date, source_message_id")
+      .order("created_at", { ascending: false }),
+    profile.client_id ? getAssignableMembers(profile.client_id) : Promise.resolve([]),
+  ]);
   const nameById = new Map(members.map((m) => [m.id, m.name]));
   const list: ClientTaskRow[] = (tasks ?? []).map((t) => ({
     ...t,

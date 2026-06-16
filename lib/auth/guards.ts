@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,21 +23,29 @@ export async function getCurrentUser() {
   return user;
 }
 
-/** Current user's public.profiles row (role, client_id, …), or null. */
-export async function getCurrentProfile(): Promise<Profile | null> {
+/**
+ * Per-request memoized profile load (getUser + the profiles row). React `cache()`
+ * dedupes this across the portal layout + the page + the guards within ONE request,
+ * so a request makes a single auth round-trip + a single profiles query instead of
+ * repeating them for every requireProfile/requireRole/requireClientAccess call.
+ */
+const loadProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-
   const { data } = await supabase
     .from("profiles")
     .select("id, role, full_name, email, avatar_url, client_id, is_active")
     .eq("id", user.id)
     .single();
-
   return (data as Profile) ?? null;
+});
+
+/** Current user's public.profiles row (role, client_id, …), or null. */
+export async function getCurrentProfile(): Promise<Profile | null> {
+  return loadProfile();
 }
 
 /** The role's home route. Clients and staff share /dashboard for now (P1). */
@@ -53,20 +62,9 @@ export function landingPathForRole(_role: Role): string {
  * by portal layouts and server actions.
  */
 export async function requireProfile(): Promise<Profile> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, role, full_name, email, avatar_url, client_id, is_active")
-    .eq("id", user.id)
-    .single();
-
-  const profile = data as Profile | null;
+  const profile = await loadProfile();
   if (!profile || !profile.is_active) {
+    const supabase = await createClient();
     await supabase.auth.signOut();
     redirect("/login");
   }

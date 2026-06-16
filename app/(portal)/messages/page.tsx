@@ -10,15 +10,12 @@ export default async function ClientMessagesPage() {
   const me = await requireRole(["client"]);
   const supabase = await createClient();
 
-  // RLS exposes ONLY the client's own client_shared thread — the internal thread
-  // is invisible, so a client has no internal surface anywhere.
-  const { data: thread } = await supabase
-    .from("threads")
-    .select("id")
-    .eq("type", "client_shared")
-    .maybeSingle();
-
-  const members = me.client_id ? await getAssignableMembers(me.client_id) : [];
+  // thread + the mention circle in parallel. RLS exposes ONLY the client's own
+  // client_shared thread — the internal thread is invisible.
+  const [{ data: thread }, members] = await Promise.all([
+    supabase.from("threads").select("id").eq("type", "client_shared").maybeSingle(),
+    me.client_id ? getAssignableMembers(me.client_id) : Promise.resolve([]),
+  ]);
 
   return (
     <div className="space-y-5">

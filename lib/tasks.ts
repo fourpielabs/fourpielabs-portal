@@ -11,15 +11,25 @@ import { clientUserIds, staffUserIds } from "@/lib/notifications";
 export type TaskMember = { id: string; name: string; role: "client" | "team" | "admin" };
 
 export async function getAssignableMembers(clientId: string): Promise<TaskMember[]> {
-  const [clients, staff] = await Promise.all([clientUserIds(clientId), staffUserIds(clientId)]);
-  const ids = [...new Set([...clients, ...staff])];
-  if (ids.length === 0) return [];
   const admin = createAdminClient();
+  // Query 1: who's assigned to this client (the only part that needs the join).
+  const { data: assigns } = await admin
+    .from("client_assignments")
+    .select("user_id")
+    .eq("client_id", clientId);
+  const assignedIds = (assigns ?? []).map((a) => a.user_id as string);
+
+  // Query 2: the whole circle + names in ONE round-trip — the client's own users
+  // (client_id) ∪ all admins ∪ the assigned team. (Was 4 round-trips: clientUserIds +
+  // staffUserIds[×2] + a names lookup.)
+  const orParts = [`client_id.eq.${clientId}`, `role.eq.admin`];
+  if (assignedIds.length) orParts.push(`id.in.(${assignedIds.join(",")})`);
   const { data } = await admin
     .from("profiles")
     .select("id, full_name, email, role")
-    .in("id", ids);
-  const clientSet = new Set(clients);
+    .eq("is_active", true)
+    .or(orParts.join(","));
+
   return (data ?? [])
     .map((p) => ({
       id: p.id as string,
@@ -28,8 +38,8 @@ export async function getAssignableMembers(clientId: string): Promise<TaskMember
     }))
     .sort((a, b) => {
       // clients first (the people work is "owed to/by"), then staff, by name
-      const ac = clientSet.has(a.id) ? 0 : 1;
-      const bc = clientSet.has(b.id) ? 0 : 1;
+      const ac = a.role === "client" ? 0 : 1;
+      const bc = b.role === "client" ? 0 : 1;
       return ac - bc || a.name.localeCompare(b.name);
     });
 }

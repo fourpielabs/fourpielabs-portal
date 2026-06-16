@@ -19,17 +19,17 @@ export default async function StaffMessagesPage({
   const me = await requireClientAccess(clientId);
   const supabase = await createClient();
 
-  const { data: threads } = await supabase
-    .from("threads")
-    .select("id, type")
-    .eq("client_id", clientId);
+  // threads + the mention/assignee circle in parallel
+  const [{ data: threads }, members] = await Promise.all([
+    supabase.from("threads").select("id, type").eq("client_id", clientId),
+    getAssignableMembers(clientId),
+  ]);
   const shared = (threads ?? []).find((t) => t.type === "client_shared");
   const internal = (threads ?? []).find((t) => t.type === "internal");
 
   const isInternal = tab === "internal";
   const active = isInternal ? internal : shared;
   const base = `/clients/${clientId}/messages`;
-  const members = await getAssignableMembers(clientId);
 
   const tabCls = (on: boolean, internalTab: boolean) =>
     cn(
