@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ListChecks, MessageSquare, Plus, User } from "lucide-react";
@@ -46,7 +46,13 @@ export function ClientTaskBoard({
   // local copy so a status change paints INSTANTLY (optimistic); the server prop
   // re-syncs on any real refresh/navigation. Reconcile/revert on error.
   const [tasks, setTasks] = useState(initialTasks);
-  useEffect(() => setTasks(initialTasks), [initialTasks]);
+  // Re-sync local optimistic state when the server prop changes (after refresh) — the
+  // React-blessed "adjust state during render" pattern (no effect, no cascading render).
+  const [prevTasks, setPrevTasks] = useState(initialTasks);
+  if (initialTasks !== prevTasks) {
+    setPrevTasks(initialTasks);
+    setTasks(initialTasks);
+  }
 
   async function setStatus(id: string, status: ClientTaskRow["status"]) {
     const prev = tasks;

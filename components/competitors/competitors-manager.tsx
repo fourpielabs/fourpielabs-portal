@@ -14,7 +14,7 @@ import {
   setCompetitorVisibilityAction,
   deleteCompetitorAction,
 } from "@/lib/actions/competitors";
-import { COMPETITOR_PRIORITIES, labelOf } from "@/lib/constants";
+import { COMPETITOR_PRIORITIES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

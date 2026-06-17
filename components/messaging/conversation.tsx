@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/format";
+import { useReducedMotion } from "@/lib/motion";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -83,6 +84,8 @@ export function Conversation({
   const [participants, setParticipants] = useState<ThreadParticipant[]>([]);
   const [mentions, setMentions] = useState<ThreadParticipant[]>([]);
   const [mention, setMention] = useState<{ query: string; at: number } | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const reduced = useReducedMotion();
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -210,6 +213,7 @@ export function Conversation({
   useEffect(() => {
     const q = search.trim();
     if (q.length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- debounced search: clear results immediately when the query is too short (the async search is debounced below)
       setSearchResults(null);
       return;
     }
@@ -230,6 +234,7 @@ export function Conversation({
   function onBodyChange(value: string, caret: number) {
     setBody(value);
     setMention(detectMention(value, caret));
+    setMentionIndex(0);
   }
   function pickMention(p: ThreadParticipant) {
     if (!mention) return;
@@ -290,8 +295,10 @@ export function Conversation({
   }, [threadId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+    // honor reduced motion: an explicit `behavior` option overrides CSS scroll-behavior,
+    // so gate it on the centralized hook rather than relying on the globals.css block
+    bottomRef.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth" });
+  }, [messages.length, reduced]);
 
   async function send() {
     const text = body.trim();
@@ -354,10 +361,11 @@ export function Conversation({
       {/* in-thread search (RLS-scoped — a client searches only their shared thread) */}
       <div className="relative border-b border-border p-2">
         <div className="flex items-center gap-2 rounded-lg bg-surface-2 px-2.5 py-1.5">
-          <Search className="size-3.5 shrink-0 text-ink-3" />
+          <Search aria-hidden className="size-3.5 shrink-0 text-ink-3" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="Search this conversation"
             placeholder="Search this conversation…"
             className="w-full bg-transparent text-[13px] outline-none placeholder:text-ink-3"
           />
@@ -595,22 +603,35 @@ export function Conversation({
         />
         <div className="relative flex items-end gap-2">
           {mention && mentionMatches.length > 0 && (
-            <div className="absolute bottom-full left-0 mb-1 w-64 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-e2">
-              {mentionMatches.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  data-mention-option
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    pickMention(p);
-                  }}
-                  className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-sm hover:bg-surface-2"
-                >
-                  <span className="text-ink-3">@</span>
-                  {p.name}
-                </button>
-              ))}
+            <div
+              role="listbox"
+              aria-label="Mention a person"
+              className="absolute bottom-full left-0 mb-1 w-64 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-e2"
+            >
+              {mentionMatches.map((p, i) => {
+                const activeOpt = i === Math.min(mentionIndex, mentionMatches.length - 1);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    role="option"
+                    aria-selected={activeOpt}
+                    data-mention-option
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      pickMention(p);
+                    }}
+                    onMouseEnter={() => setMentionIndex(i)}
+                    className={cn(
+                      "flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-sm hover:bg-surface-2",
+                      activeOpt && "bg-surface-2",
+                    )}
+                  >
+                    <span className="text-ink-3">@</span>
+                    {p.name}
+                  </button>
+                );
+              })}
             </div>
           )}
           <Textarea
@@ -621,6 +642,24 @@ export function Conversation({
             onClick={(e) => setMention(detectMention(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length))}
             onBlur={() => setTimeout(() => setMention(null), 150)}
             onKeyDown={(e) => {
+              // keyboard-operable @mention picker
+              if (mention && mentionMatches.length > 0) {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setMentionIndex((i) => (i + 1) % mentionMatches.length);
+                  return;
+                }
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setMentionIndex((i) => (i - 1 + mentionMatches.length) % mentionMatches.length);
+                  return;
+                }
+                if (e.key === "Enter" || e.key === "Tab") {
+                  e.preventDefault();
+                  pickMention(mentionMatches[Math.min(mentionIndex, mentionMatches.length - 1)]);
+                  return;
+                }
+              }
               if (e.key === "Escape") setMention(null);
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();

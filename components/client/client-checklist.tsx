@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Check, ChevronDown, Users } from "lucide-react";
 
@@ -38,7 +38,12 @@ export function ClientChecklist({
 }) {
   // local copy → the checkbox flips INSTANTLY; the server prop re-syncs on refresh.
   const [items, setItems] = useState(initialItems);
-  useEffect(() => setItems(initialItems), [initialItems]);
+  // Re-sync when the server prop changes (after refresh) — "adjust state during render".
+  const [prevItems, setPrevItems] = useState(initialItems);
+  if (initialItems !== prevItems) {
+    setPrevItems(initialItems);
+    setItems(initialItems);
+  }
   const [pending, setPending] = useState<string | null>(null);
 
   // team rows always count as done (the agency handles them) — design spec

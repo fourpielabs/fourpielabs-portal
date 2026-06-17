@@ -79,7 +79,12 @@ export function ClientTabs({ clientId, isAdmin, clientType = "program" }: Props)
       {primary.map((t) => {
         const active = isActive(t);
         return (
-          <Link key={t.href} href={t.href} className={linkCls(active)}>
+          <Link
+            key={t.href}
+            href={t.href}
+            aria-current={active ? "page" : undefined}
+            className={linkCls(active)}
+          >
             {t.label}
             {active && underline}
           </Link>
@@ -93,7 +98,11 @@ export function ClientTabs({ clientId, isAdmin, clientType = "program" }: Props)
         <DropdownMenuContent align="end">
           {more.map((t) => (
             <DropdownMenuItem key={t.href} asChild>
-              <Link href={t.href} className={isActive(t) ? "font-semibold text-ink" : ""}>
+              <Link
+                href={t.href}
+                aria-current={isActive(t) ? "page" : undefined}
+                className={isActive(t) ? "font-semibold text-ink" : ""}
+              >
                 {t.label}
               </Link>
             </DropdownMenuItem>

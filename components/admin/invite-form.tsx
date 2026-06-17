@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -21,7 +20,6 @@ import {
 } from "@/components/ui/select";
 
 export function InviteForm() {
-  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const {
     register,

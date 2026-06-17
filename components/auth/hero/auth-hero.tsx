@@ -25,6 +25,7 @@ export function AuthHero() {
   const [capable, setCapable] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- canUse3D() reads window/navigator; must run client-side after mount (SSR shows the static fallback, then upgrades)
     setCapable(canUse3D());
   }, []);
 

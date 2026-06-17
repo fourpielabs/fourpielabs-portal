@@ -69,6 +69,7 @@ export default function AcceptInvitePage() {
 
   useEffect(() => {
     const m = new URLSearchParams(window.location.search).get("mode");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads window.location (client-only), paired with the async getSession below
     setMode(m === "welcome" || m === "reset" ? m : "default");
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {

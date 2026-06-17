@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ListChecks, Lock, MessageSquare, Pencil, Plus, Trash2, User } from "lucide-react";
@@ -46,7 +46,13 @@ export function StaffTasksManager({
   // local copy → status changes + deletes paint INSTANTLY; the server prop
   // re-syncs on refresh/navigation (and after edits/creates via the dialog).
   const [tasks, setTasks] = useState(initialTasks);
-  useEffect(() => setTasks(initialTasks), [initialTasks]);
+  // Re-sync local optimistic state when the server prop changes (refresh/edit/create) —
+  // "adjust state during render" instead of an effect (no cascading render).
+  const [prevTasks, setPrevTasks] = useState(initialTasks);
+  if (initialTasks !== prevTasks) {
+    setPrevTasks(initialTasks);
+    setTasks(initialTasks);
+  }
 
   async function changeStatus(id: string, status: StaffTaskRow["status"]) {
     const prev = tasks;

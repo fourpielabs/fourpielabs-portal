@@ -37,6 +37,7 @@ export default async function ClientLayout({
   let dayLabel: string | null = null;
   if (!isProject && client.start_date) {
     const start = new Date(`${client.start_date}T00:00:00`);
+    // eslint-disable-next-line react-hooks/purity -- server component: renders once per request; Date.now() is the intended request-time clock
     const days = Math.floor((Date.now() - start.getTime()) / 86_400_000) + 1;
     if (days >= 1) dayLabel = `Day ${Math.min(days, 90)} of 90`;
   }

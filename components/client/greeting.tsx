@@ -18,6 +18,7 @@ export function Greeting({
 
   useEffect(() => {
     const h = new Date().getHours();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only clock read; SSR renders the neutral "Welcome", the client upgrades on mount (avoids a hydration mismatch)
     setTod(h < 12 ? "Morning" : h < 18 ? "Afternoon" : "Evening");
   }, []);
 

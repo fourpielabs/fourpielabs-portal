@@ -131,7 +131,9 @@ export function AuthLabel({ children, ...props }: React.ComponentProps<"label">)
 
 export function AuthError({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-xl border border-[rgba(248,113,113,0.35)] bg-[rgba(220,38,38,0.14)] px-3.5 py-3 text-[13px] leading-snug text-[#FCA5A5]">
+    <div
+      role="alert"
+      className="flex items-start gap-2.5 rounded-xl border border-[rgba(248,113,113,0.35)] bg-[rgba(220,38,38,0.14)] px-3.5 py-3 text-[13px] leading-snug text-[#FCA5A5]">
       {children}
     </div>
   );

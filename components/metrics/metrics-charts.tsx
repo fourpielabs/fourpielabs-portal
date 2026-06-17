@@ -112,7 +112,11 @@ export function MetricsCharts({
             Charts appear once you have numeric metrics with monthly entries.
           </div>
         ) : (
-          <div className="h-72 w-full rounded-lg border p-3">
+          <div
+            role="img"
+            aria-label="Performance trend chart — the same monthly figures are listed in the table below"
+            className="h-72 w-full rounded-lg border p-3"
+          >
             <MetricsLineChart data={chartData} />
           </div>
         )}

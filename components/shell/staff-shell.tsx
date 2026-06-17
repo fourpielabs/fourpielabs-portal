@@ -20,6 +20,7 @@ import { UserMenu } from "@/components/shell/user-menu";
 import { NotificationBell } from "@/components/shell/notification-bell";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { RouteTransition } from "@/components/motion/route-transition";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 import type { NotificationItem } from "@/lib/actions/notifications";
 import {
   Tooltip,
@@ -161,6 +162,7 @@ function SidebarInner({
               key={i.href}
               href={i.href}
               onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "motion-micro flex items-center rounded-[10px] text-[13.5px]",
                 collapsed ? "justify-center px-0 py-2.5" : "gap-[11px] px-3 py-2.5",
@@ -228,6 +230,7 @@ export function StaffShell({
   const pathname = usePathname();
   const [drawer, setDrawer] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const drawerRef = useModalA11y<HTMLDivElement>(drawer, () => setDrawer(false));
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -286,10 +289,15 @@ export function StaffShell({
 
         {/* mobile drawer (dark rail) */}
         {drawer && (
-          <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+          <div className="fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-ink/50" onClick={() => setDrawer(false)} />
             <div
-              className="absolute inset-y-0 left-0 w-[280px] border-r border-dark-border bg-[#141416] shadow-e3"
+              ref={drawerRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation menu"
+              tabIndex={-1}
+              className="absolute inset-y-0 left-0 w-[280px] border-r border-dark-border bg-[#141416] shadow-e3 outline-none"
               style={{ backgroundImage: "var(--dark-glow-rail)" }}
             >
               <div className="flex justify-end p-2">

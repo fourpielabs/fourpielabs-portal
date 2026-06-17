@@ -23,7 +23,7 @@
   --color-row-divider: #f4f4f0;
   --color-ink: #18181b;
   --color-ink-2: #57534e;
-  --color-ink-3: #8e8b84;
+  --color-ink-3: #6f6c66; /* darkened from #8e8b84 to clear WCAG AA (4.5:1) as body/label/placeholder text on bg/surface/surface-2 */
   --color-ink-faint: #c7c4bd;
   --color-charcoal-hover: #2c2c30;
 
@@ -163,7 +163,8 @@
   --surface-raised: linear-gradient(180deg, #ffffff 0%, #f8f7f2 100%);
   --hover-tint: #fdf6ec;
   --selected-tint: #fbecd6;
-  --amber-cta: linear-gradient(180deg, #c2670a 0%, #b45309 100%);
+  /* top stop darkened #c2670a → #ad5a08 so white text clears AA (4.5:1) across the whole button face */
+  --amber-cta: linear-gradient(180deg, #ad5a08 0%, #b45309 100%);
   --amber-cta-hover: linear-gradient(180deg, #a85a0c 0%, #92400e 100%);
   --shadow-amber: 0 1px 2px rgba(120, 53, 15, 0.25), 0 6px 16px -4px rgba(180, 83, 9, 0.35);
 

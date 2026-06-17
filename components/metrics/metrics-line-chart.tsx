@@ -72,6 +72,7 @@ export function MetricsLineChart({
           dot={{ r: 4, fill: "#fff", stroke: "#D97706", strokeWidth: 2 }}
           activeDot={{ r: 5, fill: "#D97706", stroke: "#fff", strokeWidth: 2 }}
           connectNulls
+          isAnimationActive={false}
         />
       </ComposedChart>
     </ResponsiveContainer>

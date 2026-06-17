@@ -3,7 +3,7 @@ import { Clock, ClipboardList, FileText, FolderKanban, Megaphone, Package } from
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
 import { formatDate, formatMonthYear } from "@/lib/format";
-import { PROJECT_STATUSES, labelOf } from "@/lib/constants";
+import { PROJECT_STATUSES } from "@/lib/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Banner } from "@/components/ui/banner";

@@ -49,12 +49,6 @@ const MONTHS = [
 ];
 const pad = (n: number) => String(n).padStart(2, "0");
 
-function statusVariant(s: string): "default" | "secondary" | "outline" {
-  if (s === "published") return "default";
-  if (s === "idea") return "outline";
-  return "secondary";
-}
-
 export function ContentCalendar({
   clientId,
   items,

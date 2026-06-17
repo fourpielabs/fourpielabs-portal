@@ -23,6 +23,7 @@ import { UserMenu } from "@/components/shell/user-menu";
 import { NotificationBell } from "@/components/shell/notification-bell";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { RouteTransition } from "@/components/motion/route-transition";
+import { useModalA11y } from "@/lib/use-modal-a11y";
 import type { NotificationItem } from "@/lib/actions/notifications";
 
 type Item = { href: string; label: string };
@@ -93,6 +94,7 @@ export function ClientShell({
 }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useModalA11y<HTMLDivElement>(moreOpen, () => setMoreOpen(false));
 
   const isProject = clientType === "project";
   const top = isProject ? TOP.filter((i) => !PROGRAM_ONLY.has(i.href)) : TOP;
@@ -115,6 +117,7 @@ export function ClientShell({
                 <Link
                   key={i.href}
                   href={i.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "motion-micro relative rounded-full px-4 py-1.5 text-[13.5px]",
                     active ? "font-semibold text-ink" : "font-medium text-ink-2 hover:text-ink",
@@ -157,7 +160,7 @@ export function ClientShell({
 
       {/* mobile bottom tab bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 px-3.5 pb-3.5 sm:hidden">
-        <div className="mx-auto flex max-w-md items-center justify-between rounded-full bg-surface px-3.5 py-2 shadow-e3">
+        <nav aria-label="Primary" className="mx-auto flex max-w-md items-center justify-between rounded-full bg-surface px-3.5 py-2 shadow-e3">
           {bottom.map((b) => {
             const active = isActive(pathname, b.href);
             const Icon = b.icon;
@@ -165,6 +168,7 @@ export function ClientShell({
               <Link
                 key={b.href}
                 href={b.href}
+                aria-current={active ? "page" : undefined}
                 className="flex flex-col items-center gap-0.5"
                 aria-label={b.label}
               >
@@ -202,17 +206,24 @@ export function ClientShell({
               </span>
             </button>
           )}
-        </div>
+        </nav>
       </div>
 
       {/* More sheet */}
       {moreOpen && more.length > 0 && (
-        <div className="fixed inset-0 z-50 sm:hidden" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-50 sm:hidden">
           <div
             className="absolute inset-0 bg-ink/40"
             onClick={() => setMoreOpen(false)}
           />
-          <div className="absolute inset-x-0 bottom-0 rounded-t-2xl bg-surface p-4 pb-8 shadow-e3">
+          <div
+            ref={moreRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="More menu"
+            tabIndex={-1}
+            className="absolute inset-x-0 bottom-0 rounded-t-2xl bg-surface p-4 pb-8 shadow-e3 outline-none"
+          >
             <div className="mb-3 flex items-center justify-between">
               <span className="font-display text-base font-semibold">More</span>
               <button
@@ -224,7 +235,7 @@ export function ClientShell({
                 <X className="size-5" />
               </button>
             </div>
-            <div className="flex flex-col">
+            <nav aria-label="More" className="flex flex-col">
               {more.map((m) => {
                 const Icon = m.icon;
                 return (
@@ -239,7 +250,7 @@ export function ClientShell({
                   </Link>
                 );
               })}
-            </div>
+            </nav>
           </div>
         </div>
       )}

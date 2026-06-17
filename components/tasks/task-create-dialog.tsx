@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
@@ -67,16 +67,20 @@ export function TaskCreateDialog({
   const [due, setDue] = useState("");
   const [visible, setVisible] = useState(!isInternal);
 
-  // Seed the form each time it opens — the composer is modal-blocked while open, so
-  // initialTitle (the current draft) is frozen at open time.
-  useEffect(() => {
-    if (!open) return;
-    setTitle(initialTitle);
-    setDescription("");
-    setAssignee(NONE);
-    setDue("");
-    setVisible(!isInternal);
-  }, [open, initialTitle, isInternal]);
+  // Seed the form when it opens — the composer is modal-blocked while open, so
+  // initialTitle (the current draft) is frozen at open time. Derived on the open
+  // transition ("adjust state when a prop changes") instead of an effect.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setTitle(initialTitle);
+      setDescription("");
+      setAssignee(NONE);
+      setDue("");
+      setVisible(!isInternal);
+    }
+  }
 
   async function submit() {
     if (!title.trim()) return toast.error("Add a title for the task.");

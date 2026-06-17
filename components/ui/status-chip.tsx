@@ -44,7 +44,7 @@ export const STATUS_MAP: Record<string, Record<string, Recipe>> = {
   user: {
     active: { label: "Active", text: "#166534", bg: "#DCFCE7", border: "#BBF7D0", dot: "#15803D" },
     pending: { label: "Pending invite", text: "#92400E", bg: "#FFFFFF", border: "#FBBF24", icon: "clock", dashed: true },
-    inactive: { label: "Inactive", text: "#A8A5A0", bg: "#FAFAF8", border: "#E7E5E0", dot: null },
+    inactive: { label: "Inactive", text: "#736F68", bg: "#FAFAF8", border: "#E7E5E0", dot: null },
   },
   priority: {
     high: { label: "High", text: "#9A3412", bg: "#FFF7ED", border: "#FED7AA", icon: "tri" },

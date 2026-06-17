@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -32,7 +32,12 @@ export function UserActiveToggle({ userId, isActive, isSelf, label }: Props) {
   // optimistic: the button flips Deactivate↔Reactivate instantly; router.refresh
   // then reconciles the row styling. Revert on error.
   const [active, setActive] = useState(isActive);
-  useEffect(() => setActive(isActive), [isActive]);
+  // Re-sync with the server prop after refresh — "adjust state during render".
+  const [prevActive, setPrevActive] = useState(isActive);
+  if (isActive !== prevActive) {
+    setPrevActive(isActive);
+    setActive(isActive);
+  }
 
   async function apply(next: boolean) {
     setPending(true);
