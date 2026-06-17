@@ -75,9 +75,10 @@ export const projectCreateSchema = z.object({
 });
 export type ProjectCreateValues = z.infer<typeof projectCreateSchema>;
 
+// Clients edit title + description ONLY — project status is staff-controlled
+// (the update_project RPC dropped p_status; status is never client-settable).
 export const projectUpdateSchema = projectCreateSchema.extend({
   id: z.string().uuid(),
-  status: z.enum(["proposed", "active", "in_review", "complete"]),
 });
 export type ProjectUpdateValues = z.infer<typeof projectUpdateSchema>;
 

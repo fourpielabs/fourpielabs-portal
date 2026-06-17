@@ -84,11 +84,11 @@ export async function updateProjectAction(
   const v = parsed.data;
   const supabase = await createClient();
 
+  // status is intentionally NOT passed — the client RPC can't change it (staff-only).
   const { error } = await supabase.rpc("update_project", {
     p_id: v.id,
     p_title: v.title,
     p_description: v.description ?? "",
-    p_status: v.status,
   });
   if (error) return { ok: false, error: error.message };
 
@@ -98,16 +98,17 @@ export async function updateProjectAction(
     entity: "project",
     entityId: v.id,
     clientId: profile.client_id,
-    metadata: { title: v.title, status: v.status },
+    metadata: { title: v.title },
   });
 
-  // client edited their own project (incl. status) → notify assigned staff
+  // client edited their own project's title/description (NOT status — staff-only
+  // now) → notify assigned staff
   await notify({
     recipients: await staffUserIds(profile.client_id),
     excludeUserId: profile.id,
     type: "project_status",
     title: "Client updated a project",
-    body: `${v.title} → ${labelOf(PROJECT_STATUSES, v.status)}`,
+    body: v.title,
     link: `/clients/${profile.client_id}/projects`,
     clientId: profile.client_id,
   });
