@@ -5,6 +5,13 @@ import { Switch as SwitchPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * On-token switch (shadcn/Radix). Was visually invisible (over-engineered class soup
+ * + a sub-20px track with a transparent fallback); rebuilt to the standard shadcn
+ * structure: a clearly-visible track (amber when on, border-strong when off), a white
+ * thumb with a drop shadow, and an amber focus ring. `size` is preserved for callers.
+ * Travel is 14px for both sizes (default w-8/thumb-16; sm w-7/thumb-12 → both = 14px).
+ */
 function Switch({
   className,
   size = "default",
@@ -17,14 +24,22 @@ function Switch({
       data-slot="switch"
       data-size={size}
       className={cn(
-        "peer group/switch relative inline-flex shrink-0 items-center rounded-full border border-transparent transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[size=default]:h-[18.4px] data-[size=default]:w-[32px] data-[size=sm]:h-[14px] data-[size=sm]:w-[24px] dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 data-checked:bg-primary data-unchecked:bg-input dark:data-unchecked:bg-input/80 data-checked:bg-amber-600! data-unchecked:bg-[#aca79e]! data-disabled:cursor-not-allowed data-disabled:opacity-50",
-        className
+        "peer group/switch inline-flex shrink-0 cursor-pointer items-center rounded-full border border-transparent shadow-inner transition-colors outline-none",
+        "focus-visible:ring-[3px] focus-visible:ring-amber-600/30",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        "data-[state=checked]:bg-amber-600 data-[state=unchecked]:bg-border-strong",
+        "data-[size=default]:h-[1.15rem] data-[size=default]:w-8 data-[size=sm]:h-4 data-[size=sm]:w-7",
+        className,
       )}
       {...props}
     >
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
-        className="pointer-events-none block rounded-full bg-background ring-0 transition-transform group-data-[size=default]/switch:size-4 group-data-[size=sm]/switch:size-3 group-data-[size=default]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=sm]/switch:data-checked:translate-x-[calc(100%-2px)] dark:data-checked:bg-primary-foreground group-data-[size=default]/switch:data-unchecked:translate-x-0 group-data-[size=sm]/switch:data-unchecked:translate-x-0 dark:data-unchecked:bg-foreground"
+        className={cn(
+          "pointer-events-none block rounded-full bg-white shadow-sm ring-0 transition-transform",
+          "group-data-[size=default]/switch:size-4 group-data-[size=sm]/switch:size-3",
+          "data-[state=unchecked]:translate-x-0 data-[state=checked]:translate-x-3.5",
+        )}
       />
     </SwitchPrimitive.Root>
   )

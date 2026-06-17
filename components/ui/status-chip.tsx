@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, Clock, EyeOff } from "lucide-react";
+import { Check, Clock, EyeOff, Triangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Recipe = [text, bg, border, dot]; dot null when an icon/solid is used instead.
@@ -99,7 +99,9 @@ export function StatusChip({
       {r.icon === "check" && <Check className="size-3" strokeWidth={3} />}
       {r.icon === "clock" && <Clock className="size-3" />}
       {r.icon === "eye-off" && <EyeOff className="size-3" />}
-      {r.icon === "tri" && <span aria-hidden style={{ color: "#C2410C" }}>▲</span>}
+      {r.icon === "tri" && (
+        <Triangle aria-hidden className="size-3" fill="currentColor" style={{ color: "#C2410C" }} />
+      )}
       {!r.icon && r.dot && (
         <span className="size-1.5 rounded-full" style={{ background: r.dot }} />
       )}

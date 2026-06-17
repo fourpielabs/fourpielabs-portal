@@ -6,7 +6,6 @@ import { getAssignableMembers } from "@/lib/tasks";
 import { Conversation } from "@/components/messaging/conversation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/layout/page-container";
-import { PageHeader } from "@/components/layout/page-header";
 
 export default async function ClientMessagesPage() {
   const me = await requireRole(["client"]);
@@ -21,10 +20,6 @@ export default async function ClientMessagesPage() {
 
   return (
     <PageContainer width="standard" stack>
-      <PageHeader
-        title="Messages"
-        description="Your conversation with the 4Pie Labs team."
-      />
       {!thread ? (
         <EmptyState
           icon={<MessageSquare />}

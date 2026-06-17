@@ -14,6 +14,7 @@ import {
 import { uploadClientFileAction } from "@/lib/actions/storage";
 import { DELIVERABLE_TYPES, DELIVERABLE_STATUSES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -261,12 +262,8 @@ export function DeliverableDialog({
             <Label>{deliverable?.file_path ? "Replace file" : "Attach file"}</Label>
             <FileDropzone onFile={setFile} selectedName={file?.name} />
             {deliverable?.file_path && (
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={removeFile}
-                  onChange={(e) => setRemoveFile(e.target.checked)}
-                />
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                <Checkbox checked={removeFile} onCheckedChange={(v) => setRemoveFile(v === true)} />
                 Remove current file
               </label>
             )}

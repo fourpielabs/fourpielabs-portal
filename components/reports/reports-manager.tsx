@@ -18,6 +18,7 @@ import {
 } from "@/lib/actions/reports";
 import { uploadClientFileAction } from "@/lib/actions/storage";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -151,12 +152,8 @@ function ReportDialog({
             <Label>{report?.pdf_path ? "Replace PDF" : "Attach PDF (optional)"}</Label>
             <FileDropzone onFile={setPdf} selectedName={pdf?.name} accept="application/pdf" hint="PDF only" />
             {report?.pdf_path && (
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={removePdf}
-                  onChange={(e) => setRemovePdf(e.target.checked)}
-                />
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                <Checkbox checked={removePdf} onCheckedChange={(v) => setRemovePdf(v === true)} />
                 Remove current PDF
               </label>
             )}
