@@ -23,13 +23,18 @@ const supabaseWs = supabaseUrl.replace(/^https/, "wss");
  *   nonce without per-request rewriting) and Tailwind/Recharts emit inline styles (SEC-1).
  */
 function buildCsp(secure: boolean): string {
+  // Cal.com booking embed: getCalApi loads embed.js from app.cal.com and opens the
+  // booking page in an app.cal.com iframe — so cal.com needs script-src (run embed.js),
+  // frame-src (the booking iframe), and connect-src (its API). Scoped to cal.com only.
+  const cal = "https://app.cal.com https://*.cal.com";
   return [
     `default-src 'self'`,
-    `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
+    `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"} ${cal}`,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: blob: https:`,
     `font-src 'self' data:`,
-    `connect-src 'self' ${supabaseUrl} ${supabaseWs}`,
+    `connect-src 'self' ${supabaseUrl} ${supabaseWs} ${cal}`,
+    `frame-src 'self' ${cal}`,
     `frame-ancestors 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,

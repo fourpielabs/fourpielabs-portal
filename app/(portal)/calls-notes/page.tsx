@@ -4,6 +4,8 @@ import { formatDate } from "@/lib/format";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { BookButton } from "@/components/booking/book-button";
+import { BookingTime } from "@/components/booking/booking-time";
 import {
   Card,
   CardContent,
@@ -11,20 +13,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ExternalLink, FileText, Video } from "lucide-react";
+import { CalendarClock, ExternalLink, FileText, Video } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 
 export default async function ClientCallsNotesPage() {
-  await requireRole(["client"]);
+  const me = await requireRole(["client"]);
   const supabase = await createClient();
 
-  const [{ data: callTypes }, { data: recordings }, { data: notes }] =
+  const [{ data: callTypes }, { data: upcoming }, { data: recordings }, { data: notes }] =
     await Promise.all([
       supabase
         .from("call_types")
         .select("id, name, duration_label, frequency_label, booking_url")
         .order("sort_order"),
+      // Upcoming = booked + still in the future. RLS already scopes to the client's
+      // OWN visible bookings; cancelled/rescheduled/past are excluded here.
+      supabase
+        .from("call_bookings")
+        .select("id, title, start_at, meeting_url")
+        .eq("status", "booked")
+        .gte("start_at", new Date().toISOString())
+        .order("start_at", { ascending: true }),
       supabase
         .from("call_recordings")
         .select("id, call_date, call_type, recording_url, key_topic")
@@ -55,21 +65,64 @@ export default async function ClientCallsNotesPage() {
               </CardHeader>
               <CardContent>
                 {c.booking_url ? (
-                  <Button asChild className="w-full">
-                    <a href={c.booking_url} target="_blank" rel="noreferrer">
-                      Book
-                    </a>
-                  </Button>
+                  <BookButton
+                    bookingUrl={c.booking_url}
+                    name={me.full_name}
+                    email={me.email}
+                    clientId={me.client_id ?? ""}
+                    callTypeId={c.id}
+                  />
                 ) : (
-                  <p className="text-sm text-ink-3">
-                    Reach out to schedule.
-                  </p>
+                  <p className="text-sm text-ink-3">Reach out to schedule.</p>
                 )}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Upcoming calls</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(upcoming ?? []).length === 0 ? (
+            <EmptyState
+              icon={<CalendarClock />}
+              title="No upcoming calls"
+              description="Book one above and it'll appear here."
+            />
+          ) : (
+            <ul className="divide-y">
+              {(upcoming ?? []).map((b) => (
+                <li
+                  key={b.id}
+                  className="flex items-center justify-between gap-3 py-3"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">
+                      {b.title ?? "Call"}
+                    </div>
+                    {b.start_at && (
+                      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-3">
+                        <CalendarClock className="size-3.5 shrink-0" />
+                        <BookingTime iso={b.start_at} />
+                      </div>
+                    )}
+                  </div>
+                  {b.meeting_url && (
+                    <Button asChild variant="amber" size="sm">
+                      <a href={b.meeting_url} target="_blank" rel="noreferrer">
+                        Join <Video className="size-3.5" />
+                      </a>
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
