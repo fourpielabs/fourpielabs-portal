@@ -17,6 +17,7 @@ export const EMAIL_PREF_TYPES: {
   { type: "deliverable_approved", column: "email_deliverable_approved", label: "Deliverable approved", description: "When a client approves a deliverable.", roles: ["team", "admin"] },
   { type: "report_published", column: "email_report_published", label: "New report published", description: "When a report is published for you.", roles: ["client"] },
   { type: "project_status", column: "email_project_status", label: "Project status updates", description: "When a project's status changes.", roles: ["client", "team", "admin"] },
+  { type: "call_booked", column: "email_call_booked", label: "Call bookings", description: "When a call is booked on the calendar.", roles: ["client", "team", "admin"] },
 ];
 
 export const emailPrefColumn = (type: string): string | undefined =>

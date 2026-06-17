@@ -7,7 +7,8 @@ export type NotificationType =
   | "deliverable_delivered"
   | "deliverable_approved"
   | "report_published"
-  | "project_status";
+  | "project_status"
+  | "call_booked";
 
 const EMAIL_THROTTLE_MS = 5 * 60 * 1000; // 1 message email per recipient/thread / 5 min
 const ACTIVE_VIEW_MS = 2 * 60 * 1000; // skip if the recipient viewed the thread < 2 min ago
