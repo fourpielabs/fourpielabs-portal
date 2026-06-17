@@ -330,13 +330,13 @@ async function main() {
       },
     ]);
 
-    // call_types. booking_url convention (see lib/cal.ts): a scheme-less
-    // `username/event-slug` is a Cal.com calLink → opens the in-portal popup; a
-    // full http(s) URL is legacy (Calendly) → falls back to an external link.
+    // call_types — both are real Cal.com event types, as scheme-less calLinks
+    // (username/event-slug → the in-portal popup; see lib/cal.ts#isCalLink). A full
+    // http(s) URL would instead fall back to an external link.
     await db.from("call_types").insert([
       {
         client_id: clientId,
-        name: "Monthly Review Call",
+        name: "Client Call",
         duration_label: "45 min",
         frequency_label: "Monthly",
         booking_url: "four-pie-labs/client-call", // Cal.com calLink → popup
@@ -347,7 +347,7 @@ async function main() {
         name: "Quick Question",
         duration_label: "15 min",
         frequency_label: "As needed",
-        booking_url: "https://calendly.com/4pielabs/quick-question", // legacy URL → external link
+        booking_url: "four-pie-labs/15min", // Cal.com calLink → popup
         sort_order: 2,
       },
     ]);
@@ -357,7 +357,7 @@ async function main() {
       {
         client_id: clientId,
         call_date: "2026-05-12",
-        call_type: "Monthly Review Call",
+        call_type: "Client Call",
         recording_url: "https://video.example.com/rec/may",
         key_topic: "April results + May plan",
         visible_to_client: true,
