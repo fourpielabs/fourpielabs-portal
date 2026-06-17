@@ -5,6 +5,8 @@ import { getThreadMessagesAction } from "@/lib/actions/messages";
 import { getAssignableMembers } from "@/lib/tasks";
 import { Conversation } from "@/components/messaging/conversation";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function ClientMessagesPage() {
   const me = await requireRole(["client"]);
@@ -18,11 +20,11 @@ export default async function ClientMessagesPage() {
   ]);
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Messages</h1>
-        <p className="text-sm text-ink-2">Your conversation with the 4Pie Labs team.</p>
-      </div>
+    <PageContainer width="standard" stack>
+      <PageHeader
+        title="Messages"
+        description="Your conversation with the 4Pie Labs team."
+      />
       {!thread ? (
         <EmptyState
           icon={<MessageSquare />}
@@ -40,6 +42,6 @@ export default async function ClientMessagesPage() {
           taskContext={{ role: "client", clientId: me.client_id ?? "", members }}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }

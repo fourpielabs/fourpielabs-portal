@@ -230,7 +230,7 @@ export function StaffShell({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex min-h-screen">
+      <div data-density="compact" className="flex min-h-screen">
         {/* desktop sidebar (dark rail) */}
         <aside
           className={cn(
@@ -277,7 +277,8 @@ export function StaffShell({
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+          {/* width + side-padding are owned by <PageContainer> per page. */}
+          <main className="w-full flex-1 py-6">
             {children}
           </main>
         </div>

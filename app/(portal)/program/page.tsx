@@ -12,6 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 // echoes the dashboard roadmap's phase-color treatment
 const MS_BORDER: Record<string, string> = {
@@ -58,11 +60,8 @@ export default async function ClientProgramPage() {
   ].filter((d) => d.value && d.value.trim() !== "");
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Your program</h1>
-        <p className="text-sm text-ink-2">Everything your engagement covers.</p>
-      </div>
+    <PageContainer width="standard" stack>
+      <PageHeader title="Your program" description="Everything your engagement covers." />
 
       <Card>
         <CardHeader>
@@ -171,6 +170,6 @@ export default async function ClientProgramPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageContainer>
   );
 }

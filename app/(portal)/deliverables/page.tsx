@@ -9,6 +9,8 @@ import { StatusChip } from "@/components/ui/status-chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DeliverableApprove } from "@/components/client/deliverable-approve";
 import { ExternalLink, Package } from "lucide-react";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function ClientDeliverablesPage() {
   const profile = await requireRole(["client"]);
@@ -23,11 +25,11 @@ export default async function ClientDeliverablesPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Deliverables</h1>
-        <p className="text-ink-2">Everything we&apos;re creating for you.</p>
-      </div>
+    <PageContainer width="standard" stack>
+      <PageHeader
+        title="Deliverables"
+        description="Everything we're creating for you."
+      />
 
       {(deliverables ?? []).length === 0 ? (
         <EmptyState
@@ -36,11 +38,11 @@ export default async function ClientDeliverablesPage() {
           description="Your deliverables will appear here as we ship them."
         />
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid items-stretch gap-4 lg:grid-cols-2">
           {(deliverables ?? []).map((d) => (
             <li
               key={d.id}
-              className="rounded-2xl border border-border bg-surface p-4 shadow-e1 transition-shadow hover:shadow-e2"
+              className="h-full rounded-2xl border border-border bg-surface p-[var(--card-pad)] shadow-e1 transition-shadow hover:shadow-e2"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -83,6 +85,6 @@ export default async function ClientDeliverablesPage() {
           ))}
         </ul>
       )}
-    </div>
+    </PageContainer>
   );
 }

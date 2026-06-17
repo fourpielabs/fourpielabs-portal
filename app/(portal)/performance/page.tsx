@@ -9,6 +9,8 @@ import {
 import { ClientReports, type ClientReport } from "@/components/client/client-reports";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function ClientPerformancePage() {
   const profile = await requireRole(["client"]);
@@ -43,15 +45,11 @@ export default async function ClientPerformancePage() {
   const textDefs = allDefs.filter((d) => d.unit === "text");
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">
-          Your numbers, live
-        </h1>
-        <p className="mt-1 text-sm text-ink-2">
-          Fresh metrics on the first of every month — straight from the sources we track.
-        </p>
-      </div>
+    <PageContainer width="standard" stack>
+      <PageHeader
+        title="Your numbers, live"
+        description="Fresh metrics on the first of every month — straight from the sources we track."
+      />
 
       <Card>
         <CardContent>
@@ -64,9 +62,9 @@ export default async function ClientPerformancePage() {
           <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">
             Competitors
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid items-stretch gap-4 sm:grid-cols-2">
             {(competitors ?? []).map((c) => (
-              <Card key={c.id}>
+              <Card key={c.id} className="h-full">
                 <CardContent className="flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -141,6 +139,6 @@ export default async function ClientPerformancePage() {
         <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">Reports</h2>
         <ClientReports clientId={profile.client_id!} reports={(reports ?? []) as ClientReport[]} />
       </div>
-    </div>
+    </PageContainer>
   );
 }

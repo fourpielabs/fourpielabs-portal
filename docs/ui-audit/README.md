@@ -14,6 +14,8 @@ screenshots) — documented + reversible in [screens/README.md](./screens/README
 | [drift.md](./drift.md) | Committed design system (D1/D2/D4) vs the live build — what drifted and why. |
 | [findings.md](./findings.md) | **The diagnosis.** Prioritized by category + the ranked top-10 fixes. |
 | [foundation.md](./foundation.md) | Phase-1 upgrade **proposal** (Tailwind/shadcn confirm, add `motion`, R3F auth hero, verify React Compiler) + risks. **Not executed.** |
+| [layout-spec.md](./layout-spec.md) | **Phase 1, batch 1 (shipped):** the layout & spacing system — derived spec, tokens, `<PageContainer>`/`<PageHeader>` API, and the route→(width,density) map. Fixes findings #1/#2/#4. |
+| [phase-1-before-after/](./phase-1-before-after/) | Before/after pairs for the strongest-changed routes; full after-set in `phase-1-after/`. |
 | [screens/](./screens/) | 102 full-page screenshots (51 routes × 1440/390, all roles + both client types) + [run log](./screens/_run-log.md) + [index](./screens/README.md). |
 | [tools/](./tools/) | The throwaway scripts used to provision the demo project client + run the screenshot sweep. |
 

@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ClientTaskDialog } from "./client-task-dialog";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 export type ClientTaskRow = {
   id: string;
@@ -67,14 +69,12 @@ export function ClientTaskBoard({
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Tasks</h1>
-          <p className="text-sm text-ink-2">What we&apos;re working on together — yours and ours.</p>
-        </div>
-        {tasks.length > 0 && addBtn}
-      </div>
+    <PageContainer width="standard" stack>
+      <PageHeader
+        title="Tasks"
+        description="What we're working on together — yours and ours."
+        actions={tasks.length > 0 ? addBtn : undefined}
+      />
 
       {tasks.length === 0 ? (
         <EmptyState
@@ -84,10 +84,10 @@ export function ClientTaskBoard({
           action={addBtn}
         />
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid items-stretch gap-4 lg:grid-cols-2">
           {tasks.map((t) => (
             <li key={t.id}>
-              <Card>
+              <Card className="h-full">
                 <CardContent className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -132,6 +132,6 @@ export function ClientTaskBoard({
           ))}
         </ul>
       )}
-    </div>
+    </PageContainer>
   );
 }

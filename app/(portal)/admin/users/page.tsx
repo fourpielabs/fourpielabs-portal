@@ -24,6 +24,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function AdminUsersPage() {
   const me = await requireRole(["admin"]);
@@ -80,14 +82,16 @@ export default async function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-[28px] font-semibold tracking-[-0.015em]">Users</h1>
-        <p className="text-[13px] text-ink-2 tabular-nums">
-          {(profiles ?? []).length} users · {pendingCount} pending invite
-          {pendingCount === 1 ? "" : "s"}
-        </p>
-      </div>
+    <PageContainer width="wide" stack>
+      <PageHeader
+        title="Users"
+        description={
+          <span className="tabular-nums">
+            {(profiles ?? []).length} users · {pendingCount} pending invite
+            {pendingCount === 1 ? "" : "s"}
+          </span>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -257,6 +261,6 @@ export default async function AdminUsersPage() {
           );
         })}
       </div>
-    </div>
+    </PageContainer>
   );
 }

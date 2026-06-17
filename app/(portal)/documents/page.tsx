@@ -4,6 +4,8 @@ import { FileText } from "lucide-react";
 import { FILE_CATEGORIES, labelOf } from "@/lib/constants";
 import { DownloadButton } from "@/components/files/download-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 function fmtSize(bytes: number | null) {
   if (!bytes) return "";
@@ -28,11 +30,11 @@ export default async function ClientDocumentsPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Documents</h1>
-        <p className="text-sm text-ink-2">Your agreements, forms, and shared files.</p>
-      </div>
+    <PageContainer width="standard" stack>
+      <PageHeader
+        title="Documents"
+        description="Your agreements, forms, and shared files."
+      />
 
       {list.length === 0 ? (
         <EmptyState
@@ -69,6 +71,6 @@ export default async function ClientDocumentsPage() {
           </div>
         ))
       )}
-    </div>
+    </PageContainer>
   );
 }

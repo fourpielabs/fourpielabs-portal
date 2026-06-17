@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusChip } from "@/components/ui/status-chip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageContainer } from "@/components/layout/page-container";
 
 function relTime(iso: string | null): string {
   if (!iso) return "No activity yet";
@@ -26,7 +27,9 @@ export default async function DashboardPage() {
 
   if (profile.role === "client" && profile.client_id) {
     return (
-      <ClientDashboard clientId={profile.client_id} userName={profile.full_name} />
+      <PageContainer width="standard">
+        <ClientDashboard clientId={profile.client_id} userName={profile.full_name} />
+      </PageContainer>
     );
   }
 
@@ -87,7 +90,8 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <PageContainer width="standard" stack>
+      {/* preserved hero greeting (not the standard PageHeader) */}
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">
           Welcome, {firstName}
@@ -161,7 +165,7 @@ export default async function DashboardPage() {
             }
           />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {clients.map((c) => {
               const cl = checklistBy.get(c.id);
               const pj = projectsBy.get(c.id);
@@ -170,7 +174,7 @@ export default async function DashboardPage() {
                 <Link
                   key={c.id}
                   href={`/clients/${c.id}`}
-                  className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-e2 transition-shadow hover:shadow-e3"
+                  className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-e2 transition-shadow hover:shadow-e3"
                 >
                   <div className="flex items-start gap-3">
                     <PersonAvatar name={c.name} src={c.logo_url} square size="lg" className="shrink-0" />
@@ -218,6 +222,6 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }

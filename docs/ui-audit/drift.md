@@ -84,6 +84,12 @@ codebase but absent from the design docs:
   honored on hero surfaces (client Dashboard, login) but inverted elsewhere — the staff Metrics
   editor is _over-dense/cluttered_ while client Settings/Deliverables are _over-sparse_.
 
+> **✅ RESOLVED — Phase 1, batch 1.** The missing page-shell primitive and unsystematized
+> spacing/density are now fixed: `<PageContainer>` + `<PageHeader>` own width/centering/padding/
+> density, driven by new `@theme` spacing/density tokens, adopted on every route. The shells
+> released their hardcoded `max-w`/padding to the primitive. Heroes are preserved as intentional
+> exceptions. See [layout-spec.md](./layout-spec.md). (Findings #1/#2/#4.)
+
 ## Bottom line for Phase 1
 1. **Refresh the design docs** to match shipped reality (Messages, Tasks, Notifications, the
    gradient CTA, the premium-surface tokens) — or the next builder will "fix" drift that's

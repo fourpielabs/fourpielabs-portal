@@ -16,6 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function ClientsPage() {
   // team workspace list — clients are redirected to /dashboard
@@ -56,20 +58,18 @@ export default async function ClientsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Clients</h1>
-          <p className="text-sm text-ink-2">
-            {isAdmin ? "All clients." : "Clients you're assigned to."}
-          </p>
-        </div>
-        {isAdmin && (
-          <Button asChild>
-            <Link href="/clients/new">New client</Link>
-          </Button>
-        )}
-      </div>
+    <PageContainer width="standard" stack>
+      <PageHeader
+        title="Clients"
+        description={isAdmin ? "All clients." : "Clients you're assigned to."}
+        actions={
+          isAdmin ? (
+            <Button asChild>
+              <Link href="/clients/new">New client</Link>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {!clients || clients.length === 0 ? (
         <EmptyState
@@ -172,6 +172,6 @@ export default async function ClientsPage() {
           </div>
         </>
       )}
-    </div>
+    </PageContainer>
   );
 }

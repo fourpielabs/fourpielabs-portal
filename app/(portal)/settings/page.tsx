@@ -10,6 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function SettingsPage() {
   const me = await requireProfile();
@@ -22,13 +24,11 @@ export default async function SettingsPage() {
     .maybeSingle();
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">
-          Your profile
-        </h1>
-        <p className="text-sm text-ink-2">Manage your photo, name, and password.</p>
-      </div>
+    <PageContainer width="focused" stack>
+      <PageHeader
+        title="Your profile"
+        description="Manage your photo, name, and password."
+      />
 
       <Card>
         <CardHeader>
@@ -43,6 +43,6 @@ export default async function SettingsPage() {
       <ProfileForm fullName={me.full_name} email={me.email} role={me.role} />
 
       <EmailPreferences role={me.role} current={(prefs ?? {}) as Record<string, boolean | null>} />
-    </div>
+    </PageContainer>
   );
 }

@@ -88,11 +88,11 @@ export async function ProjectsBoard({
           }
         />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid items-stretch gap-4 lg:grid-cols-2">
           {list.map((p) => {
             const dels = byProject.get(p.id) ?? [];
             return (
-              <Card key={p.id}>
+              <Card key={p.id} className="h-full">
                 <CardContent className="flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">

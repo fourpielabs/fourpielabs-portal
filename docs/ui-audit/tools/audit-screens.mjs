@@ -11,7 +11,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 const arg = Object.fromEntries(process.argv.slice(2).map((a) => { const s = a.replace(/^--/, ""); const i = s.indexOf("="); return i === -1 ? [s, true] : [s.slice(0, i), s.slice(i + 1)]; }));
 const BASE = arg.base || "http://localhost:3000";
 const PASS = "FourPie!Demo2026";
-const OUT = "docs/ui-audit/screens";
+const OUT = arg.out || "docs/ui-audit/screens";
 mkdirSync(OUT, { recursive: true });
 
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });

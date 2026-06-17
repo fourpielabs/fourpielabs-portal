@@ -123,6 +123,11 @@
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* layout — container widths (Phase 1; → max-w-focused/standard/wide utilities) */
+  --container-focused: 45rem; /* 720px — forms, reading, single-record */
+  --container-standard: 75rem; /* 1200px — default: dashboards, detail, most pages */
+  --container-wide: 90rem; /* 1440px — dense tables, boards, audit/users */
 }
 
 :root {
@@ -162,6 +167,47 @@
     transparent 70%
   );
   --sidebar-dark: var(--dark-glow-rail), #141416;
+
+  /* =========================================================================
+     Layout & spacing system (Phase 1, batch 1). Container widths live in @theme
+     above (→ max-w-* utilities). The density-switchable rhythm tokens live here
+     so they can flip per-subtree via [data-density]; page side-padding is
+     responsive. Defaults below = SPACIOUS (client). [data-density="compact"]
+     (staff/admin) tightens them. Derived from the premium surfaces: section gap
+     32 = client dashboard `gap-8`; title 30px = client `text-3xl`; side padding
+     16→24→32 = client `px-4 sm:px-8`. NO color/type token VALUES were changed.
+     ========================================================================= */
+  --page-px: 1rem; /* responsive (16 → 24 → 32), density-independent */
+  --section-gap: 2rem; /* 32 — between major page sections */
+  --stack-gap: 1rem; /* 16 — within a section */
+  --card-pad: 1.5rem; /* 24 — card interior */
+  --page-title: 1.875rem; /* 30px — standard page title (NOT the hero greeting) */
+}
+
+@media (min-width: 640px) {
+  :root {
+    --page-px: 1.5rem; /* 24 */
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --page-px: 2rem; /* 32 */
+  }
+}
+
+/* explicit spacious (lets a compact subtree opt back to spacious) */
+[data-density="spacious"] {
+  --section-gap: 2rem;
+  --stack-gap: 1rem;
+  --card-pad: 1.5rem;
+  --page-title: 1.875rem;
+}
+/* compact = staff/admin */
+[data-density="compact"] {
+  --section-gap: 1.5rem; /* 24 */
+  --stack-gap: 0.75rem; /* 12 */
+  --card-pad: 1.25rem; /* 20 */
+  --page-title: 1.5rem; /* 24px */
 }
 
 @layer base {
@@ -198,6 +244,18 @@
   }
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* tokenized vertical rhythm (density-aware via the [data-density] vars) */
+  .section-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--section-gap);
+  }
+  .content-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--stack-gap);
   }
 
   /* motion system — intent-named utilities routed through the tokens above */

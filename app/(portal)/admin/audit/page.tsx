@@ -13,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 /** Render metadata as keyed key:value pills (legible vs raw JSON). */
 function MetaPills({ metadata }: { metadata: unknown }) {
@@ -69,11 +71,11 @@ export default async function AuditPage({
     `/admin/audit?action=${encodeURIComponent(a)}${clientFilter ? `&client=${clientFilter}` : ""}`;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Audit log</h1>
-        <p className="text-sm text-ink-2">Every mutation, newest first (latest 200).</p>
-      </div>
+    <PageContainer width="wide" stack>
+      <PageHeader
+        title="Audit log"
+        description="Every mutation, newest first (latest 200)."
+      />
 
       <AuditFilters
         clients={clients ?? []}
@@ -184,6 +186,6 @@ export default async function AuditPage({
           </div>
         </>
       )}
-    </div>
+    </PageContainer>
   );
 }

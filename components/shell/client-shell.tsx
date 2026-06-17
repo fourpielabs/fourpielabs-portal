@@ -98,7 +98,7 @@ export function ClientShell({
   const moreActive = more.some((m) => isActive(pathname, m.href));
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div data-density="spacious" className="flex min-h-screen flex-col">
       {/* desktop top nav — floating rounded pill (matches fourpielabs.com) */}
       <header className="sticky top-0 z-30 hidden px-4 pt-4 sm:block">
         <div className="mx-auto flex h-14 w-fit max-w-full items-center gap-8 rounded-full border border-border bg-surface/85 px-7 shadow-e2 backdrop-blur-md">
@@ -141,7 +141,9 @@ export function ClientShell({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1280px] flex-1 scroll-pb-36 px-4 pt-6 pb-36 sm:px-8 sm:pt-11 sm:pb-10">
+      {/* width + side-padding are owned by <PageContainer> per page; the shell keeps
+          only vertical rhythm + the mobile bottom-bar safe area. */}
+      <main className="w-full flex-1 scroll-pb-36 pt-6 pb-36 sm:pt-11 sm:pb-10">
         {children}
       </main>
 

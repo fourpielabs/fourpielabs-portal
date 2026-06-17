@@ -12,6 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ExternalLink, FileText, Video } from "lucide-react";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function ClientCallsNotesPage() {
   await requireRole(["client"]);
@@ -34,11 +36,11 @@ export default async function ClientCallsNotesPage() {
     ]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Calls &amp; Notes</h1>
-        <p className="text-sm text-ink-2">Book time with us and catch up on sessions.</p>
-      </div>
+    <PageContainer width="standard" stack>
+      <PageHeader
+        title="Calls & Notes"
+        description="Book time with us and catch up on sessions."
+      />
 
       {(callTypes ?? []).length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -143,6 +145,6 @@ export default async function ClientCallsNotesPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

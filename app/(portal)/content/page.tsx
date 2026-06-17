@@ -5,6 +5,8 @@ import {
   ClientContent,
   type ClientContentItem,
 } from "@/components/client/client-content";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function ClientContentPage() {
   await requireRole(["client"]);
@@ -24,12 +26,12 @@ export default async function ClientContentPage() {
     .order("publish_date", { ascending: true, nullsFirst: false });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">Content calendar</h1>
-        <p className="text-sm text-ink-2">What we&apos;re planning and publishing.</p>
-      </div>
+    <PageContainer width="standard" stack>
+      <PageHeader
+        title="Content calendar"
+        description="What we're planning and publishing."
+      />
       <ClientContent items={(items ?? []) as ClientContentItem[]} />
-    </div>
+    </PageContainer>
   );
 }
