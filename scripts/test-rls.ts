@@ -327,21 +327,45 @@ async function main() {
     rec("projects", "project client create OWN allowed", !cr.error, cr.error?.message ?? "");
     const newProj = (Array.isArray(cr.data) ? cr.data[0] : cr.data) as { id: string } | null;
 
-    // project client CAN update its OWN project (incl. status — client owns it)
+    // project client CAN update its OWN project's TITLE + DESCRIPTION (the client
+    // RPC no longer accepts status — status is staff-only).
     let updOk = false, updErr = "";
     if (newProj?.id) {
-      const up = await projClient.rpc("update_project", { p_id: newProj.id, p_title: "RLSPROJ-own2", p_description: "d2", p_status: "active" });
+      const up = await projClient.rpc("update_project", { p_id: newProj.id, p_title: "RLSPROJ-own2", p_description: "d2" });
       updOk = !up.error; updErr = up.error?.message ?? "";
     }
-    rec("projects", "project client update OWN allowed (status)", updOk, updErr);
+    rec("projects", "project client update OWN title/desc allowed", updOk, updErr);
+
+    // SECURITY — status is staff-only; a client must NOT be able to change it.
+    // (a) the status-settable overload was DROPPED → passing p_status is rejected
+    //     (PostgREST finds no update_project matching {p_id,p_title,p_description,p_status}).
+    if (newProj?.id) {
+      const withStatus = await projClient.rpc("update_project", {
+        p_id: newProj.id, p_title: "RLSPROJ-hack", p_description: "x", p_status: "complete",
+      });
+      rec("projects", "client update_project(p_status) REJECTED — param dropped", !!withStatus.error, withStatus.error?.message ?? "(unexpectedly succeeded)");
+    }
+    // (b) a normal title/desc edit leaves status UNTOUCHED (stays 'proposed' from
+    //     create_project) — the client can never move status through the RPC.
+    if (newProj?.id) {
+      await projClient.rpc("update_project", { p_id: newProj.id, p_title: "RLSPROJ-own3", p_description: "d3" });
+      const { data: after } = await admin.from("projects").select("status").eq("id", newProj.id).single();
+      rec("projects", "client edit leaves status unchanged (still 'proposed')", after?.status === "proposed", `status=${after?.status ?? "?"}`);
+    }
 
     // direct INSERT denied — no client INSERT policy on projects
     const di = await projClient.from("projects").insert({ client_id: projId, title: "RLS direct" }).select("id");
     rec("projects", "project client direct INSERT denied", !!di.error || (di.data?.length ?? 0) === 0, di.error?.code ?? `${di.data?.length ?? 0} rows`);
     if (di.data?.[0]?.id) await admin.from("projects").delete().eq("id", di.data[0].id);
 
+    // direct UPDATE of status denied — no client UPDATE policy (the RPC is the only write path)
+    if (newProj?.id) {
+      const dsu = await projClient.from("projects").update({ status: "complete" }).eq("id", newProj.id).select("id");
+      rec("projects", "project client direct status UPDATE denied", !!dsu.error || (dsu.data?.length ?? 0) === 0, dsu.error?.code ?? `${dsu.data?.length ?? 0} rows`);
+    }
+
     // update ANOTHER client's project denied (premier's project)
-    const xu = await projClient.rpc("update_project", { p_id: premierProjectId, p_title: "RLS hijack", p_description: "", p_status: "complete" });
+    const xu = await projClient.rpc("update_project", { p_id: premierProjectId, p_title: "RLS hijack", p_description: "" });
     rec("projects", "project client update CROSS-CLIENT denied", !!xu.error, xu.error?.message ?? "");
 
     // SELECT scoping: own visible, cross-client invisible
