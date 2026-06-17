@@ -5,6 +5,8 @@ import { Markdown } from "@/components/markdown";
 import { DownloadButton } from "@/components/files/download-button";
 import { StatusChip } from "@/components/ui/status-chip";
 import { formatReportPeriod } from "@/lib/format";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FileText } from "lucide-react";
 
 export type ClientReport = {
   id: string;
@@ -26,9 +28,11 @@ export function ClientReports({
 
   if (reports.length === 0) {
     return (
-      <div className="rounded-2xl border-2 border-dashed border-border px-6 py-12 text-center text-sm text-ink-3">
-        Your first report lands after month 1.
-      </div>
+      <EmptyState
+        icon={<FileText />}
+        title="No reports yet"
+        description="Your first report lands after month 1."
+      />
     );
   }
 

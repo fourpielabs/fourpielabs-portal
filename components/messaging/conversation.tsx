@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/format";
 import { useReducedMotion } from "@/lib/motion";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,6 +87,8 @@ export function Conversation({
   const [mention, setMention] = useState<{ query: string; at: number } | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const reduced = useReducedMotion();
+  // touch devices have no ⌘ key and wrap the long hint to ~4 lines at 390w
+  const coarse = useMediaQuery("(pointer: coarse)");
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -667,7 +670,9 @@ export function Conversation({
               }
             }}
             rows={2}
-            placeholder="Write a message… (markdown · @ to mention · ⌘↵ to send)"
+            placeholder={
+              coarse ? "Write a message…" : "Write a message… (markdown · @ to mention · ⌘↵ to send)"
+            }
             className="resize-none"
           />
           <Button

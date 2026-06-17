@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { FileText, Pencil, Plus, Trash2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import { reportSchema, type ReportValues } from "@/lib/schemas";
 import { formatReportPeriod } from "@/lib/format";
@@ -195,7 +196,7 @@ export function ReportsManager({
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {reports.length === 0
-            ? "No reports yet."
+            ? ""
             : `${reports.length} report${reports.length === 1 ? "" : "s"}`}
         </p>
         <ReportDialog
@@ -209,9 +210,11 @@ export function ReportsManager({
       </div>
 
       {reports.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-          Draft monthly reports here. Clients only ever see PUBLISHED ones.
-        </div>
+        <EmptyState
+          icon={<FileText />}
+          title="No reports yet"
+          description="Draft monthly reports here. Clients only ever see PUBLISHED ones."
+        />
       ) : (
         <ul className="space-y-3">
           {reports.map((r) => (

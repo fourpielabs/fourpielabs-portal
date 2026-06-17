@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Eye, EyeOff, Pencil, Pin, PinOff, Plus, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Megaphone, Pencil, Pin, PinOff, Plus, Trash2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import { setUpdateFlagsAction, deleteUpdateAction } from "@/lib/actions/updates";
 import { formatDate } from "@/lib/format";
@@ -59,7 +60,7 @@ export function UpdatesList({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {updates.length === 0 ? "No updates yet." : `${updates.length} posted`}
+          {updates.length === 0 ? "" : `${updates.length} posted`}
         </p>
         <UpdateDialog
           clientId={clientId}
@@ -72,9 +73,11 @@ export function UpdatesList({
       </div>
 
       {ordered.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-          Share progress notes with the client here.
-        </div>
+        <EmptyState
+          icon={<Megaphone />}
+          title="No updates yet"
+          description="Share progress notes with the client here."
+        />
       ) : (
         <ul className="space-y-3">
           {ordered.map((u) => {

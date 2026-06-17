@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 
 import { formatMonthShort, monthsBetween } from "@/lib/format";
 import { MetricDelta } from "@/components/ui/metric-delta";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LineChart } from "lucide-react";
 
 // Recharts loads only when the chart actually renders (client-only), off the route's
 // initial JS. The skeleton holds the chart's space while the chunk arrives.
@@ -108,9 +110,11 @@ export function MetricsCharts({
           )}
         </div>
         {numericDefs.length === 0 || axis.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-            Charts appear once you have numeric metrics with monthly entries.
-          </div>
+          <EmptyState
+            icon={<LineChart />}
+            title="No performance data yet"
+            description="Your performance charts show up here once we start tracking your numbers."
+          />
         ) : (
           <div
             role="img"
