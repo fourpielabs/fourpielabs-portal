@@ -6,6 +6,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import { competitorSchema, type CompetitorValues } from "@/lib/schemas";
 import {
@@ -229,9 +230,7 @@ export function CompetitorsManager({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {competitors.length === 0
-            ? "No competitors tracked yet."
-            : `${competitors.length} tracked`}
+          {competitors.length === 0 ? "" : `${competitors.length} tracked`}
         </p>
         <CompetitorDialog
           clientId={clientId}
@@ -244,9 +243,11 @@ export function CompetitorsManager({
       </div>
 
       {competitors.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-          Track competitors — what&apos;s working, the gaps, and ideas to adapt.
-        </div>
+        <EmptyState
+          icon={<Eye />}
+          title="No competitors tracked yet"
+          description="Track competitors — what's working, the gaps, and ideas to adapt."
+        />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {competitors.map((c) => (
