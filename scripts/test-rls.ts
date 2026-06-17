@@ -210,12 +210,10 @@ async function main() {
   const { data: visTask } = await admin.from("tasks")
     .insert({ client_id: premierId, title: "RLSTASK-visible", visible_to_client: true }).select("id").single();
   const visTaskId = visTask!.id as string;
-  const { data: hidTask } = await admin.from("tasks")
-    .insert({ client_id: premierId, title: "RLSTASK-hidden", visible_to_client: false }).select("id").single();
-  const hidTaskId = hidTask!.id as string;
-  const { data: xcTask } = await admin.from("tasks")
-    .insert({ client_id: pulseId, title: "RLSTASK-cross", visible_to_client: true }).select("id").single();
-  const xcTaskId = xcTask!.id as string;
+  // hidden + cross-client fixture ROWS (referenced by title/client_id in the read
+  // checks below; their ids aren't needed now the client status RPC is gone).
+  await admin.from("tasks").insert({ client_id: premierId, title: "RLSTASK-hidden", visible_to_client: false });
+  await admin.from("tasks").insert({ client_id: pulseId, title: "RLSTASK-cross", visible_to_client: true });
   const { data: arbProf } = await admin.from("profiles").select("id").eq("email", projEmail).single();
   const arbitraryUid = arbProf!.id as string; // belongs to the project client → NOT in premier's circle
 
@@ -532,13 +530,17 @@ async function main() {
     const crShr = await client.rpc("create_task", { p_title: "RLSTASK-srcshared", p_source_message_id: sharedMsgId });
     rec("tasks", "create_task source=own shared message allowed", !crShr.error, crShr.error?.message ?? "");
 
-    // update_task_status: own VISIBLE allowed; cross-client RAISES; invisible RAISES
-    const usOk = await client.rpc("update_task_status", { p_task_id: visTaskId, p_status: "in_progress" });
-    rec("tasks", "update_task_status own visible task allowed", !usOk.error, usOk.error?.message ?? "");
-    const usXc = await client.rpc("update_task_status", { p_task_id: xcTaskId, p_status: "done" });
-    rec("tasks", "update_task_status CROSS-CLIENT task RAISES", !!usXc.error, usXc.error?.message ?? "");
-    const usHid = await client.rpc("update_task_status", { p_task_id: hidTaskId, p_status: "done" });
-    rec("tasks", "update_task_status INVISIBLE (staff-only) task RAISES", !!usHid.error, usHid.error?.message ?? "");
+    // SECURITY — task status is STAFF-ONLY now (update_task_status was DROPPED).
+    // (a) the client status RPC is gone → a client calling it is rejected.
+    const usGone = await client.rpc("update_task_status", { p_task_id: visTaskId, p_status: "done" });
+    rec("tasks", "client update_task_status REJECTED — RPC dropped", !!usGone.error, usGone.error?.message ?? "(unexpectedly succeeded)");
+    // (b) a client cannot move status by ANY path: staff sets 'done', then the client's
+    //     RPC attempt + a direct UPDATE both fail and the status STAYS staff-set.
+    await admin.from("tasks").update({ status: "done" }).eq("id", visTaskId);
+    await client.rpc("update_task_status", { p_task_id: visTaskId, p_status: "todo" }); // RPC gone → errors
+    await client.from("tasks").update({ status: "todo" }).eq("id", visTaskId);          // no client UPDATE policy → denied
+    const { data: afterTask } = await admin.from("tasks").select("status").eq("id", visTaskId).single();
+    rec("tasks", "client cannot move status — stays staff-set 'done'", afterTask?.status === "done", `status=${afterTask?.status ?? "?"}`);
   }
 
   // --- call_bookings: client sees OWN VISIBLE only; the service-role upsert is
@@ -647,6 +649,10 @@ async function main() {
     const tti = await team.from("tasks").insert({ client_id: premierId, title: "RLSTASK-team" }).select("id");
     rec("team→assigned", "write premier task allowed", !tti.error && (tti.data?.length ?? 0) === 1, tti.error?.code ?? `${tti.data?.length ?? 0} rows`);
     if (tti.data?.[0]?.id) await admin.from("tasks").delete().eq("id", tti.data[0].id);
+    // staff status control is UNAFFECTED — a team member changes status via a direct
+    // UPDATE under the tasks for-all policy (no RPC; the client status RPC was dropped).
+    const tts = await team.from("tasks").update({ status: "in_progress" }).eq("id", visTaskId).select("id");
+    rec("team→assigned", "staff CAN change task status (direct UPDATE)", !tts.error && (tts.data?.length ?? 0) === 1, tts.error?.code ?? `${tts.data?.length ?? 0} rows`);
 
     const tun = await team.from("tasks").select("id").eq("client_id", unId);
     rec("team→unassigned", "read tasks 0", (tun.data?.length ?? 0) === 0, `${tun.data?.length ?? 0} rows`);

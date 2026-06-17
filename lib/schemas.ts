@@ -93,7 +93,8 @@ export const projectStaffSchema = z.object({
 });
 export type ProjectStaffValues = z.infer<typeof projectStaffSchema>;
 
-// --- Tasks (5a) — staff direct writes + client RPCs (create_task/update_task_status) --
+// --- Tasks (5a) — staff direct writes + client create_task RPC. Status is staff-only
+//     (the client update_task_status RPC was dropped — see lock_task_status migration). --
 const optionalUuid = z.string().uuid().or(z.literal("")).optional().nullable();
 
 // Client write path (create_task RPC): no status (always starts 'todo'), no visibility

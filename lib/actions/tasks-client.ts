@@ -8,16 +8,16 @@ import { notify, staffUserIds } from "@/lib/notifications";
 import { taskClientCreateSchema, type TaskClientCreateValues } from "@/lib/schemas";
 
 type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
-type TaskStatus = "todo" | "in_progress" | "done";
 const orNull = (v: string | undefined | null) => (v && v.length > 0 ? v : null);
 
 /**
- * Clients create tasks and change status ONLY through the create_task /
- * update_task_status SECURITY DEFINER RPCs — there is NO direct client
- * INSERT/UPDATE policy on `tasks` (the toggle_checklist_item / create_project
- * precedent). The RPC re-validates: caller is a client, assignee is in the
- * client's circle, a source message is the client's OWN client_shared message,
- * and (status) the task is own-client + visible. The action is convenience only.
+ * Clients create tasks ONLY through the create_task SECURITY DEFINER RPC — there
+ * is NO direct client INSERT/UPDATE policy on `tasks` (the toggle_checklist_item /
+ * create_project precedent). Task STATUS is staff-controlled: the client status RPC
+ * (update_task_status) was DROPPED, so a client has no status-write path (it sees
+ * status read-only). The RPC re-validates: caller is a client, assignee is in the
+ * client's circle, a source message is the client's OWN client_shared message. The
+ * action is convenience only.
  */
 export async function createTaskAction(
   input: TaskClientCreateValues,
@@ -66,28 +66,4 @@ export async function createTaskAction(
 
   revalidatePath("/tasks");
   return { ok: true, data: row ? { id: row.id } : undefined };
-}
-
-export async function setTaskStatusAction(taskId: string, status: TaskStatus): Promise<Result> {
-  const profile = await requireProfile();
-  if (profile.role !== "client" || !profile.client_id) {
-    return { ok: false, error: "Only clients can update tasks here." };
-  }
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("update_task_status", {
-    p_task_id: taskId,
-    p_status: status,
-  });
-  if (error) return { ok: false, error: error.message };
-
-  await logAudit({
-    actorId: profile.id,
-    action: "task.status_changed",
-    entity: "task",
-    entityId: taskId,
-    clientId: profile.client_id,
-    metadata: { status, by: "client" },
-  });
-  revalidatePath("/tasks");
-  return { ok: true };
 }

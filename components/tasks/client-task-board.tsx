@@ -1,25 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { toast } from "sonner";
 import { ListChecks, MessageSquare, Plus, User } from "lucide-react";
 
-import { setTaskStatusAction } from "@/lib/actions/tasks-client";
-import { TASK_STATUSES } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import type { TaskMember } from "@/lib/tasks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusChip } from "@/components/ui/status-chip";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ClientTaskDialog } from "./client-task-dialog";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
@@ -37,33 +26,15 @@ export type ClientTaskRow = {
 };
 
 export function ClientTaskBoard({
-  tasks: initialTasks,
+  tasks,
   members,
 }: {
   tasks: ClientTaskRow[];
   members: TaskMember[];
 }) {
-  // local copy so a status change paints INSTANTLY (optimistic); the server prop
-  // re-syncs on any real refresh/navigation. Reconcile/revert on error.
-  const [tasks, setTasks] = useState(initialTasks);
-  // Re-sync local optimistic state when the server prop changes (after refresh) — the
-  // React-blessed "adjust state during render" pattern (no effect, no cascading render).
-  const [prevTasks, setPrevTasks] = useState(initialTasks);
-  if (initialTasks !== prevTasks) {
-    setPrevTasks(initialTasks);
-    setTasks(initialTasks);
-  }
-
-  async function setStatus(id: string, status: ClientTaskRow["status"]) {
-    const prev = tasks;
-    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, status } : t))); // <100ms
-    const res = await setTaskStatusAction(id, status);
-    if (!res.ok) {
-      setTasks(prev); // revert
-      toast.error("Couldn't update", { description: res.error });
-    }
-  }
-
+  // Task status is STAFF-controlled: clients see it read-only (the StatusChip) and
+  // have no status-write path (the client status RPC was dropped). Clients can still
+  // ADD tasks; nothing on this board mutates an existing task.
   const addBtn = (
     <ClientTaskDialog
       members={members}
@@ -118,21 +89,6 @@ export function ClientTaskBoard({
                     </div>
                     {t.description && <p className="pt-1 text-sm text-ink-2">{t.description}</p>}
                   </div>
-                  <Select
-                    value={t.status}
-                    onValueChange={(s) => setStatus(t.id, s as ClientTaskRow["status"])}
-                  >
-                    <SelectTrigger size="sm" className="w-[8.5rem] shrink-0" aria-label={`Status for ${t.title}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TASK_STATUSES.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>
-                          {o.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </CardContent>
               </Card>
             </StaggerItem>
