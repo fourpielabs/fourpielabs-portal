@@ -27,6 +27,7 @@ const CTA_BY_TYPE: Record<string, string> = {
   deliverable_approved: "View deliverable",
   report_published: "View report",
   project_status: "View project",
+  call_booked: "View booking",
 };
 
 /**

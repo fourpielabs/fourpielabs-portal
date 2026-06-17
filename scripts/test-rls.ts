@@ -29,7 +29,7 @@ const rec = (group: string, check: string, pass: boolean, detail = "") =>
 const CLIENT_TABLES = [
   "checklist_items", "milestones", "deliverables", "content_items",
   "metric_definitions", "metric_entries", "competitors", "call_types",
-  "call_recordings", "meeting_notes", "reports", "updates", "files",
+  "call_recordings", "call_bookings", "meeting_notes", "reports", "updates", "files",
 ];
 // admin-only tables clients/team must never read
 const RESTRICTED_TABLES = ["invitations", "audit_log"];
@@ -45,6 +45,7 @@ function insertPayloads(clientId: string, defId: string) {
     { t: "competitors", row: { client_id: clientId, name_or_handle: "rls" } },
     { t: "call_types", row: { client_id: clientId, name: "rls" } },
     { t: "call_recordings", row: { client_id: clientId, call_type: "rls" } },
+    { t: "call_bookings", row: { client_id: clientId, external_id: `rls_bk_${clientId}`, title: "rls" } },
     { t: "meeting_notes", row: { client_id: clientId, title: "rls" } },
     { t: "reports", row: { client_id: clientId, title: "rls" } },
     { t: "updates", row: { client_id: clientId, title: "rls" } },
@@ -217,6 +218,16 @@ async function main() {
   const xcTaskId = xcTask!.id as string;
   const { data: arbProf } = await admin.from("profiles").select("id").eq("email", projEmail).single();
   const arbitraryUid = arbProf!.id as string; // belongs to the project client → NOT in premier's circle
+
+  // --- call_bookings fixtures (Cal.com sync) --------------------------------
+  // a VISIBLE booking on premier (demo-client's own), a HIDDEN one, and a
+  // cross-client booking on pulse. Service-role insert (the webhook's path).
+  await admin.from("call_bookings").delete().like("external_id", "RLSBK%");
+  await admin.from("call_bookings").insert([
+    { client_id: premierId, external_id: "RLSBK-visible", title: "RLSBK visible", status: "booked", visible_to_client: true },
+    { client_id: premierId, external_id: "RLSBK-hidden", title: "RLSBK hidden", status: "booked", visible_to_client: false },
+    { client_id: pulseId, external_id: "RLSBK-cross", title: "RLSBK cross", status: "booked", visible_to_client: true },
+  ]);
   const { data: sharedMsg } = await admin.from("messages").select("id").eq("client_id", premierId).eq("body", "RLSMSG-shared").single();
   const { data: internalMsg } = await admin.from("messages").select("id").eq("client_id", premierId).eq("body", "RLSMSG-internal").single();
   const sharedMsgId = sharedMsg!.id as string;
@@ -327,13 +338,15 @@ async function main() {
     rec("projects", "project client create OWN allowed", !cr.error, cr.error?.message ?? "");
     const newProj = (Array.isArray(cr.data) ? cr.data[0] : cr.data) as { id: string } | null;
 
-    // project client CAN update its OWN project (incl. status — client owns it)
+    // project client CAN update its OWN project's title/description. NOTE: the
+    // remote DB already has the project-status-lock migration applied (status is
+    // staff-only now), so the client update_project RPC is 3-arg — no p_status.
     let updOk = false, updErr = "";
     if (newProj?.id) {
-      const up = await projClient.rpc("update_project", { p_id: newProj.id, p_title: "RLSPROJ-own2", p_description: "d2", p_status: "active" });
+      const up = await projClient.rpc("update_project", { p_id: newProj.id, p_title: "RLSPROJ-own2", p_description: "d2" });
       updOk = !up.error; updErr = up.error?.message ?? "";
     }
-    rec("projects", "project client update OWN allowed (status)", updOk, updErr);
+    rec("projects", "project client update OWN title/desc allowed", updOk, updErr);
 
     // direct INSERT denied — no client INSERT policy on projects
     const di = await projClient.from("projects").insert({ client_id: projId, title: "RLS direct" }).select("id");
@@ -341,7 +354,7 @@ async function main() {
     if (di.data?.[0]?.id) await admin.from("projects").delete().eq("id", di.data[0].id);
 
     // update ANOTHER client's project denied (premier's project)
-    const xu = await projClient.rpc("update_project", { p_id: premierProjectId, p_title: "RLS hijack", p_description: "", p_status: "complete" });
+    const xu = await projClient.rpc("update_project", { p_id: premierProjectId, p_title: "RLS hijack", p_description: "" });
     rec("projects", "project client update CROSS-CLIENT denied", !!xu.error, xu.error?.message ?? "");
 
     // SELECT scoping: own visible, cross-client invisible
@@ -506,6 +519,25 @@ async function main() {
     rec("tasks", "update_task_status INVISIBLE (staff-only) task RAISES", !!usHid.error, usHid.error?.message ?? "");
   }
 
+  // --- call_bookings: client sees OWN VISIBLE only; the service-role upsert is
+  //     the ONLY write path (no client INSERT/UPDATE policy) ------------------
+  {
+    const { data: bk } = await client.from("call_bookings").select("external_id");
+    const ids = (bk ?? []).map((b) => b.external_id);
+    rec("bookings", "client reads OWN visible booking", ids.includes("RLSBK-visible"), `${bk?.length ?? 0} rows`);
+    rec("bookings", "client cannot see HIDDEN booking", !ids.includes("RLSBK-hidden"));
+    // direct UPDATE denied (no client UPDATE policy → error or 0 rows)
+    const bu = await client.from("call_bookings").update({ status: "cancelled" }).eq("external_id", "RLSBK-visible").select("id");
+    rec("bookings", "client direct UPDATE denied", !!bu.error || (bu.data?.length ?? 0) === 0, bu.error?.code ?? `${bu.data?.length ?? 0} rows`);
+
+    // service-role idempotent upsert (the webhook's path): same external_id twice = 1 row
+    await admin.from("call_bookings").upsert({ external_id: "RLSBK-visible", client_id: premierId, title: "RLSBK upsert-1", status: "booked", visible_to_client: true }, { onConflict: "external_id" });
+    await admin.from("call_bookings").upsert({ external_id: "RLSBK-visible", client_id: premierId, title: "RLSBK upsert-2", status: "rescheduled", visible_to_client: true }, { onConflict: "external_id" });
+    const { data: dup } = await admin.from("call_bookings").select("status").eq("external_id", "RLSBK-visible");
+    rec("bookings", "service-role upsert idempotent (1 row)", (dup?.length ?? 0) === 1, `${dup?.length ?? 0} rows`);
+    rec("bookings", "service-role upsert updates fields (status)", dup?.[0]?.status === "rescheduled", `status=${dup?.[0]?.status ?? "?"}`);
+  }
+
   // ====================== AS TEAM (demo-team, unassigned client) ============
   const team = createClient(url, anonKey, { auth: { persistSession: false } });
   await team.auth.signInWithPassword({ email: "demo-team@example.com", password: PW });
@@ -551,6 +583,12 @@ async function main() {
       teamLink.error?.code ?? `${teamLink.data?.length ?? 0} rows`,
     );
     await admin.from("deliverables").update({ project_id: null }).eq("id", apprId); // reset
+  }
+  // call_bookings: ASSIGNED team reads premier's bookings, INCLUDING hidden ones
+  {
+    const tb = await team.from("call_bookings").select("external_id").eq("client_id", premierId);
+    const ids = (tb.data ?? []).map((x) => x.external_id);
+    rec("team→assigned", "read premier bookings incl. hidden", ids.includes("RLSBK-visible") && ids.includes("RLSBK-hidden"), `${tb.data?.length ?? 0} rows`);
   }
   // messaging: ASSIGNED team reads BOTH thread types + posts to both
   {
@@ -689,6 +727,7 @@ async function main() {
   await admin.from("messages").delete().eq("client_id", premierId).like("body", "RLS%");
   await admin.from("thread_reads").delete().eq("thread_id", premierShared);
   await admin.from("projects").delete().eq("client_id", premierId).like("title", "RLS%");
+  await admin.from("call_bookings").delete().like("external_id", "RLSBK%");
   {
     const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
     const u = list?.users.find((x) => x.email === projEmail);

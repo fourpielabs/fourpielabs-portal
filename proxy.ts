@@ -57,8 +57,10 @@ export const config = {
      * Match all request paths except:
      * - _next/static, _next/image, favicon.ico
      * - the PWA manifest (public static asset — must not be auth-gated/redirected)
+     * - the Cal.com booking webhook (authenticated by HMAC signature, NOT a session —
+     *   it must reach its route handler, never get redirected to /login)
      * - common static image assets
      */
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|api/cal/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

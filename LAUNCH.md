@@ -72,6 +72,30 @@ emails itself (Resend HTTP API via `fetch` in `lib/email.ts`), NOT through Supab
    `BrandLogo`. Swap the real logo there + in `components/ui/brand-logo.tsx` (the existing
    logo-swap blocker covers both).
 
+## 3c. Cal.com booking webhook (booking sync — backend Part A)
+Confirmed Cal.com bookings sync into the portal's `call_bookings` table via a signed
+webhook at **`/api/cal/webhook`**. (Part B adds the client-facing embed popup + the
+upcoming-call UI.)
+1. **`CAL_WEBHOOK_SECRET`** — add a strong secret (e.g. `openssl rand -hex 32`) as an env
+   var on **Vercel** (Production) and in `.env.local` locally. The route verifies the
+   Cal.com signature (`HMAC-SHA256` of the raw body, hex, in the `x-cal-signature-256`
+   header) against it; **missing → the route rejects every request (500)**. Server-only;
+   never `NEXT_PUBLIC`.
+2. **Register the webhook in Cal.com** → **Settings → Developer → Webhooks → New**:
+   - **Subscriber URL:** `https://fourpielabs-portal.vercel.app/api/cal/webhook`
+     (later: `https://portal.fourpielabs.com/api/cal/webhook` at domain cutover).
+   - **Event triggers:** `BOOKING_CREATED`, `BOOKING_RESCHEDULED`, `BOOKING_CANCELLED`.
+   - **Secret:** the **same** `CAL_WEBHOOK_SECRET` value.
+3. **client_id mapping (the reliability contract):** the route maps each booking to a
+   portal client by reading **`metadata.clientId`** (and optional **`metadata.callTypeId`**)
+   from the Cal.com payload — **Part B's embed must pass these in the booking metadata.**
+   Fallback: it matches an attendee email to a client portal user. If neither resolves it
+   **logs + returns 200** (never 500-loops Cal.com) and the booking is flagged for review.
+4. **calLink format (for Part B):** the existing **`call_types.booking_url`** column carries
+   the Cal.com **calLink** = `username/event-slug` (e.g. `4pielabs/strategy-call`) — **no
+   schema change**. Part B's embed popup uses it as `data-cal-link` and passes
+   `{ metadata: { clientId, callTypeId } }` in the embed config.
+
 ## 4. Auth URL configuration + email templates  (Supabase → Authentication)
 ### 4a. URL configuration (Authentication → URL Configuration)
 - **Site URL:** `https://fourpielabs-portal.vercel.app`
