@@ -19,6 +19,7 @@ import { initials } from "@/lib/format";
 import { UserMenu } from "@/components/shell/user-menu";
 import { NotificationBell } from "@/components/shell/notification-bell";
 import { BrandLogo } from "@/components/ui/brand-logo";
+import { RouteTransition } from "@/components/motion/route-transition";
 import type { NotificationItem } from "@/lib/actions/notifications";
 import {
   Tooltip,
@@ -279,7 +280,7 @@ export function StaffShell({
 
           {/* width + side-padding are owned by <PageContainer> per page. */}
           <main className="w-full flex-1 py-6">
-            {children}
+            <RouteTransition>{children}</RouteTransition>
           </main>
         </div>
 

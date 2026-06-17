@@ -16,10 +16,13 @@ import {
   Phone,
   X,
 } from "lucide-react";
+import { m } from "motion/react";
 import { cn } from "@/lib/utils";
+import { spring } from "@/lib/motion";
 import { UserMenu } from "@/components/shell/user-menu";
 import { NotificationBell } from "@/components/shell/notification-bell";
 import { BrandLogo } from "@/components/ui/brand-logo";
+import { RouteTransition } from "@/components/motion/route-transition";
 import type { NotificationItem } from "@/lib/actions/notifications";
 
 type Item = { href: string; label: string };
@@ -113,12 +116,17 @@ export function ClientShell({
                   key={i.href}
                   href={i.href}
                   className={cn(
-                    "motion-micro rounded-full px-4 py-1.5 text-[13.5px]",
-                    active
-                      ? "bg-surface-2 font-semibold text-ink"
-                      : "font-medium text-ink-2 hover:bg-bg hover:text-ink",
+                    "motion-micro relative rounded-full px-4 py-1.5 text-[13.5px]",
+                    active ? "font-semibold text-ink" : "font-medium text-ink-2 hover:text-ink",
                   )}
                 >
+                  {active && (
+                    <m.span
+                      layoutId="client-nav-pill"
+                      className="absolute inset-0 -z-10 rounded-full bg-surface-2"
+                      transition={spring.snappy}
+                    />
+                  )}
                   {i.label}
                 </Link>
               );
@@ -144,7 +152,7 @@ export function ClientShell({
       {/* width + side-padding are owned by <PageContainer> per page; the shell keeps
           only vertical rhythm + the mobile bottom-bar safe area. */}
       <main className="w-full flex-1 scroll-pb-36 pt-6 pb-36 sm:pt-11 sm:pb-10">
-        {children}
+        <RouteTransition>{children}</RouteTransition>
       </main>
 
       {/* mobile bottom tab bar */}

@@ -23,6 +23,7 @@ import {
 import { ClientTaskDialog } from "./client-task-dialog";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
+import { Stagger, StaggerItem } from "@/components/motion/motion-primitives";
 
 export type ClientTaskRow = {
   id: string;
@@ -84,9 +85,9 @@ export function ClientTaskBoard({
           action={addBtn}
         />
       ) : (
-        <ul className="grid items-stretch gap-4 lg:grid-cols-2">
+        <Stagger as="ul" className="grid items-stretch gap-4 lg:grid-cols-2">
           {tasks.map((t) => (
-            <li key={t.id}>
+            <StaggerItem as="li" key={t.id}>
               <Card className="h-full">
                 <CardContent className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -128,9 +129,9 @@ export function ClientTaskBoard({
                   </Select>
                 </CardContent>
               </Card>
-            </li>
+            </StaggerItem>
           ))}
-        </ul>
+        </Stagger>
       )}
     </PageContainer>
   );

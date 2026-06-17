@@ -342,7 +342,9 @@ export default async function ClientOverviewPage({
                         {e.definition?.label}
                       </div>
                       <div className="flex items-baseline gap-1.5">
-                        <MetricValue size="snapshot" className="truncate">{fmtMetric(e)}</MetricValue>
+                        <MetricValue size="snapshot" className="truncate" value={e.value_numeric} unit={e.definition?.unit}>
+                          {fmtMetric(e)}
+                        </MetricValue>
                         {delta !== null && <MetricDelta delta={delta} variant="inline" />}
                       </div>
                     </div>

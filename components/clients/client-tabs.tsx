@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
+import { m } from "motion/react";
 import { cn } from "@/lib/utils";
+import { spring } from "@/lib/motion";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,22 +62,33 @@ export function ClientTabs({ clientId, isAdmin, clientType = "program" }: Props)
 
   const linkCls = (active: boolean) =>
     cn(
-      "-mb-px shrink-0 border-b-2 px-3 py-2.5 text-[13px] whitespace-nowrap transition-colors",
-      active
-        ? "border-amber-600 font-semibold text-ink"
-        : "border-transparent font-medium text-ink-3 hover:text-ink",
+      "relative shrink-0 px-3 py-2.5 text-[13px] whitespace-nowrap transition-colors",
+      active ? "font-semibold text-ink" : "font-medium text-ink-3 hover:text-ink",
     );
+  // shared-layout underline that springs between tabs (reduced motion → jumps instantly)
+  const underline = (
+    <m.span
+      layoutId="workspace-tab-underline"
+      className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-amber-600"
+      transition={spring.snappy}
+    />
+  );
 
   return (
     <nav className="flex items-center gap-1 overflow-x-auto border-b border-border">
-      {primary.map((t) => (
-        <Link key={t.href} href={t.href} className={linkCls(isActive(t))}>
-          {t.label}
-        </Link>
-      ))}
+      {primary.map((t) => {
+        const active = isActive(t);
+        return (
+          <Link key={t.href} href={t.href} className={linkCls(active)}>
+            {t.label}
+            {active && underline}
+          </Link>
+        );
+      })}
       <DropdownMenu>
         <DropdownMenuTrigger className={cn(linkCls(moreActive), "inline-flex items-center gap-1")}>
           More <ChevronDown className="size-3.5" />
+          {moreActive && underline}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {more.map((t) => (

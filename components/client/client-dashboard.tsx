@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MetricValue } from "@/components/ui/metric-value";
 import { MetricDelta } from "@/components/ui/metric-delta";
+import { Stagger, StaggerItem } from "@/components/motion/motion-primitives";
 
 type MetricRow = {
   period: string;
@@ -186,10 +187,11 @@ export async function ClientDashboard({
 
       {/* KPIs */}
       {kpis.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stagger as="div" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {kpis.map((k) => {
             return (
-              <Link key={k.label} href="/performance" className="block">
+              <StaggerItem key={k.label} lift className="block">
+              <Link href="/performance" className="block">
               <Card className="h-full transition-shadow hover:shadow-e3">
                 <CardContent className="flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">
@@ -199,7 +201,9 @@ export async function ClientDashboard({
                     <span className="shrink-0 text-[11px] font-semibold text-ink-3">{monthLabel}</span>
                   </div>
                   <div className="flex items-baseline gap-2.5">
-                    <MetricValue size="hero">{formatMetricValue(k.unit, k.cur, null)}</MetricValue>
+                    <MetricValue size="hero" value={k.cur} unit={k.unit}>
+                      {formatMetricValue(k.unit, k.cur, null)}
+                    </MetricValue>
                     {k.delta !== null && <MetricDelta delta={k.delta} variant="badge" />}
                   </div>
                   <div className="text-xs text-ink-3 tabular-nums">
@@ -208,9 +212,10 @@ export async function ClientDashboard({
                 </CardContent>
               </Card>
               </Link>
+              </StaggerItem>
             );
           })}
-        </div>
+        </Stagger>
       )}
 
       {/* main: 2fr left / 1fr right rail */}

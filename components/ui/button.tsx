@@ -1,9 +1,13 @@
+"use client";
+
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Slot } from "radix-ui";
 import { Loader2 } from "lucide-react";
+import { m } from "motion/react";
 
 import { cn } from "@/lib/utils";
+import { spring } from "@/lib/motion";
 
 const buttonVariants = cva(
   // Disabled = an unmistakably-inactive light pill (faint fill + muted text, no border/
@@ -74,19 +78,25 @@ function Button({
     );
   }
 
+  // press = subtle scale-down spring-back; hover = slight lift. Under prefers-reduced-motion
+  // MotionConfig (reducedMotion="user") drops these transforms automatically. Disabled
+  // buttons have pointer-events-none, so they never fire press/hover.
   return (
-    <button
+    <m.button
       data-slot="button"
       data-variant={variant}
       data-size={size}
       aria-busy={loading || undefined}
       disabled={disabled || loading}
       className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
+      whileTap={{ scale: 0.97 }}
+      whileHover={{ y: -1 }}
+      transition={spring.snappy}
+      {...(props as React.ComponentProps<typeof m.button>)}
     >
       {loading ? <Loader2 className="size-4 animate-spin" /> : null}
       {children}
-    </button>
+    </m.button>
   );
 }
 

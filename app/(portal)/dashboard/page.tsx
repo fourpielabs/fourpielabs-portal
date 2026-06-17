@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusChip } from "@/components/ui/status-chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/layout/page-container";
+import { Stagger, StaggerItem } from "@/components/motion/motion-primitives";
 
 function relTime(iso: string | null): string {
   if (!iso) return "No activity yet";
@@ -165,14 +166,14 @@ export default async function DashboardPage() {
             }
           />
         ) : (
-          <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Stagger as="div" className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {clients.map((c) => {
               const cl = checklistBy.get(c.id);
               const pj = projectsBy.get(c.id);
               const isProj = c.client_type === "project";
               return (
+                <StaggerItem key={c.id} lift className="h-full">
                 <Link
-                  key={c.id}
                   href={`/clients/${c.id}`}
                   className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-e2 transition-shadow hover:shadow-e3"
                 >
@@ -217,9 +218,10 @@ export default async function DashboardPage() {
                     <span>{relTime(lastActivity.get(c.id) ?? null)}</span>
                   </div>
                 </Link>
+                </StaggerItem>
               );
             })}
-          </div>
+          </Stagger>
         )}
       </div>
     </PageContainer>

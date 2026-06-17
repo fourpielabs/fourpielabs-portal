@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque, Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { MotionProvider } from "@/components/motion/motion-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -37,7 +38,7 @@ export default function RootLayout({
       className={`${inter.variable} ${bricolage.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {children}
+        <MotionProvider>{children}</MotionProvider>
         <Toaster closeButton />
       </body>
     </html>

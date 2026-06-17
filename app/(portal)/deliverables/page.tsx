@@ -11,6 +11,7 @@ import { DeliverableApprove } from "@/components/client/deliverable-approve";
 import { ExternalLink, Package } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
+import { Stagger, StaggerItem } from "@/components/motion/motion-primitives";
 
 export default async function ClientDeliverablesPage() {
   const profile = await requireRole(["client"]);
@@ -38,9 +39,10 @@ export default async function ClientDeliverablesPage() {
           description="Your deliverables will appear here as we ship them."
         />
       ) : (
-        <ul className="grid items-stretch gap-4 lg:grid-cols-2">
+        <Stagger as="ul" className="grid items-stretch gap-4 lg:grid-cols-2">
           {(deliverables ?? []).map((d) => (
-            <li
+            <StaggerItem
+              as="li"
               key={d.id}
               className="h-full rounded-2xl border border-border bg-surface p-[var(--card-pad)] shadow-e1 transition-shadow hover:shadow-e2"
             >
@@ -81,9 +83,9 @@ export default async function ClientDeliverablesPage() {
                   )}
                 </div>
               </div>
-            </li>
+            </StaggerItem>
           ))}
-        </ul>
+        </Stagger>
       )}
     </PageContainer>
   );
