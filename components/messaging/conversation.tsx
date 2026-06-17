@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/format";
 import { useReducedMotion } from "@/lib/motion";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,6 +56,10 @@ const EMOJIS = [
   "💯", "🆗", "📌", "⚡", "🥳", "😅", "🙂", "🫶",
 ];
 
+// composer action buttons — labeled, left-aligned, restrained amber emphasis on hover/focus
+const actionBtn =
+  "inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 focus-visible:border-amber-400 focus-visible:bg-amber-50 focus-visible:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600/30 disabled:cursor-not-allowed disabled:opacity-50";
+
 export function Conversation({
   threadId,
   notifLink,
@@ -86,6 +91,7 @@ export function Conversation({
   const [mention, setMention] = useState<{ query: string; at: number } | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const reduced = useReducedMotion();
+  const coarse = useMediaQuery("(pointer: coarse)");
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -506,79 +512,62 @@ export function Conversation({
 
       {/* composer — the who-can-see-this indicator is unmissable for BOTH audiences */}
       <div className="border-t border-border p-3">
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          {!isClient && (
-            <div className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold", banner.cls)}>
-              {banner.icon} {banner.label}
-            </div>
-          )}
-          {file && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium text-ink">
-              <Paperclip className="size-3" />
-              <span className="max-w-[160px] truncate">{file.name}</span>
-              <button type="button" onClick={() => setFile(null)} aria-label="Remove attachment" className="text-ink-3 hover:text-ink">
-                <X className="size-3" />
-              </button>
-            </span>
-          )}
-          {/* formatting toolbar — emoji picker + markdown helpers (insert at the cursor) */}
-          <div className="ml-auto flex items-center gap-0.5">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Insert emoji"
-                  title="Emoji"
-                  className="inline-flex size-7 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink"
-                >
-                  <Smile className="size-4" />
+        {/* who-can-see indicator (staff, both audiences) + selected-file chip */}
+        {(!isClient || file) && (
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            {!isClient && (
+              <div className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold", banner.cls)}>
+                {banner.icon} {banner.label}
+              </div>
+            )}
+            {file && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium text-ink">
+                <Paperclip className="size-3" />
+                <span className="max-w-[160px] truncate">{file.name}</span>
+                <button type="button" onClick={() => setFile(null)} aria-label="Remove attachment" className="text-ink-3 hover:text-ink">
+                  <X className="size-3" />
                 </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-auto p-2">
-                <div className="grid grid-cols-8 gap-0.5">
-                  {EMOJIS.map((e) => (
-                    <button
-                      key={e}
-                      type="button"
-                      onClick={() => insertAtCursor(e)}
-                      className="rounded p-1 text-lg leading-none hover:bg-surface-2"
-                    >
-                      {e}
-                    </button>
-                  ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <button
-              type="button"
-              onClick={() => wrapSelection("**")}
-              aria-label="Bold (markdown **)"
-              title="Bold"
-              className="inline-flex size-7 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink"
-            >
-              <Bold className="size-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => wrapSelection("*")}
-              aria-label="Italic (markdown *)"
-              title="Italic"
-              className="inline-flex size-7 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink"
-            >
-              <Italic className="size-3.5" />
-            </button>
-            {taskContext && (
-              <button
-                type="button"
-                onClick={() => setTaskOpen(true)}
-                aria-label="Create a task"
-                title="Create a task"
-                className="inline-flex size-7 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink"
-              >
-                <ListPlus className="size-4" />
-              </button>
+              </span>
             )}
           </div>
+        )}
+        {/* action toolbar — labeled + left-aligned so it's immediately visible (restrained amber emphasis) */}
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="Insert emoji" className={actionBtn}>
+                <Smile className="size-3.5" /> Emoji
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-auto p-2">
+              <div className="grid grid-cols-8 gap-0.5">
+                {EMOJIS.map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => insertAtCursor(e)}
+                    className="rounded p-1 text-lg leading-none hover:bg-surface-2"
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button type="button" onClick={() => wrapSelection("**")} aria-label="Bold (markdown **)" className={actionBtn}>
+            <Bold className="size-3.5" /> Bold
+          </button>
+          <button type="button" onClick={() => wrapSelection("*")} aria-label="Italic (markdown *)" className={actionBtn}>
+            <Italic className="size-3.5" /> Italic
+          </button>
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={sending} aria-label="Attach a file" className={actionBtn}>
+            <Paperclip className="size-3.5" /> Attach
+          </button>
+          {taskContext && (
+            <button type="button" onClick={() => setTaskOpen(true)} aria-label="Create a task" className={actionBtn}>
+              <ListPlus className="size-3.5" /> Task
+            </button>
+          )}
         </div>
         {taskContext && (
           <TaskCreateDialog
@@ -667,20 +656,11 @@ export function Conversation({
               }
             }}
             rows={2}
-            placeholder="Write a message… (markdown · @ to mention · ⌘↵ to send)"
+            placeholder={
+              coarse ? "Write a message…" : "Write a message… (markdown · @ to mention · ⌘↵ to send)"
+            }
             className="resize-none"
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => fileRef.current?.click()}
-            disabled={sending}
-            aria-label="Attach a file"
-            title="Attach a file"
-          >
-            <Paperclip className="size-4" />
-          </Button>
           <Button onClick={() => void send()} loading={sending} disabled={!body.trim() && !file}>
             <Send className="size-4" /> {internal ? "Post internal" : "Send"}
           </Button>
