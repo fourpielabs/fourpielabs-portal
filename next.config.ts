@@ -32,6 +32,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  // three ships add-ons as mixed CJS/ESM — the documented R3F default. It only
+  // affects the lazy auth-hero chunk (the sole importer of three), never the app bundle.
+  transpilePackages: ["three"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

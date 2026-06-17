@@ -1,11 +1,17 @@
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/ui/brand-logo";
+import { AuthHero } from "@/components/auth/hero/auth-hero";
+import { AuthCardReveal } from "@/components/auth/auth-card-reveal";
 
 /**
- * Dark split-screen auth shell (K1). Form panel holds `children`; the brand
- * panel (amber glow + statement) shows on desktop. `brand={false}` renders a
- * single centered dark card (confirm / expired / interstitials).
+ * Split-screen auth shell over the living hero (charcoal forms drifting through
+ * cream light). The card is frosted smoked glass — its dark scrim keeps form text
+ * at WCAG AA while the backdrop breathes through the edges and margins. Form panel
+ * holds `children`; the brand panel (amber glow + statement) shows on desktop.
+ * `brand={false}` renders a single centered card (confirm / expired / interstitials).
+ * The hero degrades to a crafted static composition on mobile / reduced-motion /
+ * no-WebGL, and the 3D ships as a lazy chunk (zero three.js in the app bundle).
  */
 export function AuthFrame({
   children,
@@ -15,24 +21,17 @@ export function AuthFrame({
   brand?: boolean;
 }) {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#101012] p-4 sm:p-8">
-      {/* page glows */}
-      <div
-        className="pointer-events-none absolute -top-[200px] -right-[100px] size-[700px] rounded-full"
-        style={{ background: "radial-gradient(circle, rgba(217,119,6,0.16), transparent 65%)" }}
-      />
-      <div
-        className="pointer-events-none absolute -bottom-[260px] left-[12%] size-[600px] rounded-full"
-        style={{ background: "radial-gradient(circle, rgba(255,255,255,0.035), transparent 65%)" }}
-      />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f4efe4] p-4 sm:p-8">
+      {/* living hero backdrop — decorative; crafted static fallback + lazy 3D island */}
+      <AuthHero />
 
-      <div
-        className={`relative grid w-full overflow-hidden rounded-3xl border border-dark-border bg-dark-surface shadow-[0_24px_64px_rgba(0,0,0,0.45)] ${
+      <AuthCardReveal
+        className={`relative z-10 grid w-full overflow-hidden rounded-3xl border border-white/10 shadow-[0_30px_80px_-16px_rgba(28,20,10,0.55)] ${
           brand ? "max-w-[1160px] lg:grid-cols-[480px_1fr]" : "max-w-md"
         }`}
       >
-        {/* form column (mobile brand header + form panel) */}
-        <div className="flex flex-col">
+        {/* form column (mobile brand header + form panel) — frosted smoked glass over the hero */}
+        <div className="relative flex flex-col bg-[rgba(17,17,20,0.92)] backdrop-blur-2xl backdrop-saturate-150">
           {brand && (
             <div
               className="relative overflow-hidden border-b border-dark-border px-6 pt-7 pb-6 lg:hidden"
@@ -73,10 +72,10 @@ export function AuthFrame({
         {/* brand panel (desktop) */}
         {brand && (
           <div
-            className="relative hidden flex-col justify-end overflow-hidden p-14 lg:flex"
+            className="relative hidden flex-col justify-end overflow-hidden p-14 backdrop-blur-2xl backdrop-saturate-150 lg:flex"
             style={{
               background:
-                "radial-gradient(110% 90% at 78% 8%, rgba(217,119,6,0.30), rgba(217,119,6,0.06) 48%, transparent 72%), #101012",
+                "radial-gradient(110% 90% at 78% 8%, rgba(217,119,6,0.30), rgba(217,119,6,0.06) 48%, transparent 72%), rgba(16,16,18,0.86)",
             }}
           >
             <div
@@ -105,7 +104,7 @@ export function AuthFrame({
             </div>
           </div>
         )}
-      </div>
+      </AuthCardReveal>
     </main>
   );
 }
