@@ -6,7 +6,10 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  // Disabled = an unmistakably-inactive light pill (faint fill + muted text, no border/
+  // shadow/gradient), NOT a faded charcoal that reads like an active gray button. This is
+  // why the disabled "Save" used to look like a muted secondary. Uses existing tokens only.
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:border-transparent disabled:bg-surface-2 disabled:bg-none disabled:text-ink-3 disabled:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -15,9 +18,13 @@ const buttonVariants = cva(
         // amber CTA — depth gradient over amber-700 base (white text = AA), hover amber-800
         amber:
           "bg-amber-700 bg-[image:var(--amber-cta)] text-white shadow-[var(--shadow-amber)] hover:bg-amber-800 hover:bg-[image:var(--amber-cta-hover)]",
+        // outline — the quiet/tertiary action: white surface + hairline border (D2 "secondary")
         outline:
           "border border-border-strong bg-surface text-ink hover:border-ink hover:bg-bg",
-        secondary: "bg-surface-2 text-ink hover:bg-border",
+        // secondary — a medium-weight filled neutral, DISTINCT from outline (filled vs white)
+        // and from disabled (has a border + ink text + hover); never reads as disabled.
+        secondary:
+          "border border-border-strong bg-surface-2 text-ink hover:border-ink hover:bg-border",
         ghost: "text-ink-2 hover:bg-surface-2 hover:text-ink",
         destructive: "bg-danger-solid text-white hover:bg-danger-hover",
         link: "h-auto rounded-none px-0 text-amber-700 underline-offset-[3px] hover:underline",
