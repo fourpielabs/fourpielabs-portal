@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 
 import { formatMonthShort, monthsBetween } from "@/lib/format";
+import { MetricDelta } from "@/components/ui/metric-delta";
 
 // Recharts loads only when the chart actually renders (client-only), off the route's
 // initial JS. The skeleton holds the chart's space while the chunk arrives.
@@ -152,15 +153,10 @@ export function MetricsCharts({
                         const cur = numericMap.get(`${d.id}|${p}`);
                         const prior = isFirst ? null : (numericMap.get(`${d.id}|${prevP}`) ?? null);
                         const delta = cur != null && prior != null ? cur - prior : null;
-                        const up = (delta ?? 0) > 0;
                         return (
                           <TableCell key={d.id} className="text-right tabular-nums">
                             {cur != null ? cur.toLocaleString() : "—"}
-                            {delta != null && delta !== 0 && (
-                              <span className={`ml-1 text-[11px] ${up ? "text-success-text" : "text-danger-text"}`}>
-                                {up ? "▲" : "▼"}{Math.abs(delta).toLocaleString()}
-                              </span>
-                            )}
+                            {delta != null && <MetricDelta delta={delta} variant="inline" className="ml-1" />}
                           </TableCell>
                         );
                       })}

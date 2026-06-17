@@ -1,20 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
-import { formatMonthYear } from "@/lib/format";
-import {
-  DefinitionsManager,
-  type MetricDef,
-} from "@/components/metrics/definitions-manager";
-import {
-  MonthlyEntryGrid,
-  type ActiveDef,
-} from "@/components/metrics/monthly-entry-grid";
-import { CsvImport } from "@/components/metrics/csv-import";
-import {
-  MetricsCharts,
-  type DefLite,
-  type Entry,
-} from "@/components/metrics/metrics-charts";
+import { type MetricDef } from "@/components/metrics/definitions-manager";
+import { type ActiveDef } from "@/components/metrics/monthly-entry-grid";
+import { MetricsWorkspace } from "@/components/metrics/metrics-workspace";
+import { type DefLite, type Entry } from "@/components/metrics/metrics-charts";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -98,63 +87,18 @@ export default async function MetricsPage({
       return { period: p, status };
     });
 
-  const statusChip = (s: string) =>
-    s === "complete"
-      ? "border border-success-border bg-success-bg text-success-text"
-      : s === "in_progress"
-        ? "border border-amber-200 bg-amber-100 text-amber-800"
-        : "border border-border text-ink-3";
-  const statusLabel = (s: string) =>
-    s === "complete" ? "Complete" : s === "in_progress" ? "In progress" : "Not started";
-
   return (
-    <div className="space-y-5">
-      <div className="grid gap-5 lg:grid-cols-[320px_1fr_300px] lg:items-start">
-        <DefinitionsManager clientId={clientId} definitions={allDefs} />
-
-        <MonthlyEntryGrid
-          clientId={clientId}
-          activeDefs={activeDefs}
-          initialPeriod={currentMonth}
-          initialValues={initialValues}
-        />
-
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-e2">
-          <h3 className="text-sm font-semibold">Entry status</h3>
-          <ul className="mt-3 flex flex-col gap-2">
-            {entryStatus.map((m) => (
-              <li key={m.period} className="flex items-center justify-between gap-2 text-[13px]">
-                <span>{formatMonthYear(m.period)}</span>
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusChip(m.status)}`}>
-                  {statusLabel(m.status)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Client preview — exactly what the client sees */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-e2 sm:p-6">
-        <div className="mb-4">
-          <h3 className="font-display text-xl font-semibold tracking-[-0.01em]">Client preview</h3>
-          <p className="text-[12.5px] text-ink-3">
-            Exactly what the client sees on their Performance page.
-          </p>
-        </div>
-        <MetricsCharts
-          numericDefs={numericDefs}
-          textDefs={textDefs}
-          entries={(histEntries ?? []) as Entry[]}
-        />
-      </div>
-
-      {/* CSV import — full width */}
-      <CsvImport
-        clientId={clientId}
-        defs={activeDefs.map((d) => ({ key: d.key, unit: d.unit }))}
-        currentMonth={currentMonth}
-      />
-    </div>
+    <MetricsWorkspace
+      clientId={clientId}
+      allDefs={allDefs}
+      activeDefs={activeDefs}
+      currentMonth={currentMonth}
+      initialValues={initialValues}
+      entryStatus={entryStatus}
+      csvDefs={activeDefs.map((d) => ({ key: d.key, unit: d.unit }))}
+      numericDefs={numericDefs}
+      textDefs={textDefs}
+      histEntries={(histEntries ?? []) as Entry[]}
+    />
   );
 }

@@ -79,6 +79,14 @@
   --color-priority-text: #9a3412;
   --color-priority-icon: #c2410c;
 
+  /* metric deltas — warm-harmonized (NEW tokens; no existing color value changed).
+     Positive = forest green; negative = warm brick (not stoplight red), tuned to sit
+     beside the amber accent. Used by <MetricDelta>. */
+  --color-delta-up: #15803d;
+  --color-delta-up-bg: #dcfce7;
+  --color-delta-down: #b23a1e;
+  --color-delta-down-bg: #fbeae3;
+
   /* --- shadcn/ui semantic mapping --- */
   --color-background: var(--color-bg);
   --color-foreground: var(--color-ink);

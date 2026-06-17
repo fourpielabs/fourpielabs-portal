@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -160,8 +161,14 @@ export function ContentDialog({
               <Input id="ci-type" placeholder="Reel, Carousel, Blog…" {...register("content_type")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ci-date">Publish date</Label>
-              <Input id="ci-date" type="date" {...register("publish_date")} />
+              <Label>Publish date</Label>
+              <Controller
+                control={control}
+                name="publish_date"
+                render={({ field }) => (
+                  <DatePicker value={field.value} onChange={field.onChange} />
+                )}
+              />
             </div>
           </div>
           <div className="space-y-2">

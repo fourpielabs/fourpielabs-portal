@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -243,8 +244,14 @@ function RecordingDialog({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="r-date">Date</Label>
-              <Input id="r-date" type="date" {...register("call_date")} />
+              <Label>Date</Label>
+              <Controller
+                control={control}
+                name="call_date"
+                render={({ field }) => (
+                  <DatePicker value={field.value} onChange={field.onChange} />
+                )}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="r-type">Call type</Label>

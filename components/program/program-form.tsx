@@ -12,11 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 
 export function ProgramForm({ defaults }: { defaults: ProgramValues }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-  const { register, handleSubmit } = useForm<ProgramValues>({
+  const { register, handleSubmit, setValue, watch } = useForm<ProgramValues>({
     resolver: zodResolver(programSchema),
     defaultValues: defaults,
   });
@@ -43,13 +44,17 @@ export function ProgramForm({ defaults }: { defaults: ProgramValues }) {
           <Label htmlFor="investment">Investment</Label>
           <Input id="investment" {...register("investment")} placeholder="$3,500/mo" />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="start_date">Start date</Label>
-          <Input id="start_date" type="date" {...register("start_date")} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="end_date">End date</Label>
-          <Input id="end_date" type="date" {...register("end_date")} />
+        <div className="space-y-2 sm:col-span-2">
+          <Label>Program dates</Label>
+          <DateRangePicker
+            from={watch("start_date")}
+            to={watch("end_date")}
+            placeholder="Start – end (optional)"
+            onChange={(f, t) => {
+              setValue("start_date", f, { shouldDirty: true, shouldValidate: true });
+              setValue("end_date", t, { shouldDirty: true, shouldValidate: true });
+            }}
+          />
         </div>
       </div>
 

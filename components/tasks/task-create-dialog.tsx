@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -144,8 +145,8 @@ export function TaskCreateDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tc-due">Due date</Label>
-              <Input id="tc-due" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+              <Label>Due date</Label>
+              <DatePicker value={due} onChange={setDue} />
             </div>
           </div>
           {role === "staff" && isInternal && (

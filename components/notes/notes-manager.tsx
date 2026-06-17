@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -108,8 +109,14 @@ function NoteDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="n-date">Date</Label>
-              <Input id="n-date" type="date" {...register("meeting_date")} />
+              <Label>Date</Label>
+              <Controller
+                control={control}
+                name="meeting_date"
+                render={({ field }) => (
+                  <DatePicker value={field.value} onChange={field.onChange} />
+                )}
+              />
             </div>
           </div>
           <div className="space-y-2">

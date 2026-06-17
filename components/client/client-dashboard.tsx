@@ -14,6 +14,8 @@ import { Greeting } from "@/components/client/greeting";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { MetricValue } from "@/components/ui/metric-value";
+import { MetricDelta } from "@/components/ui/metric-delta";
 
 type MetricRow = {
   period: string;
@@ -186,7 +188,6 @@ export async function ClientDashboard({
       {kpis.length > 0 && (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {kpis.map((k) => {
-            const up = (k.delta ?? 0) > 0;
             return (
               <Link key={k.label} href="/performance" className="block">
               <Card className="h-full transition-shadow hover:shadow-e3">
@@ -198,16 +199,8 @@ export async function ClientDashboard({
                     <span className="shrink-0 text-[11px] font-semibold text-ink-3">{monthLabel}</span>
                   </div>
                   <div className="flex items-baseline gap-2.5">
-                    <span className="font-display text-[40px] leading-none font-bold tracking-[-0.01em] tabular-nums">
-                      {formatMetricValue(k.unit, k.cur, null)}
-                    </span>
-                    {k.delta !== null && k.delta !== 0 && (
-                      <span
-                        className={`inline-flex items-center gap-0.5 rounded-full px-[9px] py-[3px] text-[12.5px] font-semibold tabular-nums ${up ? "bg-success-bg text-success-text" : "bg-danger-bg text-[#991B1B]"}`}
-                      >
-                        {up ? "▲" : "▼"} {Math.abs(k.delta).toLocaleString()}
-                      </span>
-                    )}
+                    <MetricValue size="hero">{formatMetricValue(k.unit, k.cur, null)}</MetricValue>
+                    {k.delta !== null && <MetricDelta delta={k.delta} variant="badge" />}
                   </div>
                   <div className="text-xs text-ink-3 tabular-nums">
                     {k.before !== null ? `vs ${k.before.toLocaleString()} last month` : monthLabel}

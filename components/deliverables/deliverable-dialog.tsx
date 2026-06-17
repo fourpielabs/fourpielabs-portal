@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/components/ui/date-picker";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import {
   Select,
   SelectContent,
@@ -70,7 +72,7 @@ export function DeliverableDialog({
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [removeFile, setRemoveFile] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
 
   const {
     register,
@@ -99,7 +101,6 @@ export function DeliverableDialog({
 
     // resolve file: upload new one if selected; otherwise leave/clear
     let filePath: string | null | undefined = undefined;
-    const file = fileRef.current?.files?.[0];
     if (file && file.size > 0) {
       const fd = new FormData();
       fd.append("file", file);
@@ -124,6 +125,7 @@ export function DeliverableDialog({
     setOpen(false);
     if (!deliverable) reset();
     setRemoveFile(false);
+    setFile(null);
     router.refresh();
   }
 
@@ -192,8 +194,14 @@ export function DeliverableDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="d-due">Due date</Label>
-              <Input id="d-due" type="date" {...register("due_date")} />
+              <Label>Due date</Label>
+              <Controller
+                control={control}
+                name="due_date"
+                render={({ field }) => (
+                  <DatePicker value={field.value} onChange={field.onChange} />
+                )}
+              />
             </div>
             <div className="space-y-2">
               <Label>Visible to client</Label>
@@ -250,10 +258,8 @@ export function DeliverableDialog({
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="d-file">
-              {deliverable?.file_path ? "Replace file" : "Attach file"}
-            </Label>
-            <Input id="d-file" type="file" ref={fileRef} />
+            <Label>{deliverable?.file_path ? "Replace file" : "Attach file"}</Label>
+            <FileDropzone onFile={setFile} selectedName={file?.name} />
             {deliverable?.file_path && (
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <input

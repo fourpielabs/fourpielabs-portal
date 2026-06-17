@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -159,8 +160,14 @@ export function TaskFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="t-due">Due date</Label>
-              <Input id="t-due" type="date" {...register("due_date")} />
+              <Label>Due date</Label>
+              <Controller
+                control={control}
+                name="due_date"
+                render={({ field }) => (
+                  <DatePicker value={field.value} onChange={field.onChange} />
+                )}
+              />
             </div>
           </div>
           <Controller

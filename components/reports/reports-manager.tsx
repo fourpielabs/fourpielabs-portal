@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +22,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusChip } from "@/components/ui/status-chip";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import {
   Dialog,
   DialogContent,
@@ -67,10 +69,12 @@ function ReportDialog({
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [removePdf, setRemovePdf] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [pdf, setPdf] = useState<File | null>(null);
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     reset,
     formState: { errors },
   } = useForm<ReportValues>({
@@ -86,10 +90,9 @@ function ReportDialog({
   async function onSubmit(values: ReportValues) {
     setSubmitting(true);
     let pdfPath: string | null | undefined = undefined;
-    const file = fileRef.current?.files?.[0];
-    if (file && file.size > 0) {
+    if (pdf && pdf.size > 0) {
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", pdf);
       const up = await uploadClientFileAction(clientId, fd);
       if (!up.ok) {
         setSubmitting(false);
@@ -109,6 +112,7 @@ function ReportDialog({
     setOpen(false);
     if (!report) reset();
     setRemovePdf(false);
+    setPdf(null);
     router.refresh();
   }
 
@@ -127,25 +131,25 @@ function ReportDialog({
               <p className="text-sm text-destructive">{errors.title.message}</p>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="rp-start">Period start</Label>
-              <Input id="rp-start" type="date" {...register("period_start")} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="rp-end">Period end</Label>
-              <Input id="rp-end" type="date" {...register("period_end")} />
-            </div>
+          <div className="space-y-2">
+            <Label>Reporting period</Label>
+            <DateRangePicker
+              from={watch("period_start")}
+              to={watch("period_end")}
+              placeholder="Period start – end"
+              onChange={(f, t) => {
+                setValue("period_start", f, { shouldDirty: true, shouldValidate: true });
+                setValue("period_end", t, { shouldDirty: true, shouldValidate: true });
+              }}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="rp-summary">Summary (markdown)</Label>
             <Textarea id="rp-summary" rows={5} {...register("summary")} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="rp-pdf">
-              {report?.pdf_path ? "Replace PDF" : "Attach PDF (optional)"}
-            </Label>
-            <Input id="rp-pdf" type="file" accept="application/pdf" ref={fileRef} />
+            <Label>{report?.pdf_path ? "Replace PDF" : "Attach PDF (optional)"}</Label>
+            <FileDropzone onFile={setPdf} selectedName={pdf?.name} accept="application/pdf" hint="PDF only" />
             {report?.pdf_path && (
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <input

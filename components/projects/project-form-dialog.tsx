@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Select,
   SelectContent,
@@ -59,6 +60,8 @@ export function ProjectFormDialog({
     register,
     handleSubmit,
     control,
+    setValue,
+    watch,
     reset,
     formState: { errors },
   } = useForm<ProjectStaffValues>({
@@ -132,12 +135,16 @@ export function ProjectFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sp-start">Start date</Label>
-              <Input id="sp-start" type="date" {...register("start_date")} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="sp-due">Due date</Label>
-              <Input id="sp-due" type="date" {...register("due_date")} />
+              <Label>Dates</Label>
+              <DateRangePicker
+                from={watch("start_date")}
+                to={watch("due_date")}
+                placeholder="Start – due"
+                onChange={(f, t) => {
+                  setValue("start_date", f, { shouldDirty: true, shouldValidate: true });
+                  setValue("due_date", t, { shouldDirty: true, shouldValidate: true });
+                }}
+              />
             </div>
           </div>
           <DialogFooter>

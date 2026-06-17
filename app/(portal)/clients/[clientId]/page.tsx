@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Banner } from "@/components/ui/banner";
 import { StatusChip } from "@/components/ui/status-chip";
+import { MetricValue } from "@/components/ui/metric-value";
+import { MetricDelta } from "@/components/ui/metric-delta";
 
 type MetricEntry = {
   value_numeric: number | null;
@@ -334,19 +336,14 @@ export default async function ClientOverviewPage({
             ) : (
               <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                 {snapshot.map(({ e, delta }, i) => {
-                  const up = (delta ?? 0) > 0;
                   return (
                     <div key={i}>
                       <div className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">
                         {e.definition?.label}
                       </div>
                       <div className="flex items-baseline gap-1.5">
-                        <span className="truncate text-[19px] font-bold tabular-nums">{fmtMetric(e)}</span>
-                        {delta !== null && delta !== 0 && (
-                          <span className={`text-[11.5px] font-semibold tabular-nums ${up ? "text-success-text" : "text-danger-text"}`}>
-                            {up ? "▲" : "▼"}{Math.abs(delta).toLocaleString()}
-                          </span>
-                        )}
+                        <MetricValue size="snapshot" className="truncate">{fmtMetric(e)}</MetricValue>
+                        {delta !== null && <MetricDelta delta={delta} variant="inline" />}
                       </div>
                     </div>
                   );

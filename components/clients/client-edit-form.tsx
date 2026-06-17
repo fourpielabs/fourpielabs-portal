@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 
 type Props = { defaults: ClientUpdateValues };
 
@@ -125,8 +126,14 @@ export function ClientEditForm({ defaults }: Props) {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="start_date">Start date</Label>
-          <Input id="start_date" type="date" {...register("start_date")} />
+          <Label>Start date</Label>
+          <Controller
+            control={control}
+            name="start_date"
+            render={({ field }) => (
+              <DatePicker value={field.value} onChange={field.onChange} />
+            )}
+          />
         </div>
       </div>
 

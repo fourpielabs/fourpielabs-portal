@@ -9,7 +9,7 @@ import { PersonAvatar } from "@/components/ui/person-avatar";
 import { ClientTabs } from "@/components/clients/client-tabs";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Badge } from "@/components/ui/badge";
-import { PageContainer } from "@/components/layout/page-container";
+import { WorkspaceContainer } from "@/components/layout/workspace-container";
 
 export default async function ClientLayout({
   children,
@@ -42,7 +42,7 @@ export default async function ClientLayout({
   }
 
   return (
-    <PageContainer width="standard" stack>
+    <WorkspaceContainer>
       <div className="flex flex-wrap items-center gap-3">
         <PersonAvatar name={client.name} src={client.logo_url} square size="lg" className="shrink-0" />
         <div className="min-w-0">
@@ -78,6 +78,6 @@ export default async function ClientLayout({
         clientType={client.client_type}
       />
       <div>{children}</div>
-    </PageContainer>
+    </WorkspaceContainer>
   );
 }

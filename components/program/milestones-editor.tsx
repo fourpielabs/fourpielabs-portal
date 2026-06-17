@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -134,8 +135,14 @@ function MilestoneDialog({
               <Input id="m-phase" placeholder="Weeks 1–2" {...register("phase_label")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="m-due">Due date</Label>
-              <Input id="m-due" type="date" {...register("due_date")} />
+              <Label>Due date</Label>
+              <Controller
+                control={control}
+                name="due_date"
+                render={({ field }) => (
+                  <DatePicker value={field.value} onChange={field.onChange} />
+                )}
+              />
             </div>
             <div className="space-y-2">
               <Label>Status</Label>
