@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -25,6 +25,10 @@ export const metadata: Metadata = {
     template: "%s · 4Pie Labs",
   },
   description: "Your 4Pie Labs client portal.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f7f6f2",
 };
 
 export default function RootLayout({

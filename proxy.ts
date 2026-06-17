@@ -56,8 +56,9 @@ export const config = {
     /*
      * Match all request paths except:
      * - _next/static, _next/image, favicon.ico
+     * - the PWA manifest (public static asset — must not be auth-gated/redirected)
      * - common static image assets
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
