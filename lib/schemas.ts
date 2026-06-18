@@ -108,6 +108,15 @@ export const taskClientCreateSchema = z.object({
 });
 export type TaskClientCreateValues = z.infer<typeof taskClientCreateSchema>;
 
+// Client EDIT path (update_task RPC): TITLE + DESCRIPTION only. status / assignee /
+// due_date / visible_to_client are staff-only and structurally unreachable here.
+export const taskClientUpdateSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().trim().min(1, "Title is required"),
+  description: z.string().trim().optional(),
+});
+export type TaskClientUpdateValues = z.infer<typeof taskClientUpdateSchema>;
+
 // Staff write path (direct table under the tasks for-all policies). Staff set
 // status + visibility; assignee is re-validated to the client's circle in the action.
 export const taskStaffSchema = z.object({

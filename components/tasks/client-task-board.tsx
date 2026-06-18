@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ListChecks, MessageSquare, Plus, User } from "lucide-react";
 
 import { formatDate } from "@/lib/format";
@@ -10,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusChip } from "@/components/ui/status-chip";
 import { ClientTaskDialog } from "./client-task-dialog";
+import { TaskDetailDialog } from "./task-detail-dialog";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { Stagger, StaggerItem } from "@/components/motion/motion-primitives";
@@ -23,6 +25,9 @@ export type ClientTaskRow = {
   assigneeName: string | null;
   due_date: string | null;
   source_message_id: string | null;
+  sourceThreadType: "client_shared" | "internal" | null;
+  createdByName: string | null;
+  created_at: string;
 };
 
 export function ClientTaskBoard({
@@ -32,9 +37,15 @@ export function ClientTaskBoard({
   tasks: ClientTaskRow[];
   members: TaskMember[];
 }) {
-  // Task status is STAFF-controlled: clients see it read-only (the StatusChip) and
-  // have no status-write path (the client status RPC was dropped). Clients can still
-  // ADD tasks; nothing on this board mutates an existing task.
+  const router = useRouter();
+  const params = useSearchParams();
+  // `?task={id}` opens the detail for a row already in this RLS-scoped list (a task
+  // the client can't see never reaches the list → opening it is a natural no-op).
+  const openId = params.get("task");
+  const openTask = openId ? tasks.find((t) => t.id === openId) ?? null : null;
+
+  // Task status is STAFF-controlled: clients see it read-only (the StatusChip) and have
+  // no status-write path. In the detail they may edit title + description only.
   const addBtn = (
     <ClientTaskDialog
       members={members}
@@ -64,36 +75,54 @@ export function ClientTaskBoard({
       ) : (
         <Stagger as="ul" className="grid items-stretch gap-4 lg:grid-cols-2">
           {tasks.map((t) => (
-            <StaggerItem as="li" key={t.id}>
-              <Card className="h-full">
-                <CardContent className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium">{t.title}</span>
-                      <StatusChip kind="task" value={t.status} />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs text-ink-3">
-                      <span className="inline-flex items-center gap-1">
-                        <User className="size-3" />
-                        {t.assigneeName ?? "Unassigned"}
-                      </span>
-                      {t.due_date && <span>Due {formatDate(t.due_date)}</span>}
-                      {t.source_message_id && (
-                        <Link
-                          href="/messages"
-                          className="inline-flex items-center gap-1 text-ink-3 hover:text-ink"
-                        >
-                          <MessageSquare className="size-3" /> from a message
-                        </Link>
+            <StaggerItem as="li" key={t.id} lift className="block">
+              <Link
+                href={`/tasks?task=${t.id}`}
+                scroll={false}
+                className="block h-full"
+                aria-label={`Open task ${t.title}`}
+              >
+                <Card className="h-full transition-shadow hover:shadow-e3">
+                  <CardContent className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{t.title}</span>
+                        <StatusChip kind="task" value={t.status} />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs text-ink-3">
+                        <span className="inline-flex items-center gap-1">
+                          <User className="size-3" />
+                          {t.assigneeName ?? "Unassigned"}
+                        </span>
+                        {t.due_date && <span>Due {formatDate(t.due_date)}</span>}
+                        {t.source_message_id && (
+                          <span className="inline-flex items-center gap-1">
+                            <MessageSquare className="size-3" /> from a message
+                          </span>
+                        )}
+                      </div>
+                      {t.description && (
+                        <p className="line-clamp-2 pt-1 text-sm text-ink-2">{t.description}</p>
                       )}
                     </div>
-                    {t.description && <p className="pt-1 text-sm text-ink-2">{t.description}</p>}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             </StaggerItem>
           ))}
         </Stagger>
+      )}
+
+      {openTask && (
+        <TaskDetailDialog
+          task={openTask}
+          role="client"
+          members={members}
+          open
+          onOpenChange={(v) => {
+            if (!v) router.push("/tasks", { scroll: false });
+          }}
+        />
       )}
     </PageContainer>
   );

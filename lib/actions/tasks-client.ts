@@ -5,7 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/guards";
 import { logAudit } from "@/lib/audit";
 import { notify, staffUserIds } from "@/lib/notifications";
-import { taskClientCreateSchema, type TaskClientCreateValues } from "@/lib/schemas";
+import {
+  taskClientCreateSchema,
+  taskClientUpdateSchema,
+  type TaskClientCreateValues,
+  type TaskClientUpdateValues,
+} from "@/lib/schemas";
 
 type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 const orNull = (v: string | undefined | null) => (v && v.length > 0 ? v : null);
@@ -66,4 +71,41 @@ export async function createTaskAction(
 
   revalidatePath("/tasks");
   return { ok: true, data: row ? { id: row.id } : undefined };
+}
+
+/**
+ * Client edit of their OWN task's TITLE + DESCRIPTION — via the update_task SECURITY
+ * DEFINER RPC (own-client + visible scope). The RPC takes only (id, title, description),
+ * so status / assignee / due_date / visible_to_client are unreachable: a client can
+ * never escalate through this path. No status side-effects, no notifications.
+ */
+export async function updateTaskAction(
+  input: TaskClientUpdateValues,
+): Promise<Result> {
+  const profile = await requireProfile();
+  if (profile.role !== "client" || !profile.client_id) {
+    return { ok: false, error: "Only clients can edit tasks here." };
+  }
+  const parsed = taskClientUpdateSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  const v = parsed.data;
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("update_task", {
+    p_task_id: v.id,
+    p_title: v.title,
+    p_description: v.description ?? "",
+  });
+  if (error) return { ok: false, error: error.message };
+
+  await logAudit({
+    actorId: profile.id,
+    action: "task.updated",
+    entity: "task",
+    entityId: v.id,
+    clientId: profile.client_id,
+    metadata: { title: v.title, by: "client" },
+  });
+  revalidatePath("/tasks");
+  return { ok: true };
 }

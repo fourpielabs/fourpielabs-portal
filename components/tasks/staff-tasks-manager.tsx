@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ListChecks, Lock, MessageSquare, Pencil, Plus, Trash2, User } from "lucide-react";
 
@@ -31,8 +32,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { TaskFormDialog, type StaffTaskRow } from "./task-form-dialog";
+import { TaskDetailDialog } from "./task-detail-dialog";
 
-export type StaffTask = StaffTaskRow & { assigneeName: string | null };
+export type StaffTask = StaffTaskRow & {
+  assigneeName: string | null;
+  createdByName: string | null;
+  created_at: string;
+  sourceThreadType: "client_shared" | "internal" | null;
+};
 
 export function StaffTasksManager({
   clientId,
@@ -43,6 +50,8 @@ export function StaffTasksManager({
   tasks: StaffTask[];
   members: TaskMember[];
 }) {
+  const router = useRouter();
+  const params = useSearchParams();
   // local copy → status changes + deletes paint INSTANTLY; the server prop
   // re-syncs on refresh/navigation (and after edits/creates via the dialog).
   const [tasks, setTasks] = useState(initialTasks);
@@ -53,6 +62,11 @@ export function StaffTasksManager({
     setPrevTasks(initialTasks);
     setTasks(initialTasks);
   }
+
+  // `?task={id}` opens the detail for a task in this list. Read from the live local
+  // copy so an optimistic status change is reflected in the open detail too.
+  const openId = params.get("task");
+  const openTask = openId ? tasks.find((t) => t.id === openId) ?? null : null;
 
   async function changeStatus(id: string, status: StaffTaskRow["status"]) {
     const prev = tasks;
@@ -111,7 +125,14 @@ export function StaffTasksManager({
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{t.title}</span>
+                    {/* title opens the detail (full view + control); quick actions stay at right */}
+                    <Link
+                      href={`/clients/${clientId}/tasks?task=${t.id}`}
+                      scroll={false}
+                      className="font-medium hover:text-amber-700"
+                    >
+                      {t.title}
+                    </Link>
                     <StatusChip kind="task" value={t.status} />
                     {!t.visible_to_client && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
@@ -127,7 +148,7 @@ export function StaffTasksManager({
                     {t.due_date && <span>Due {formatDate(t.due_date)}</span>}
                     {t.source_message_id && (
                       <Link
-                        href={`/clients/${clientId}/messages`}
+                        href={`/clients/${clientId}/messages${t.sourceThreadType === "internal" ? "?tab=internal" : ""}`}
                         className="inline-flex items-center gap-1 text-ink-3 hover:text-ink"
                       >
                         <MessageSquare className="size-3" /> from a message
@@ -189,6 +210,19 @@ export function StaffTasksManager({
             </li>
           ))}
         </ul>
+      )}
+
+      {openTask && (
+        <TaskDetailDialog
+          task={openTask}
+          role="staff"
+          clientId={clientId}
+          members={members}
+          open
+          onOpenChange={(v) => {
+            if (!v) router.push(`/clients/${clientId}/tasks`, { scroll: false });
+          }}
+        />
       )}
     </div>
   );

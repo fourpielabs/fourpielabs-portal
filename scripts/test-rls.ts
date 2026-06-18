@@ -210,10 +210,14 @@ async function main() {
   const { data: visTask } = await admin.from("tasks")
     .insert({ client_id: premierId, title: "RLSTASK-visible", visible_to_client: true }).select("id").single();
   const visTaskId = visTask!.id as string;
-  // hidden + cross-client fixture ROWS (referenced by title/client_id in the read
-  // checks below; their ids aren't needed now the client status RPC is gone).
-  await admin.from("tasks").insert({ client_id: premierId, title: "RLSTASK-hidden", visible_to_client: false });
-  await admin.from("tasks").insert({ client_id: pulseId, title: "RLSTASK-cross", visible_to_client: true });
+  // hidden (staff-only) + cross-client fixture rows — ids used by the update_task
+  // cross-client / invisible denial checks.
+  const { data: hidTask } = await admin.from("tasks")
+    .insert({ client_id: premierId, title: "RLSTASK-hidden", visible_to_client: false }).select("id").single();
+  const hidTaskId = hidTask!.id as string;
+  const { data: xcTask } = await admin.from("tasks")
+    .insert({ client_id: pulseId, title: "RLSTASK-cross", visible_to_client: true }).select("id").single();
+  const xcTaskId = xcTask!.id as string;
   const { data: arbProf } = await admin.from("profiles").select("id").eq("email", projEmail).single();
   const arbitraryUid = arbProf!.id as string; // belongs to the project client → NOT in premier's circle
 
@@ -541,6 +545,22 @@ async function main() {
     await client.from("tasks").update({ status: "todo" }).eq("id", visTaskId);          // no client UPDATE policy → denied
     const { data: afterTask } = await admin.from("tasks").select("status").eq("id", visTaskId).single();
     rec("tasks", "client cannot move status — stays staff-set 'done'", afterTask?.status === "done", `status=${afterTask?.status ?? "?"}`);
+
+    // --- update_task (Phase 2): client edits OWN task TITLE/DESC only, NO escalation ---
+    const { data: beforeUt } = await admin.from("tasks")
+      .select("status, assignee_id, due_date, visible_to_client").eq("id", visTaskId).single();
+    const ut = await client.rpc("update_task", { p_task_id: visTaskId, p_title: "RLSTASK-edited", p_description: "edited by client" });
+    rec("tasks", "client update_task own title/desc allowed", !ut.error, ut.error?.message ?? "");
+    const { data: afterUt } = await admin.from("tasks")
+      .select("title, description, status, assignee_id, due_date, visible_to_client").eq("id", visTaskId).single();
+    rec("tasks", "client update_task changed title + description", afterUt?.title === "RLSTASK-edited" && afterUt?.description === "edited by client", `title=${afterUt?.title}`);
+    rec("tasks", "client update_task did NOT escalate (status/assignee/due/visibility unchanged)",
+      afterUt?.status === beforeUt?.status && afterUt?.assignee_id === beforeUt?.assignee_id && afterUt?.due_date === beforeUt?.due_date && afterUt?.visible_to_client === beforeUt?.visible_to_client,
+      `status=${afterUt?.status} vis=${afterUt?.visible_to_client}`);
+    const utXc = await client.rpc("update_task", { p_task_id: xcTaskId, p_title: "RLS hijack", p_description: "" });
+    rec("tasks", "client update_task CROSS-CLIENT denied", !!utXc.error, utXc.error?.message ?? "");
+    const utHid = await client.rpc("update_task", { p_task_id: hidTaskId, p_title: "RLS hijack", p_description: "" });
+    rec("tasks", "client update_task INVISIBLE (staff-only) denied", !!utHid.error, utHid.error?.message ?? "");
   }
 
   // --- call_bookings: client sees OWN VISIBLE only; the service-role upsert is
