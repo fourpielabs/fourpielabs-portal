@@ -5,13 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ListChecks, MessageSquare, Plus, User } from "lucide-react";
 
 import { formatDate } from "@/lib/format";
-import type { TaskMember } from "@/lib/tasks";
+import type { TaskMember, TaskChecklistItem } from "@/lib/tasks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusChip } from "@/components/ui/status-chip";
 import { ClientTaskDialog } from "./client-task-dialog";
 import { TaskDetailDialog } from "./task-detail-dialog";
+import { TaskChecklistProgress } from "./task-checklist";
 import { PageContainer } from "@/components/layout/page-container";
 import { PageHeader } from "@/components/layout/page-header";
 import { Stagger, StaggerItem } from "@/components/motion/motion-primitives";
@@ -28,6 +29,7 @@ export type ClientTaskRow = {
   sourceThreadType: "client_shared" | "internal" | null;
   createdByName: string | null;
   created_at: string;
+  checklist: TaskChecklistItem[];
 };
 
 export function ClientTaskBoard({
@@ -100,6 +102,7 @@ export function ClientTaskBoard({
                             <MessageSquare className="size-3" /> from a message
                           </span>
                         )}
+                        <TaskChecklistProgress items={t.checklist} />
                       </div>
                       {t.description && (
                         <p className="line-clamp-2 pt-1 text-sm text-ink-2">{t.description}</p>
@@ -118,6 +121,7 @@ export function ClientTaskBoard({
           task={openTask}
           role="client"
           members={members}
+          checklist={openTask.checklist}
           open
           onOpenChange={(v) => {
             if (!v) router.push("/tasks", { scroll: false });

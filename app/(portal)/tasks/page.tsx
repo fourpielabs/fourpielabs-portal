@@ -1,22 +1,34 @@
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
-import { getAssignableMembers } from "@/lib/tasks";
+import { getAssignableMembers, type TaskChecklistItem } from "@/lib/tasks";
 import { ClientTaskBoard, type ClientTaskRow } from "@/components/tasks/client-task-board";
 
 export default async function MyTasksPage() {
   const profile = await requireRole(["client"]);
   const supabase = await createClient();
 
-  // tasks + the assignee circle in parallel (members no longer adds to the critical
-  // path). RLS scopes tasks to the client's own client_id AND visible_to_client.
-  const [{ data: tasks }, members] = await Promise.all([
+  // tasks + subtasks + the assignee circle in parallel. RLS scopes tasks to the
+  // client's own client_id AND visible_to_client; the task_checklist_items SELECT
+  // policy mirrors it (items only on a visible own task), so a bare select is safe.
+  const [{ data: tasks }, { data: items }, members] = await Promise.all([
     supabase
       .from("tasks")
       .select("id, title, description, status, assignee_id, due_date, source_message_id, created_by, created_at")
       .order("created_at", { ascending: false }),
+    supabase
+      .from("task_checklist_items")
+      .select("id, task_id, title, is_done, sort_order")
+      .order("sort_order", { ascending: true }),
     profile.client_id ? getAssignableMembers(profile.client_id) : Promise.resolve([]),
   ]);
   const nameById = new Map(members.map((m) => [m.id, m.name]));
+
+  const checklistByTask = new Map<string, TaskChecklistItem[]>();
+  for (const it of items ?? []) {
+    const arr = checklistByTask.get(it.task_id) ?? [];
+    arr.push({ id: it.id, title: it.title, is_done: it.is_done, sort_order: it.sort_order });
+    checklistByTask.set(it.task_id, arr);
+  }
   const list: ClientTaskRow[] = (tasks ?? []).map((t) => ({
     id: t.id,
     title: t.title,
@@ -31,6 +43,7 @@ export default async function MyTasksPage() {
     // a client's source is always a client_shared message (create_task RPC-enforced),
     // and the client source-link goes to /messages regardless — type is unused here.
     sourceThreadType: t.source_message_id ? "client_shared" : null,
+    checklist: checklistByTask.get(t.id) ?? [],
   }));
 
   return <ClientTaskBoard tasks={list} members={members} />;

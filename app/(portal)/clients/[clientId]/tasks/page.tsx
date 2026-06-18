@@ -1,7 +1,7 @@
 import { requireClientAccess } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAssignableMembers } from "@/lib/tasks";
+import { getAssignableMembers, type TaskChecklistItem } from "@/lib/tasks";
 import { StaffTasksManager, type StaffTask } from "@/components/tasks/staff-tasks-manager";
 
 export default async function ClientTasksPage({
@@ -25,6 +25,23 @@ export default async function ClientTasksPage({
   ]);
 
   const nameById = new Map(members.map((m) => [m.id, m.name]));
+
+  // Subtasks for this client's tasks (RLS = team_all/admin_all, redundantly scoped to
+  // these task ids). Grouped onto each task for the card progress + the detail list.
+  const taskIds = (tasks ?? []).map((t) => t.id);
+  const checklistByTask = new Map<string, TaskChecklistItem[]>();
+  if (taskIds.length) {
+    const { data: items } = await supabase
+      .from("task_checklist_items")
+      .select("id, task_id, title, is_done, sort_order")
+      .in("task_id", taskIds)
+      .order("sort_order", { ascending: true });
+    for (const it of items ?? []) {
+      const arr = checklistByTask.get(it.task_id) ?? [];
+      arr.push({ id: it.id, title: it.title, is_done: it.is_done, sort_order: it.sort_order });
+      checklistByTask.set(it.task_id, arr);
+    }
+  }
 
   // Resolve each sourced task's REAL thread_type (service-role) so the detail's
   // "Created from a message" link picks the right thread + tab (shared vs internal) —
@@ -52,6 +69,7 @@ export default async function ClientTasksPage({
     createdByName: t.created_by ? nameById.get(t.created_by) ?? null : null,
     created_at: t.created_at,
     sourceThreadType: t.source_message_id ? threadTypeById.get(t.source_message_id) ?? null : null,
+    checklist: checklistByTask.get(t.id) ?? [],
   }));
 
   return (

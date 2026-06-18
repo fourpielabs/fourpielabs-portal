@@ -221,6 +221,21 @@ async function main() {
   const { data: arbProf } = await admin.from("profiles").select("id").eq("email", projEmail).single();
   const arbitraryUid = arbProf!.id as string; // belongs to the project client → NOT in premier's circle
 
+  // --- task subtasks fixtures (Phase 4) ------------------------------------
+  // one checklist item under each of the three tasks (visible-own / hidden-own /
+  // cross-client) — item read+write visibility must FOLLOW the parent task.
+  await admin.from("task_checklist_items").delete().like("title", "RLSSUB%");
+  const seedSub = async (taskId: string, title: string) =>
+    (await admin.from("task_checklist_items").insert({ task_id: taskId, title }).select("id").single()).data!.id as string;
+  const visSubId = await seedSub(visTaskId, "RLSSUB-visible");
+  const hidSubId = await seedSub(hidTaskId, "RLSSUB-hidden");
+  const xcSubId = await seedSub(xcTaskId, "RLSSUB-cross");
+  // a task + item on the UNASSIGNED client — demo-team must read/write neither.
+  const { data: unTask } = await admin.from("tasks")
+    .insert({ client_id: unId, title: "RLSTASK-unassigned", visible_to_client: true }).select("id").single();
+  const unTaskId = unTask!.id as string;
+  const unSubId = await seedSub(unTaskId, "RLSSUB-unassigned");
+
   // --- call_bookings fixtures (Cal.com sync) --------------------------------
   // a VISIBLE booking on premier (demo-client's own), a HIDDEN one, and a
   // cross-client booking on pulse. Service-role insert (the webhook's path).
@@ -563,6 +578,50 @@ async function main() {
     rec("tasks", "client update_task INVISIBLE (staff-only) denied", !!utHid.error, utHid.error?.message ?? "");
   }
 
+  // --- task subtasks (Phase 4): read + RPC writes FOLLOW the parent task -----
+  {
+    // READ: only the item under the OWN VISIBLE task is visible; invisible + cross 0.
+    const { data: cSubs } = await client.from("task_checklist_items").select("title");
+    const subTitles = (cSubs ?? []).map((s) => s.title);
+    rec("subtasks", "client reads item on OWN VISIBLE task", subTitles.includes("RLSSUB-visible"), `${cSubs?.length ?? 0} row(s)`);
+    rec("subtasks", "client CANNOT read item on invisible/cross task",
+      !subTitles.includes("RLSSUB-hidden") && !subTitles.includes("RLSSUB-cross"), `${cSubs?.length ?? 0} row(s)`);
+
+    // DIRECT writes denied (NO client INSERT/UPDATE/DELETE policy).
+    const sdi = await client.from("task_checklist_items").insert({ task_id: visTaskId, title: "RLSSUB-direct" }).select("id");
+    rec("subtasks", "client direct INSERT item DENIED", !!sdi.error || (sdi.data?.length ?? 0) === 0, sdi.error?.code ?? `${sdi.data?.length ?? 0} rows`);
+    if (sdi.data?.[0]?.id) await admin.from("task_checklist_items").delete().eq("id", sdi.data[0].id);
+    const sdu = await client.from("task_checklist_items").update({ is_done: true }).eq("id", visSubId).select("id");
+    rec("subtasks", "client direct UPDATE item denied", !!sdu.error || (sdu.data?.length ?? 0) === 0, sdu.error?.code ?? `${sdu.data?.length ?? 0} rows`);
+    const sdd = await client.from("task_checklist_items").delete().eq("id", visSubId).select("id");
+    rec("subtasks", "client direct DELETE item denied", !!sdd.error || (sdd.data?.length ?? 0) === 0, sdd.error?.code ?? `${sdd.data?.length ?? 0} rows`);
+
+    // RPC on the OWN VISIBLE task → allowed (add → toggle → edit → delete).
+    const sAdd = await client.rpc("add_task_checklist_item", { p_task_id: visTaskId, p_title: "RLSSUB-rpc" });
+    rec("subtasks", "client add_task_checklist_item on visible task allowed", !sAdd.error, sAdd.error?.message ?? "");
+    const newSubId = (Array.isArray(sAdd.data) ? sAdd.data[0]?.id : sAdd.data?.id) as string | undefined;
+    const sTog = await client.rpc("toggle_task_checklist_item", { p_item_id: newSubId });
+    rec("subtasks", "client toggle own item allowed", !sTog.error, sTog.error?.message ?? "");
+    const sEd = await client.rpc("edit_task_checklist_item", { p_item_id: newSubId, p_title: "RLSSUB-rpc2" });
+    rec("subtasks", "client edit own item allowed", !sEd.error, sEd.error?.message ?? "");
+    const sDel = await client.rpc("delete_task_checklist_item", { p_item_id: newSubId });
+    rec("subtasks", "client delete own item allowed", !sDel.error, sDel.error?.message ?? "");
+
+    // RPC on an INVISIBLE / CROSS-CLIENT parent → RAISES (the inherited boundary).
+    const sAddHid = await client.rpc("add_task_checklist_item", { p_task_id: hidTaskId, p_title: "RLSSUB-hijack" });
+    rec("subtasks", "client add on INVISIBLE (staff-only) task RAISES", !!sAddHid.error, sAddHid.error?.message ?? "");
+    const sAddXc = await client.rpc("add_task_checklist_item", { p_task_id: xcTaskId, p_title: "RLSSUB-hijack" });
+    rec("subtasks", "client add on CROSS-CLIENT task RAISES", !!sAddXc.error, sAddXc.error?.message ?? "");
+    const sTogHid = await client.rpc("toggle_task_checklist_item", { p_item_id: hidSubId });
+    rec("subtasks", "client toggle item on INVISIBLE task RAISES", !!sTogHid.error, sTogHid.error?.message ?? "");
+    const sTogXc = await client.rpc("toggle_task_checklist_item", { p_item_id: xcSubId });
+    rec("subtasks", "client toggle item on CROSS-CLIENT task RAISES", !!sTogXc.error, sTogXc.error?.message ?? "");
+    const sEdXc = await client.rpc("edit_task_checklist_item", { p_item_id: xcSubId, p_title: "RLSSUB-hijack" });
+    rec("subtasks", "client edit item on CROSS-CLIENT task RAISES", !!sEdXc.error, sEdXc.error?.message ?? "");
+    const sDelXc = await client.rpc("delete_task_checklist_item", { p_item_id: xcSubId });
+    rec("subtasks", "client delete item on CROSS-CLIENT task RAISES", !!sDelXc.error, sDelXc.error?.message ?? "");
+  }
+
   // --- call_bookings: client sees OWN VISIBLE only; the service-role upsert is
   //     the ONLY write path (no client INSERT/UPDATE policy) ------------------
   {
@@ -679,6 +738,23 @@ async function main() {
     const tunI = await team.from("tasks").insert({ client_id: unId, title: "RLSTASK-teamun" }).select("id");
     rec("team→unassigned", "write tasks denied", !!tunI.error || (tunI.data?.length ?? 0) === 0, tunI.error?.code ?? `${tunI.data?.length ?? 0} rows`);
     if (tunI.data?.[0]?.id) await admin.from("tasks").delete().eq("id", tunI.data[0].id);
+
+    // subtasks: ASSIGNED team manages premier's items directly (for-all policies);
+    // UNASSIGNED team can neither read nor write — read scoped to the parent task.
+    const tsr = await team.from("task_checklist_items").select("id").eq("task_id", visTaskId);
+    rec("team→assigned", "read premier subtasks allowed", !tsr.error && (tsr.data?.length ?? 0) >= 1, `${tsr.data?.length ?? 0} rows`);
+    const tsi = await team.from("task_checklist_items").insert({ task_id: visTaskId, title: "RLSSUB-team" }).select("id");
+    rec("team→assigned", "write premier subtask allowed", !tsi.error && (tsi.data?.length ?? 0) === 1, tsi.error?.code ?? `${tsi.data?.length ?? 0} rows`);
+    if (tsi.data?.[0]?.id) await admin.from("task_checklist_items").delete().eq("id", tsi.data[0].id);
+    // a HIDDEN (staff-only) task's items are still visible to assigned staff (parent is_assigned).
+    const tsh = await team.from("task_checklist_items").select("id").eq("task_id", hidTaskId);
+    rec("team→assigned", "read staff-only task subtasks allowed", !tsh.error && (tsh.data?.length ?? 0) >= 1, `${tsh.data?.length ?? 0} rows`);
+
+    const tuns = await team.from("task_checklist_items").select("id").eq("task_id", unTaskId);
+    rec("team→unassigned", "read unassigned-client subtasks 0", (tuns.data?.length ?? 0) === 0, `${tuns.data?.length ?? 0} rows`);
+    const tunsI = await team.from("task_checklist_items").insert({ task_id: unTaskId, title: "RLSSUB-teamun" }).select("id");
+    rec("team→unassigned", "write unassigned-client subtask denied", !!tunsI.error || (tunsI.data?.length ?? 0) === 0, tunsI.error?.code ?? `${tunsI.data?.length ?? 0} rows`);
+    if (tunsI.data?.[0]?.id) await admin.from("task_checklist_items").delete().eq("id", tunsI.data[0].id);
   }
 
   // ====================== AS ANON ===========================================

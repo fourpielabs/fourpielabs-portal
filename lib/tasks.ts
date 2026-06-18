@@ -10,6 +10,15 @@ import { clientUserIds, staffUserIds } from "@/lib/notifications";
  */
 export type TaskMember = { id: string; name: string; role: "client" | "team" | "admin" };
 
+/** A Phase-4 subtask: a lightweight checklist item under a parent task. Read visibility
+ *  follows the parent (RLS); both roles write (client via RPC, staff direct). */
+export type TaskChecklistItem = {
+  id: string;
+  title: string;
+  is_done: boolean;
+  sort_order: number;
+};
+
 export async function getAssignableMembers(clientId: string): Promise<TaskMember[]> {
   const admin = createAdminClient();
   // Query 1: who's assigned to this client (the only part that needs the join).

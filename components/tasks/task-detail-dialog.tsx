@@ -10,7 +10,8 @@ import { updateTaskAction } from "@/lib/actions/tasks-client";
 import { staffUpdateTaskAction } from "@/lib/actions/tasks";
 import { TASK_STATUSES } from "@/lib/constants";
 import { formatDate, formatDateTime } from "@/lib/format";
-import type { TaskMember } from "@/lib/tasks";
+import type { TaskMember, TaskChecklistItem } from "@/lib/tasks";
+import { TaskChecklist } from "./task-checklist";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,6 +71,7 @@ export function TaskDetailDialog({
   role,
   clientId,
   members,
+  checklist,
   open,
   onOpenChange,
 }: {
@@ -77,6 +79,7 @@ export function TaskDetailDialog({
   role: "client" | "staff";
   clientId?: string;
   members: TaskMember[];
+  checklist: TaskChecklistItem[];
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
@@ -238,10 +241,12 @@ export function TaskDetailDialog({
           </div>
 
           {/* ════════════════════════════════════════════════════════════════
-              SUBTASKS (Phase 4) — slot. The subtasks list + "add subtask" render
-              here for BOTH roles (client writes via a future client RPC, staff
-              direct). Built to host without restructuring this detail.
+              SUBTASKS (Phase 4) — checklist-style items + a parent progress bar,
+              for BOTH roles. Client writes via the SECURITY DEFINER RPCs (own-client
+              + parent visible_to_client); staff write directly. The boundary is
+              inherited from the parent task this detail already gated on.
              ════════════════════════════════════════════════════════════════ */}
+          <TaskChecklist taskId={task.id} role={role} clientId={clientId} items={checklist} />
 
           {isStaff && (
             <>

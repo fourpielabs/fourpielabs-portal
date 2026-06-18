@@ -33,12 +33,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TaskFormDialog, type StaffTaskRow } from "./task-form-dialog";
 import { TaskDetailDialog } from "./task-detail-dialog";
+import { TaskChecklistProgress } from "./task-checklist";
+import type { TaskChecklistItem } from "@/lib/tasks";
 
 export type StaffTask = StaffTaskRow & {
   assigneeName: string | null;
   createdByName: string | null;
   created_at: string;
   sourceThreadType: "client_shared" | "internal" | null;
+  checklist: TaskChecklistItem[];
 };
 
 export function StaffTasksManager({
@@ -154,6 +157,7 @@ export function StaffTasksManager({
                         <MessageSquare className="size-3" /> from a message
                       </Link>
                     )}
+                    <TaskChecklistProgress items={t.checklist} />
                   </div>
                   {t.description && <p className="pt-1 text-sm text-ink-3">{t.description}</p>}
                 </div>
@@ -218,6 +222,7 @@ export function StaffTasksManager({
           role="staff"
           clientId={clientId}
           members={members}
+          checklist={openTask.checklist}
           open
           onOpenChange={(v) => {
             if (!v) router.push(`/clients/${clientId}/tasks`, { scroll: false });
