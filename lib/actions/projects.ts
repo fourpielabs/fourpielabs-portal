@@ -50,9 +50,13 @@ export async function createProjectAction(
   const v = parsed.data;
   const supabase = await createClient();
 
+  // priority + target_date are client-settable; status + due_date are NOT passed
+  // (no RPC param exists for them — staff-only). target_date "" → null.
   const { data, error } = await supabase.rpc("create_project", {
     p_title: v.title,
     p_description: v.description ?? "",
+    p_priority: v.priority,
+    p_target_date: clean(v.target_date),
   });
   if (error) return { ok: false, error: error.message };
 
@@ -63,7 +67,7 @@ export async function createProjectAction(
     entity: "project",
     entityId: row?.id,
     clientId: profile.client_id,
-    metadata: { title: v.title },
+    metadata: { title: v.title, priority: v.priority },
   });
 
   revalidatePath("/dashboard");
@@ -84,11 +88,14 @@ export async function updateProjectAction(
   const v = parsed.data;
   const supabase = await createClient();
 
-  // status is intentionally NOT passed — the client RPC can't change it (staff-only).
+  // status + due_date are intentionally NOT passed — no RPC param exists for them
+  // (staff-only; the status lock holds). priority + target_date ARE client-settable.
   const { error } = await supabase.rpc("update_project", {
     p_id: v.id,
     p_title: v.title,
     p_description: v.description ?? "",
+    p_priority: v.priority,
+    p_target_date: clean(v.target_date),
   });
   if (error) return { ok: false, error: error.message };
 
@@ -141,8 +148,10 @@ export async function staffCreateProjectAction(
       title: v.title,
       description: clean(v.description),
       status: v.status,
+      priority: v.priority,
       start_date: clean(v.start_date),
       due_date: clean(v.due_date),
+      target_date: clean(v.target_date),
       created_by: me.id,
     })
     .select("id")
@@ -180,8 +189,10 @@ export async function staffUpdateProjectAction(
       title: v.title,
       description: clean(v.description),
       status: v.status,
+      priority: v.priority,
       start_date: clean(v.start_date),
       due_date: clean(v.due_date),
+      target_date: clean(v.target_date),
     })
     .eq("id", id)
     .eq("client_id", clientId);

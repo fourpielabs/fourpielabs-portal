@@ -46,6 +46,13 @@ export const TASK_STATUSES = [
   { value: "done", label: "Done" },
 ] as const;
 
+export const PROJECT_PRIORITIES = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "urgent", label: "Urgent" },
+] as const;
+
 export const DELIVERABLE_TYPES = [
   { value: "blog_post", label: "Blog post" },
   { value: "landing_page", label: "Landing page" },

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusChip } from "@/components/ui/status-chip";
 import { ProjectDialog, type ProjectRow } from "./project-dialog";
+import { PriorityBadge } from "@/components/projects/priority-badge";
 
 type DeliverableMini = {
   id: string;
@@ -33,7 +34,7 @@ export async function ProjectsBoard({
       supabase.from("client_clients").select("name").maybeSingle(),
       supabase
         .from("projects")
-        .select("id, title, description, status, start_date, due_date, created_at")
+        .select("id, title, description, status, priority, start_date, due_date, target_date, created_at")
         .order("created_at", { ascending: false }),
       supabase
         .from("deliverables")
@@ -99,15 +100,19 @@ export async function ProjectsBoard({
                       <h3 className="font-display text-lg font-semibold tracking-[-0.01em]">
                         {p.title}
                       </h3>
-                      {(p.start_date || p.due_date) && (
-                        <p className="text-xs text-ink-3">
-                          {p.start_date && `Start ${formatDate(p.start_date)}`}
-                          {p.start_date && p.due_date && " · "}
-                          {p.due_date && `Due ${formatDate(p.due_date)}`}
+                      {(p.target_date || p.due_date) && (
+                        <p className="flex flex-wrap gap-x-2 text-xs text-ink-3">
+                          {p.target_date && (
+                            <span className="text-ink-2">Your target {formatDate(p.target_date)}</span>
+                          )}
+                          {p.due_date && <span>· Due {formatDate(p.due_date)}</span>}
                         </p>
                       )}
                     </div>
-                    <StatusChip kind="project" value={p.status} />
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <StatusChip kind="project" value={p.status} />
+                      <PriorityBadge value={p.priority} />
+                    </div>
                   </div>
                   {p.description && <p className="text-sm text-ink-2">{p.description}</p>}
                   {dels.length > 0 && (

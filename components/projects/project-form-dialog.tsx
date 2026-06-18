@@ -11,11 +11,12 @@ import {
   staffCreateProjectAction,
   staffUpdateProjectAction,
 } from "@/lib/actions/projects";
-import { PROJECT_STATUSES } from "@/lib/constants";
+import { PROJECT_STATUSES, PROJECT_PRIORITIES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Select,
@@ -38,8 +39,10 @@ export type StaffProjectRow = {
   title: string;
   description: string | null;
   status: ProjectStaffValues["status"];
+  priority: ProjectStaffValues["priority"];
   start_date: string | null;
   due_date: string | null;
+  target_date: string | null;
 };
 
 export function ProjectFormDialog({
@@ -70,8 +73,10 @@ export function ProjectFormDialog({
       title: project?.title ?? "",
       description: project?.description ?? "",
       status: project?.status ?? "proposed",
+      priority: project?.priority ?? "medium",
       start_date: project?.start_date ?? "",
       due_date: project?.due_date ?? "",
+      target_date: project?.target_date ?? "",
     },
   });
 
@@ -135,7 +140,32 @@ export function ProjectFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label>Dates</Label>
+              <Label>Priority</Label>
+              <Controller
+                control={control}
+                name="priority"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROJECT_PRIORITIES.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>
+                Schedule <span className="font-normal text-ink-3">(staff start – due)</span>
+              </Label>
               <DateRangePicker
                 from={watch("start_date")}
                 to={watch("due_date")}
@@ -144,6 +174,18 @@ export function ProjectFormDialog({
                   setValue("start_date", f, { shouldDirty: true, shouldValidate: true });
                   setValue("due_date", t, { shouldDirty: true, shouldValidate: true });
                 }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>
+                Client target <span className="font-normal text-ink-3">(their desired date)</span>
+              </Label>
+              <Controller
+                control={control}
+                name="target_date"
+                render={({ field }) => (
+                  <DatePicker value={field.value ?? ""} onChange={field.onChange} />
+                )}
               />
             </div>
           </div>

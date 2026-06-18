@@ -381,6 +381,41 @@ async function main() {
       rec("projects", "client edit leaves status unchanged (still 'proposed')", after?.status === "proposed", `status=${after?.status ?? "?"}`);
     }
 
+    // PHASE 3 — client CAN set priority + target_date (advanced options), and these
+    // must NOT become a status / staff-due_date escalation vector.
+    if (newProj?.id) {
+      // admin stamps a staff due_date first → prove the client edit preserves it.
+      await admin.from("projects").update({ due_date: "2026-12-31" }).eq("id", newProj.id);
+      const setOpts = await projClient.rpc("update_project", {
+        p_id: newProj.id, p_title: "RLSPROJ-opts", p_description: "d4",
+        p_priority: "urgent", p_target_date: "2026-09-01",
+      });
+      rec("projects", "client update_project priority+target_date allowed", !setOpts.error, setOpts.error?.message ?? "");
+      const { data: opt } = await admin.from("projects")
+        .select("priority, target_date, status, due_date").eq("id", newProj.id).single();
+      rec("projects", "client set priority persisted (urgent)", opt?.priority === "urgent", `priority=${opt?.priority ?? "?"}`);
+      rec("projects", "client set target_date persisted", opt?.target_date === "2026-09-01", `target_date=${opt?.target_date ?? "?"}`);
+      rec("projects", "client priority/target edit did NOT touch status", opt?.status === "proposed", `status=${opt?.status ?? "?"}`);
+      rec("projects", "client priority/target edit did NOT touch staff due_date", opt?.due_date === "2026-12-31", `due_date=${opt?.due_date ?? "?"}`);
+
+      // passing p_due_date is rejected — no such RPC param (due_date is staff-only).
+      const withDue = await projClient.rpc("update_project", {
+        p_id: newProj.id, p_title: "RLSPROJ-hack2", p_description: "x", p_due_date: "2026-01-01",
+      });
+      rec("projects", "client update_project(p_due_date) REJECTED — no such param", !!withDue.error, withDue.error?.message ?? "(unexpectedly succeeded)");
+
+      // create_project also carries priority + target_date, never status/due_date.
+      const crOpts = await projClient.rpc("create_project", {
+        p_title: "RLSPROJ-opts2", p_description: "", p_priority: "high", p_target_date: "2026-10-15",
+      });
+      const crRow = (Array.isArray(crOpts.data) ? crOpts.data[0] : crOpts.data) as
+        { priority?: string; status?: string; due_date?: string | null } | null;
+      rec("projects", "client create_project with priority+target_date allowed", !crOpts.error, crOpts.error?.message ?? "");
+      rec("projects", "created project: priority=high, status=proposed, no due_date",
+        crRow?.priority === "high" && crRow?.status === "proposed" && !crRow?.due_date,
+        `priority=${crRow?.priority} status=${crRow?.status} due=${crRow?.due_date ?? "null"}`);
+    }
+
     // direct INSERT denied — no client INSERT policy on projects
     const di = await projClient.from("projects").insert({ client_id: projId, title: "RLS direct" }).select("id");
     rec("projects", "project client direct INSERT denied", !!di.error || (di.data?.length ?? 0) === 0, di.error?.code ?? `${di.data?.length ?? 0} rows`);

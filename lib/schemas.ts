@@ -69,27 +69,38 @@ export const inviteSchema = z.object({
 export type InviteValues = z.infer<typeof inviteSchema>;
 
 // --- Projects (client-owned, written via create_project/update_project RPCs) --
+// Clients set priority + target_date + brief(description) on their OWN projects.
+// They CANNOT set status (staff-only — the RPC has no p_status) nor the staff
+// due_date (the RPC's SET clause never touches it). target_date = the client's
+// desired date, kept DISTINCT from the staff-managed due_date.
+const projectPriority = z.enum(["low", "medium", "high", "urgent"]);
+
 export const projectCreateSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   description: z.string().trim().optional(),
+  priority: projectPriority,
+  target_date: optionalDate,
 });
 export type ProjectCreateValues = z.infer<typeof projectCreateSchema>;
 
-// Clients edit title + description ONLY — project status is staff-controlled
-// (the update_project RPC dropped p_status; status is never client-settable).
+// Clients edit title + description + priority + target_date — NEVER status or
+// due_date (both absent from the update_project RPC; the status lock holds).
 export const projectUpdateSchema = projectCreateSchema.extend({
   id: z.string().uuid(),
 });
 export type ProjectUpdateValues = z.infer<typeof projectUpdateSchema>;
 
 // Staff project management (direct table writes under the projects for-all
-// policies — admin/assigned team). Staff also set dates; the client RPC doesn't.
+// policies — admin/assigned team). Staff set EVERYTHING: status, both the staff
+// due_date and the client-facing target_date, start_date, and priority.
 export const projectStaffSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   description: z.string().trim().optional(),
   status: z.enum(["proposed", "active", "in_review", "complete"]),
+  priority: projectPriority,
   start_date: optionalDate,
   due_date: optionalDate,
+  target_date: optionalDate,
 });
 export type ProjectStaffValues = z.infer<typeof projectStaffSchema>;
 

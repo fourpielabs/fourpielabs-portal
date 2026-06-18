@@ -33,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ProjectFormDialog, type StaffProjectRow } from "./project-form-dialog";
+import { PriorityBadge } from "./priority-badge";
 
 export type ProjectDeliverable = {
   id: string;
@@ -102,12 +103,15 @@ export function StaffProjectsManager({
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{p.title}</span>
                     <StatusChip kind="project" value={p.status} />
+                    <PriorityBadge value={p.priority} />
                   </div>
-                  {(p.start_date || p.due_date) && (
-                    <div className="pt-1 text-xs text-ink-3">
-                      {p.start_date && `Start ${formatDate(p.start_date)}`}
-                      {p.start_date && p.due_date && " · "}
-                      {p.due_date && `Due ${formatDate(p.due_date)}`}
+                  {(p.start_date || p.due_date || p.target_date) && (
+                    <div className="flex flex-wrap gap-x-2 pt-1 text-xs text-ink-3">
+                      {p.start_date && <span>Start {formatDate(p.start_date)}</span>}
+                      {p.due_date && <span>· Due {formatDate(p.due_date)}</span>}
+                      {p.target_date && (
+                        <span className="text-ink-2">· Client target {formatDate(p.target_date)}</span>
+                      )}
                     </div>
                   )}
                   {p.description && (
