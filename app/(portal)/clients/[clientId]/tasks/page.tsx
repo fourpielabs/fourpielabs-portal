@@ -1,7 +1,7 @@
 import { requireClientAccess } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAssignableMembers, type TaskChecklistItem } from "@/lib/tasks";
+import { getAssignableMembers, type TaskChecklistItem, type TimeEntry } from "@/lib/tasks";
 import { StaffTasksManager, type StaffTask } from "@/components/tasks/staff-tasks-manager";
 
 export default async function ClientTasksPage({
@@ -10,7 +10,7 @@ export default async function ClientTasksPage({
   params: Promise<{ clientId: string }>;
 }) {
   const { clientId } = await params;
-  await requireClientAccess(clientId);
+  const me = await requireClientAccess(clientId);
   const supabase = await createClient();
 
   const [{ data: tasks }, members] = await Promise.all([
@@ -43,6 +43,29 @@ export default async function ClientTasksPage({
     }
   }
 
+  // STAFF-ONLY time entries per task (RLS = admin_all/team_all; clients have no
+  // policy so this never returns for them, and only the staff detail consumes it).
+  const timeByTask = new Map<string, TimeEntry[]>();
+  if (taskIds.length) {
+    const { data: te } = await supabase
+      .from("time_entries")
+      .select("id, task_id, user_id, started_at, ended_at")
+      .in("task_id", taskIds)
+      .order("started_at", { ascending: false });
+    for (const e of te ?? []) {
+      const arr = timeByTask.get(e.task_id) ?? [];
+      arr.push({
+        id: e.id,
+        task_id: e.task_id,
+        user_id: e.user_id,
+        userName: nameById.get(e.user_id) ?? null,
+        started_at: e.started_at,
+        ended_at: e.ended_at,
+      });
+      timeByTask.set(e.task_id, arr);
+    }
+  }
+
   // Resolve each sourced task's REAL thread_type (service-role) so the detail's
   // "Created from a message" link picks the right thread + tab (shared vs internal) —
   // fixing the old hardcoded-shared link.
@@ -70,11 +93,12 @@ export default async function ClientTasksPage({
     created_at: t.created_at,
     sourceThreadType: t.source_message_id ? threadTypeById.get(t.source_message_id) ?? null : null,
     checklist: checklistByTask.get(t.id) ?? [],
+    timeEntries: timeByTask.get(t.id) ?? [],
   }));
 
   return (
     <div className="space-y-4">
-      <StaffTasksManager clientId={clientId} tasks={list} members={members} />
+      <StaffTasksManager clientId={clientId} currentUserId={me.id} tasks={list} members={members} />
     </div>
   );
 }

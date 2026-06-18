@@ -19,6 +19,17 @@ export type TaskChecklistItem = {
   sort_order: number;
 };
 
+/** A Phase-5 STAFF-ONLY time entry on a task (ended_at null = running). Clients have
+ *  zero access — this never reaches a client surface. */
+export type TimeEntry = {
+  id: string;
+  task_id: string;
+  user_id: string;
+  userName: string | null;
+  started_at: string;
+  ended_at: string | null;
+};
+
 export async function getAssignableMembers(clientId: string): Promise<TaskMember[]> {
   const admin = createAdminClient();
   // Query 1: who's assigned to this client (the only part that needs the join).

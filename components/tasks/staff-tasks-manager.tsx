@@ -34,7 +34,7 @@ import {
 import { TaskFormDialog, type StaffTaskRow } from "./task-form-dialog";
 import { TaskDetailDialog } from "./task-detail-dialog";
 import { TaskChecklistProgress } from "./task-checklist";
-import type { TaskChecklistItem } from "@/lib/tasks";
+import type { TaskChecklistItem, TimeEntry } from "@/lib/tasks";
 
 export type StaffTask = StaffTaskRow & {
   assigneeName: string | null;
@@ -42,14 +42,17 @@ export type StaffTask = StaffTaskRow & {
   created_at: string;
   sourceThreadType: "client_shared" | "internal" | null;
   checklist: TaskChecklistItem[];
+  timeEntries: TimeEntry[];
 };
 
 export function StaffTasksManager({
   clientId,
+  currentUserId,
   tasks: initialTasks,
   members,
 }: {
   clientId: string;
+  currentUserId: string;
   tasks: StaffTask[];
   members: TaskMember[];
 }) {
@@ -223,6 +226,8 @@ export function StaffTasksManager({
           clientId={clientId}
           members={members}
           checklist={openTask.checklist}
+          timeEntries={openTask.timeEntries}
+          currentUserId={currentUserId}
           open
           onOpenChange={(v) => {
             if (!v) router.push(`/clients/${clientId}/tasks`, { scroll: false });

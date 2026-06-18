@@ -10,8 +10,9 @@ import { updateTaskAction } from "@/lib/actions/tasks-client";
 import { staffUpdateTaskAction } from "@/lib/actions/tasks";
 import { TASK_STATUSES } from "@/lib/constants";
 import { formatDate, formatDateTime } from "@/lib/format";
-import type { TaskMember, TaskChecklistItem } from "@/lib/tasks";
+import type { TaskMember, TaskChecklistItem, TimeEntry } from "@/lib/tasks";
 import { TaskChecklist } from "./task-checklist";
+import { TaskTimer } from "./task-timer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,6 +73,8 @@ export function TaskDetailDialog({
   clientId,
   members,
   checklist,
+  timeEntries,
+  currentUserId,
   open,
   onOpenChange,
 }: {
@@ -80,6 +83,8 @@ export function TaskDetailDialog({
   clientId?: string;
   members: TaskMember[];
   checklist: TaskChecklistItem[];
+  timeEntries?: TimeEntry[]; // staff only
+  currentUserId?: string; // staff only
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
@@ -248,14 +253,18 @@ export function TaskDetailDialog({
              ════════════════════════════════════════════════════════════════ */}
           <TaskChecklist taskId={task.id} role={role} clientId={clientId} items={checklist} />
 
-          {isStaff && (
-            <>
-              {/* ══════════════════════════════════════════════════════════════
-                  TIME TRACKING (Phase 5, STAFF-ONLY) — slot. The staff timer
-                  (start/stop + logged entries) renders here; rendered only in the
-                  staff branch so it is NEVER shown to a client.
-                 ══════════════════════════════════════════════════════════════ */}
-            </>
+          {/* ════════════════════════════════════════════════════════════════
+              TIME TRACKING (Phase 5, STAFF-ONLY) — rendered ONLY in the staff
+              branch, so a client never sees a timer. Start → in_progress; plain
+              Stop leaves in_progress; "Stop & complete" → done.
+             ════════════════════════════════════════════════════════════════ */}
+          {isStaff && clientId && currentUserId && (
+            <TaskTimer
+              clientId={clientId}
+              taskId={task.id}
+              currentUserId={currentUserId}
+              entries={timeEntries ?? []}
+            />
           )}
         </div>
 

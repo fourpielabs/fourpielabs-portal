@@ -53,6 +53,21 @@ export function formatDate(date: string | null | undefined): string {
   return p ? `${MONTHS_SHORT[p[1] - 1]} ${p[2]}, ${p[0]}` : "—";
 }
 
+/** Seconds -> "H:MM:SS" (a running clock) or, when >= 1h and not ticking, "Hh Mm".
+ *  `clock` true keeps the zero-padded H:MM:SS form for the live timer display. */
+export function formatDuration(totalSeconds: number, clock = false): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (clock) {
+    return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  }
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return `${sec}s`;
+}
+
 /** Full timestamp -> "Apr 12, 2026, 3:45 PM" (audit log). Real Date — has a time. */
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";

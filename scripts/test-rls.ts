@@ -236,6 +236,15 @@ async function main() {
   const unTaskId = unTask!.id as string;
   const unSubId = await seedSub(unTaskId, "RLSSUB-unassigned");
 
+  // --- time_entries fixtures (Phase 5) -------------------------------------
+  // a STOPPED entry on the visible task by the team user — the client must be able
+  // to neither read nor touch it (no client policy; the RPCs raise for non-staff).
+  await admin.from("time_entries").delete().eq("task_id", visTaskId);
+  const { data: teSeed } = await admin.from("time_entries")
+    .insert({ task_id: visTaskId, user_id: teamUid, started_at: "2026-06-18T10:00:00Z", ended_at: "2026-06-18T10:30:00Z" })
+    .select("id").single();
+  const teSeedId = teSeed!.id as string;
+
   // --- call_bookings fixtures (Cal.com sync) --------------------------------
   // a VISIBLE booking on premier (demo-client's own), a HIDDEN one, and a
   // cross-client booking on pulse. Service-role insert (the webhook's path).
@@ -657,6 +666,25 @@ async function main() {
     rec("subtasks", "client delete item on CROSS-CLIENT task RAISES", !!sDelXc.error, sDelXc.error?.message ?? "");
   }
 
+  // --- time tracking (Phase 5): STAFF-ONLY — a client has ZERO access --------
+  {
+    const cte = await client.from("time_entries").select("id");
+    rec("time", "client reads time_entries 0 (no client policy)", (cte.data?.length ?? 0) === 0, `${cte.data?.length ?? 0} rows`);
+    const cti = await client.from("time_entries").insert({ task_id: visTaskId, user_id: clientUid, started_at: "2026-06-18T12:00:00Z" }).select("id");
+    rec("time", "client direct INSERT time_entry DENIED", !!cti.error || (cti.data?.length ?? 0) === 0, cti.error?.code ?? `${cti.data?.length ?? 0} rows`);
+    if (cti.data?.[0]?.id) await admin.from("time_entries").delete().eq("id", cti.data[0].id);
+    const ctu = await client.from("time_entries").update({ ended_at: "2026-06-18T13:00:00Z" }).eq("id", teSeedId).select("id");
+    rec("time", "client direct UPDATE time_entry denied", !!ctu.error || (ctu.data?.length ?? 0) === 0, ctu.error?.code ?? `${ctu.data?.length ?? 0} rows`);
+    const cStart = await client.rpc("start_timer", { p_task_id: visTaskId });
+    rec("time", "client start_timer RPC RAISES", !!cStart.error, cStart.error?.message ?? "");
+    const cStop = await client.rpc("stop_timer", { p_entry_id: teSeedId, p_complete: false });
+    rec("time", "client stop_timer RPC RAISES", !!cStop.error, cStop.error?.message ?? "");
+    const cEdit = await client.rpc("edit_time_entry", { p_entry_id: teSeedId, p_started_at: "2026-06-18T10:00:00Z", p_ended_at: null });
+    rec("time", "client edit_time_entry RPC RAISES", !!cEdit.error, cEdit.error?.message ?? "");
+    const cDel = await client.rpc("delete_time_entry", { p_entry_id: teSeedId });
+    rec("time", "client delete_time_entry RPC RAISES", !!cDel.error, cDel.error?.message ?? "");
+  }
+
   // --- call_bookings: client sees OWN VISIBLE only; the service-role upsert is
   //     the ONLY write path (no client INSERT/UPDATE policy) ------------------
   {
@@ -792,6 +820,50 @@ async function main() {
     if (tunsI.data?.[0]?.id) await admin.from("task_checklist_items").delete().eq("id", tunsI.data[0].id);
   }
 
+  // time tracking (Phase 5): assigned staff drive the full timer lifecycle + the
+  // status model (start→in_progress, plain stop STAYS in_progress, complete→done,
+  // one running enforced); unassigned staff can neither read nor start.
+  {
+    await admin.from("time_entries").delete().eq("task_id", visTaskId);
+    await admin.from("tasks").update({ status: "todo" }).eq("id", visTaskId);
+
+    const start1 = await team.rpc("start_timer", { p_task_id: visTaskId });
+    rec("time", "assigned staff start_timer allowed", !start1.error, start1.error?.message ?? "");
+    const e1 = (Array.isArray(start1.data) ? start1.data[0] : start1.data) as { id: string } | null;
+    const { data: st1 } = await admin.from("tasks").select("status").eq("id", visTaskId).single();
+    rec("time", "start_timer sets task in_progress", st1?.status === "in_progress", `status=${st1?.status ?? "?"}`);
+
+    const start2 = await team.rpc("start_timer", { p_task_id: visTaskId });
+    rec("time", "second start while running RAISES (one running)", !!start2.error, start2.error?.message ?? "");
+
+    const stop1 = await team.rpc("stop_timer", { p_entry_id: e1?.id, p_complete: false });
+    rec("time", "plain stop allowed", !stop1.error, stop1.error?.message ?? "");
+    const { data: st2 } = await admin.from("tasks").select("status").eq("id", visTaskId).single();
+    rec("time", "plain STOP leaves status in_progress (NOT done)", st2?.status === "in_progress", `status=${st2?.status ?? "?"}`);
+    const { data: e1row } = await admin.from("time_entries").select("ended_at").eq("id", e1?.id ?? "").single();
+    rec("time", "stop set ended_at", !!e1row?.ended_at, `ended_at=${e1row?.ended_at ?? "null"}`);
+
+    const start3 = await team.rpc("start_timer", { p_task_id: visTaskId });
+    const e3 = (Array.isArray(start3.data) ? start3.data[0] : start3.data) as { id: string } | null;
+    const stopC = await team.rpc("stop_timer", { p_entry_id: e3?.id, p_complete: true });
+    rec("time", "stop & complete allowed", !stopC.error, stopC.error?.message ?? "");
+    const { data: st3 } = await admin.from("tasks").select("status").eq("id", visTaskId).single();
+    rec("time", "stop & complete sets task done", st3?.status === "done", `status=${st3?.status ?? "?"}`);
+
+    const tRead = await team.from("time_entries").select("id").eq("task_id", visTaskId);
+    rec("time", "assigned staff reads task time_entries", !tRead.error && (tRead.data?.length ?? 0) >= 2, `${tRead.data?.length ?? 0} rows`);
+
+    // unassigned staff: no read, start raises
+    const tunRead = await team.from("time_entries").select("id").eq("task_id", unTaskId);
+    rec("time", "unassigned staff reads time_entries 0", (tunRead.data?.length ?? 0) === 0, `${tunRead.data?.length ?? 0} rows`);
+    const tunStart = await team.rpc("start_timer", { p_task_id: unTaskId });
+    rec("time", "unassigned staff start_timer RAISES", !!tunStart.error, tunStart.error?.message ?? "");
+
+    // cleanup
+    await admin.from("time_entries").delete().eq("task_id", visTaskId);
+    await admin.from("tasks").update({ status: "todo" }).eq("id", visTaskId);
+  }
+
   // ====================== AS ANON ===========================================
   const anon = createClient(url, anonKey, { auth: { persistSession: false } });
   for (const t of [...CLIENT_TABLES, "clients", ...RESTRICTED_TABLES])
@@ -842,6 +914,10 @@ async function main() {
     rec("anon", "create_task RPC denied", !!act.error);
     const aut = await anon.rpc("update_task_status", { p_task_id: visTaskId, p_status: "done" });
     rec("anon", "update_task_status RPC denied", !!aut.error);
+    const aTime = await anon.from("time_entries").select("id");
+    rec("anon", "read time_entries 0", (aTime.data?.length ?? 0) === 0, `${aTime.data?.length ?? 0} rows`);
+    const aStart = await anon.rpc("start_timer", { p_task_id: visTaskId });
+    rec("anon", "start_timer RPC denied", !!aStart.error);
   }
 
   // ====================== SEED GATING =======================================
