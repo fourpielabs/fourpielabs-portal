@@ -1,7 +1,8 @@
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { getAssignableMembers, type TaskChecklistItem } from "@/lib/tasks";
-import { ClientTaskBoard, type ClientTaskRow } from "@/components/tasks/client-task-board";
+import type { ClientTaskRow } from "@/components/tasks/client-task-board";
+import { TaskBoard } from "@/components/redesign/client/task-board";
 
 export default async function MyTasksPage() {
   const profile = await requireRole(["client"]);
@@ -46,5 +47,5 @@ export default async function MyTasksPage() {
     checklist: checklistByTask.get(t.id) ?? [],
   }));
 
-  return <ClientTaskBoard tasks={list} members={members} />;
+  return <TaskBoard tasks={list} members={members} />;
 }
