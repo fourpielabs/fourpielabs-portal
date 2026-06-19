@@ -54,7 +54,7 @@ export function DeliverablesList({
       {deliverables.length === 0 ? (
         <EmptyPanel icon={<Package size={22} />} title="No deliverables yet" description="Track everything you're delivering — drafts, links, and files." action={addBtn} />
       ) : (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.7rem" }}>
+        <ul className="rd-stagger" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.7rem" }}>
           {deliverables.map((d) => (
             <li key={d.id} className={panel} style={{ borderRadius: 18, padding: "1rem 1.1rem", display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 12 }}>
               <div style={{ minWidth: 0, flex: 1 }}>

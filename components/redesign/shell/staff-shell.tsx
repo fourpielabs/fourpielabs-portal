@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 import type { NotificationItem } from "@/lib/actions/notifications";
 import { BrandLogo } from "@/components/ui/brand-logo";
+import { RouteTransition } from "@/components/motion/route-transition";
 import { FluentScope, ThemeToggle, useRedesignMode } from "@/components/redesign/themed-fluent";
 import { NotificationBell } from "@/components/redesign/shell/notification-bell";
 import { UserMenu } from "@/components/redesign/shell/user-menu";
@@ -287,8 +288,13 @@ export function StaffShell({
           </div>
         </header>
 
-        {/* OLD page body — outside FluentProvider, untouched */}
-        <main className="w-full flex-1 py-6">{children}</main>
+        {/* page body — outside FluentProvider (converted bodies bring their own FluentScope).
+            R5: RouteTransition keyed on the top-level path segment — fades top-level section
+            changes; workspace TAB switches within /clients/[id]/* share the "clients" segment
+            so they do NOT re-fire (the per-client tabs get the shared-layout indicator instead). */}
+        <main className="w-full flex-1 py-6">
+          <RouteTransition>{children}</RouteTransition>
+        </main>
       </div>
 
       {/* mobile nav drawer (Fluent Drawer = side panel; Tabster focus trap + Esc) */}

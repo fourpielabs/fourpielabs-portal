@@ -67,7 +67,7 @@ export function StaffOverviewBody({ data }: { data: OverviewData }) {
         </div>
       )}
 
-      <div className="rd-overview-grid">
+      <div className="rd-overview-grid rd-stagger">
         {isProject ? (
           <>
             <div className={panel} style={card}>

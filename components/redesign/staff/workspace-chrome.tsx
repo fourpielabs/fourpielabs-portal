@@ -3,7 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { m } from "motion/react";
 import { ChevronDown, MoreHorizontal } from "lucide-react";
+import { spring, useReducedMotion } from "@/lib/motion";
 import { labelOf, PROGRAMS } from "@/lib/constants";
 import { formatMonthYear } from "@/lib/format";
 import {
@@ -31,6 +33,7 @@ export function WorkspaceChrome({
   client: WorkspaceClient; isAdmin: boolean; dayLabel: string | null; children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const reduced = useReducedMotion();
   const { mode } = useRedesignMode();
   const onDark = mode === "dark";
   const fg1 = tokens.colorNeutralForeground1, fg3 = tokens.colorNeutralForeground3;
@@ -76,8 +79,14 @@ export function WorkspaceChrome({
     whiteSpace: "nowrap", textDecoration: "none", fontWeight: active ? 600 : 500,
     color: active ? (onDark ? "#fbbf24" : "#b45309") : fg3,
   });
-  const underline = (
-    <span style={{ position: "absolute", insetInline: 8, bottom: 0, height: 2, borderRadius: 999, background: "linear-gradient(90deg,#b45309,#f59e0b)" }} />
+  // R5: shared-layout indicator — only the active tab renders it; the shared layoutId makes
+  // Motion slide it between tabs on navigation (the WorkspaceChrome persists across tab
+  // switches). Reduced motion → a plain span that jumps instantly (no slide).
+  const ulStyle: React.CSSProperties = { position: "absolute", insetInline: 8, bottom: 0, height: 2, borderRadius: 999, background: "linear-gradient(90deg,#b45309,#f59e0b)" };
+  const underline = reduced ? (
+    <span style={ulStyle} />
+  ) : (
+    <m.span layoutId="ws-tab-underline" transition={spring.snappy} style={ulStyle} />
   );
 
   return (

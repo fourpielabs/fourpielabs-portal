@@ -326,4 +326,40 @@
   .motion-collapsible {
     transition: none !important;
   }
+  /* R5: glass → opaque solid + ember bloom OFF (static) under reduced motion. Enforced
+     HERE (the single, provably-applied global reduced block) because Lightning CSS merges
+     redesign.css's multiple @media (prefers-reduced-motion) blocks and drops the glass one. */
+  .rd-glass {
+    /* blur(0) not `none`: Lightning CSS drops `backdrop-filter:none` as initial-value-
+       redundant (leaving the base blur to win), but keeps a non-initial blur(0) = no blur.
+       The opaque background-color below is the real "solid card" guarantee regardless. */
+    backdrop-filter: blur(0px) !important;
+    -webkit-backdrop-filter: blur(0px) !important;
+    background-color: var(--glass-light-fallback, #ffffff) !important;
+  }
+  .rd-glass--dark {
+    background-color: var(--glass-dark-fallback, #1c1813) !important;
+  }
+  .rd-glass--ember::before {
+    display: none !important;
+  }
+}
+
+/* R5: reduced-transparency → glass becomes the opaque solid card (no blur, no bloom).
+   Same enforcement here for the same Lightning-CSS-merge reason. */
+@media (prefers-reduced-transparency: reduce) {
+  .rd-glass {
+    /* blur(0) not `none`: Lightning CSS drops `backdrop-filter:none` as initial-value-
+       redundant (leaving the base blur to win), but keeps a non-initial blur(0) = no blur.
+       The opaque background-color below is the real "solid card" guarantee regardless. */
+    backdrop-filter: blur(0px) !important;
+    -webkit-backdrop-filter: blur(0px) !important;
+    background-color: var(--glass-light-fallback, #ffffff) !important;
+  }
+  .rd-glass--dark {
+    background-color: var(--glass-dark-fallback, #1c1813) !important;
+  }
+  .rd-glass--ember::before {
+    display: none !important;
+  }
 }

@@ -67,7 +67,7 @@ export function StaffTasksManager({
       {tasks.length === 0 ? (
         <EmptyPanel icon={<ListChecks size={22} />} title="No tasks yet" description="Create a task for this client — assign it to your team or to the client, and they'll see it on their Tasks page." action={newBtn} />
       ) : (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.7rem" }}>
+        <ul className="rd-stagger" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.7rem" }}>
           {tasks.map((t) => (
             <li key={t.id} className={panel} style={{ borderRadius: 18, padding: "1rem 1.1rem", display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
               <div style={{ minWidth: 0 }}>
