@@ -60,7 +60,7 @@ export function SettingsBody({
           <AvatarSection name={fullName} email={email} avatarUrl={avatarUrl} fg3={fg3} />
         </div>
 
-        <ProfileSection fullName={fullName} email={email} role={role} card={card} panel={panel} title={sectionTitle} fg2={fg2} fg3={fg3} />
+        <ProfileSection fullName={fullName} email={email} role={role} card={card} panel={panel} title={sectionTitle} fg2={fg2} fg3={fg3} onDark={onDark} />
 
         <EmailPrefsSection role={role} current={prefs} card={card} panel={panel} title={sectionTitle} onDark={onDark} fg1={fg1} fg3={fg3} />
       </div>
@@ -110,7 +110,7 @@ function AvatarSection({ name, email, avatarUrl, fg3 }: { name: string | null; e
   );
 }
 
-function ProfileSection({ fullName, email, role, card, panel, title, fg2, fg3 }: any) {
+function ProfileSection({ fullName, email, role, card, panel, title, fg2, fg3, onDark }: any) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -143,7 +143,7 @@ function ProfileSection({ fullName, email, role, card, panel, title, fg2, fg3 }:
         </Field>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: "0.75rem", color: fg3 }}>Role</span>
-          <span style={{ fontSize: "0.7rem", fontWeight: 600, padding: "0.25rem 0.6rem", borderRadius: 999, textTransform: "capitalize", background: "rgba(217,119,6,0.12)", color: "#b45309" }}>{role}</span>
+          <span style={{ fontSize: "0.7rem", fontWeight: 600, padding: "0.25rem 0.6rem", borderRadius: 999, textTransform: "capitalize", background: onDark ? "rgba(245,158,11,0.16)" : "rgba(217,119,6,0.12)", color: onDark ? "#fcd34d" : "#b45309" }}>{role}</span>
         </div>
         <div><EmberButton type="submit" loading={saving} disabled={saving || !isDirty}>Save changes</EmberButton></div>
       </form>
