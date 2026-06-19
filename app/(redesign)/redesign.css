@@ -1,0 +1,256 @@
+/* =============================================================================
+   4Pie Labs — REDESIGN R0 glass + immersive-layout language.
+
+   Glass is a CUSTOM layer on top of Fluent's tokens (Fluent does not ship it).
+   Everything here is plain CSS so the HARD a11y rules — solid fallback, and the
+   prefers-reduced-transparency / prefers-reduced-motion downgrades — are auditable
+   in one place. Consumed via the className helpers below; tokens cascade from
+   `.rd-root` (applied on the FluentProvider wrapper).
+
+   Font vars (--font-display / --font-mono / --font-sans) come from globals.css
+   (@theme), which is loaded document-wide by the root layout.
+   ============================================================================= */
+
+.rd-root {
+  /* --- glass: light "frost" ------------------------------------------------ */
+  --glass-light-fill: rgba(252, 251, 247, 0.72);
+  --glass-light-fill-strong: rgba(252, 251, 247, 0.9); /* the scrim for KPI/summary */
+  --glass-light-blur: 18px;
+  --glass-light-edge: rgba(255, 255, 255, 0.7); /* inset top edge highlight */
+  --glass-light-hairline: rgba(40, 33, 24, 0.12); /* outer hairline */
+  /* opaque solid fallback — pure white (not ivory) so a solid card still reads as
+     a CARD against the warm ivory field; ivory-on-ivory would disappear. */
+  --glass-light-fallback: #ffffff;
+
+  /* --- glass: dark "ember obsidian" --------------------------------------- */
+  --glass-dark-fill: rgba(26, 21, 16, 0.72);
+  --glass-dark-fill-strong: rgba(20, 16, 12, 0.88); /* the scrim for KPI/summary */
+  --glass-dark-blur: 20px;
+  --glass-dark-edge: rgba(255, 255, 255, 0.1);
+  --glass-dark-hairline: rgba(0, 0, 0, 0.45);
+  --glass-dark-fallback: #1c1813; /* opaque solid fallback */
+
+  /* signature: a warm "ember" bloom that appears to pass THROUGH the pane.
+     Kept restrained (0.12) so it never washes glass text below WCAG AA. */
+  --ember-bloom: radial-gradient(135% 120% at 100% -8%, rgba(245, 158, 11, 0.12), transparent 58%);
+
+  /* readable measures inside a full-bleed immersive shell */
+  --rd-measure-text: 45rem; /* 720 — forms, reading, single record */
+  --rd-measure-standard: 75rem; /* 1200 — dashboards */
+  --rd-measure-wide: 90rem; /* 1440 — dense tables (then horizontal scroll) */
+  --rd-page-px: clamp(1rem, 4vw, 2.5rem);
+
+  /* motion tokens (mirror lib/motion.ts so CSS + JS agree) */
+  --rd-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --rd-dur-fast: 140ms;
+  --rd-dur-base: 220ms;
+}
+
+/* === GLASS SURFACES ========================================================= */
+.rd-glass {
+  position: relative;
+  background-color: var(--glass-light-fill);
+  -webkit-backdrop-filter: blur(var(--glass-light-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-light-blur)) saturate(140%);
+  border: 1px solid var(--glass-light-hairline);
+  box-shadow:
+    inset 0 1px 0 var(--glass-light-edge),
+    0 18px 50px -16px rgba(40, 33, 24, 0.28);
+}
+.rd-glass--strong {
+  background-color: var(--glass-light-fill-strong);
+}
+.rd-glass--dark {
+  background-color: var(--glass-dark-fill);
+  -webkit-backdrop-filter: blur(var(--glass-dark-blur)) saturate(135%);
+  backdrop-filter: blur(var(--glass-dark-blur)) saturate(135%);
+  border-color: var(--glass-dark-hairline);
+  box-shadow:
+    inset 0 1px 0 var(--glass-dark-edge),
+    0 28px 80px -22px rgba(0, 0, 0, 0.62);
+}
+.rd-glass--dark.rd-glass--strong {
+  background-color: var(--glass-dark-fill-strong);
+}
+/* signature ember edge (decorative; hidden under reduced prefs) */
+.rd-glass--ember::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--ember-bloom);
+  pointer-events: none;
+}
+
+/* === SOLID SURFACES (where glass is FORBIDDEN: tables, forms, running text) === */
+.rd-solid {
+  background-color: #ffffff;
+  border: 1px solid #e7e5e0;
+  box-shadow: 0 1px 2px rgba(40, 33, 24, 0.05), 0 4px 12px -2px rgba(40, 33, 24, 0.08);
+}
+.rd-solid--dark {
+  background-color: #1c1813;
+  border: 1px solid #34302a;
+  box-shadow: 0 8px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* === HARD A11Y RULE: every glass surface degrades to its OPAQUE solid =========
+   Triggers (any one): no backdrop-filter support · prefers-reduced-transparency ·
+   prefers-reduced-motion. Result: an opaque SOLID CARD (fill + visible border +
+   contact shadow so it still reads as a card against the field), no blur, no
+   ember bloom. The shared recipe lives in the two utility classes below; each
+   trigger just opts the glass surfaces into it. ============================== */
+.rd-glass--solidfallback {
+  background-color: var(--glass-light-fallback);
+  border-color: #d6d3cd;
+  box-shadow: 0 1px 3px rgba(40, 33, 24, 0.1), 0 14px 32px -10px rgba(40, 33, 24, 0.22);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.rd-glass--solidfallback.rd-glass--dark {
+  background-color: var(--glass-dark-fallback);
+  border-color: #3a352d;
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rd-glass {
+    background-color: var(--glass-light-fallback);
+    border-color: #d6d3cd;
+    box-shadow: 0 1px 3px rgba(40, 33, 24, 0.1), 0 14px 32px -10px rgba(40, 33, 24, 0.22);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .rd-glass--dark {
+    background-color: var(--glass-dark-fallback);
+    border-color: #3a352d;
+    box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .rd-glass {
+    background-color: var(--glass-light-fallback) !important;
+    border-color: #d6d3cd !important;
+    box-shadow: 0 1px 3px rgba(40, 33, 24, 0.1), 0 14px 32px -10px rgba(40, 33, 24, 0.22) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .rd-glass--dark {
+    background-color: var(--glass-dark-fallback) !important;
+    border-color: #3a352d !important;
+    box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6) !important;
+  }
+  .rd-glass--ember::before {
+    display: none !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rd-glass {
+    background-color: var(--glass-light-fallback) !important;
+    border-color: #d6d3cd !important;
+    box-shadow: 0 1px 3px rgba(40, 33, 24, 0.1), 0 14px 32px -10px rgba(40, 33, 24, 0.22) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .rd-glass--dark {
+    background-color: var(--glass-dark-fallback) !important;
+    border-color: #3a352d !important;
+    box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6) !important;
+  }
+  .rd-glass--ember::before {
+    display: none !important;
+  }
+}
+
+/* === IMMERSIVE SHELL + READABLE MEASURE ====================================== */
+.rd-shell {
+  position: relative;
+  min-height: 100dvh;
+  width: 100%;
+  isolation: isolate;
+  /* no overflow clip here — it would turn the shell into a scroll container and
+     break the sticky glass chrome. Horizontal overflow is contained locally
+     (the dense table has its own overflow-x:auto wrapper). */
+}
+.rd-measure {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: var(--rd-page-px);
+}
+.rd-measure--text {
+  max-width: var(--rd-measure-text);
+}
+.rd-measure--standard {
+  max-width: var(--rd-measure-standard);
+}
+.rd-measure--wide {
+  max-width: var(--rd-measure-wide);
+}
+
+/* === TYPE SIGNATURES ========================================================= */
+/* mono "instrument label" eyebrow — encodes that this is a measurement tool */
+.rd-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem; /* 11px */
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.rd-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.rd-tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* === ENTRANCE / HOVER (CSS-driven, reduced-motion SAFE by construction) =======
+   The resting state is ALWAYS visible (opacity 1); the keyframe only adds a
+   `from` state and uses fill-mode `backwards`, so once it ends the element is
+   back to its natural visible state. A reduced-motion user (animation:none) sees
+   that visible resting state immediately. This deliberately avoids JS entrance
+   wrappers that pin opacity:0 as the initial — those can strand content hidden
+   when reduced-motion detection is racy. Stagger = per-item animation-delay. */
+@keyframes rd-rise {
+  from { opacity: 0; transform: translateY(10px); }
+}
+@keyframes rd-pop {
+  from { opacity: 0; transform: scale(0.965); }
+}
+.rd-rise { animation: rd-rise var(--rd-dur-base) var(--rd-ease-out) backwards; }
+.rd-pop { animation: rd-pop 0.34s var(--rd-ease-out) backwards; }
+.rd-lift {
+  transition: transform var(--rd-dur-base) var(--rd-ease-out),
+    box-shadow var(--rd-dur-base) var(--rd-ease-out);
+}
+.rd-lift:hover {
+  transform: translateY(-3px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rd-rise,
+  .rd-pop {
+    animation: none;
+  }
+  .rd-lift {
+    transition: none;
+  }
+  .rd-lift:hover {
+    transform: none;
+  }
+}
+
+/* ambient field tint helpers (full-bleed backgrounds behind the shell) */
+.rd-field-light {
+  background:
+    radial-gradient(60% 50% at 84% -6%, rgba(245, 158, 11, 0.16), transparent 60%),
+    radial-gradient(80% 70% at 50% 120%, rgba(217, 119, 6, 0.06), transparent 60%),
+    linear-gradient(180deg, #f8f5ef 0%, #f3efe6 100%);
+}
+.rd-field-dark {
+  background:
+    radial-gradient(55% 45% at 82% -8%, rgba(245, 158, 11, 0.22), transparent 58%),
+    radial-gradient(70% 60% at 50% 120%, rgba(217, 119, 6, 0.1), transparent 62%),
+    linear-gradient(180deg, #14110d 0%, #0f0d0a 100%);
+}
