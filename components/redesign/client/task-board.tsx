@@ -11,7 +11,7 @@ import { useRedesignMode } from "@/components/redesign/themed-fluent";
 import { ClientPageFrame } from "@/components/redesign/client/page-frame";
 import { type ClientTaskRow } from "@/components/tasks/client-task-board";
 import { ClientTaskDialog } from "@/components/tasks/client-task-dialog";
-import { TaskDetailDialog } from "@/components/tasks/task-detail-dialog";
+import { TaskDetailDialog } from "@/components/redesign/staff/task-detail-dialog";
 
 export type { ClientTaskRow };
 

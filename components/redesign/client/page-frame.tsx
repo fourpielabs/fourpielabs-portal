@@ -21,7 +21,7 @@ export function ClientPageFrame({
   const { mode } = useRedesignMode();
   return (
     <FluentScope>
-      <div aria-hidden style={{ position: "fixed", inset: 0, zIndex: 0 }}>
+      <div aria-hidden style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}>
         <AmbientField mode={mode} />
       </div>
       <Measure width={width} style={{ position: "relative", zIndex: 1 }}>

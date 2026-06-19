@@ -37,7 +37,7 @@ export function AmbientField({ mode }: { mode: "light" | "dark" }) {
     <div
       aria-hidden
       className={mode === "dark" ? "rd-field-dark" : "rd-field-light"}
-      style={{ position: "absolute", inset: 0, zIndex: 0 }}
+      style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }}
     />
   );
 }

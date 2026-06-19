@@ -38,10 +38,10 @@ const EMOJIS = ["👍","🙏","🎉","🔥","✅","👀","💪","😄","🙌","�
  * unreachable. Native <textarea>/<input> keep the cursor/selection logic intact.
  */
 export function Conversation({
-  threadId, notifLink, currentUserId, currentUserName, initialMessages, audience, taskContext,
+  threadId, notifLink, currentUserId, currentUserName, initialMessages, audience, taskContext, bare = false,
 }: {
   threadId: string; notifLink: string; currentUserId: string; currentUserName: string;
-  initialMessages: ThreadMessage[]; audience: "shared" | "internal"; taskContext?: ConversationTaskContext;
+  initialMessages: ThreadMessage[]; audience: "shared" | "internal"; taskContext?: ConversationTaskContext; bare?: boolean;
 }) {
   const { mode } = useRedesignMode();
   const onDark = mode === "dark";
@@ -206,8 +206,8 @@ export function Conversation({
     border: `1px solid ${border}`, background: surface, color: fg2, ...extra,
   });
 
-  return (
-    <ClientFrame>
+  const inner = (
+    <>
       <div className={onDark ? "rd-solid--dark" : "rd-solid"} style={{ display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: 20, height: "72vh", minHeight: 460 }}>
         {/* search */}
         <div style={{ position: "relative", borderBottom: `1px solid ${border}`, padding: 8 }}>
@@ -363,8 +363,9 @@ export function Conversation({
         .rd-msg code{color:${fg1} !important;background:${surface2} !important;}
         .rd-msg a{color:${onDark ? "#fcd34d" : "#b45309"} !important;}
       `}</style>
-    </ClientFrame>
+    </>
   );
+  return bare ? inner : <ClientFrame>{inner}</ClientFrame>;
 }
 
 // headerless frame — no page title, just the immersive field + a readable measure

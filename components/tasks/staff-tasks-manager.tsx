@@ -32,7 +32,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { TaskFormDialog, type StaffTaskRow } from "./task-form-dialog";
-import { TaskDetailDialog } from "./task-detail-dialog";
+import { TaskDetailDialog } from "@/components/redesign/staff/task-detail-dialog";
 import { TaskChecklistProgress } from "./task-checklist";
 import type { TaskChecklistItem, TimeEntry } from "@/lib/tasks";
 

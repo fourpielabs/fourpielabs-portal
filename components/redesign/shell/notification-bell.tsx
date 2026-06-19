@@ -98,7 +98,11 @@ export function NotificationBell({
           <Bell className="size-[18px]" strokeWidth={1.8} />
           {unread > 0 && (
             <span className="absolute -top-0.5 -right-0.5">
-              <CounterBadge count={unread} color="danger" size="small" overflowCount={9} />
+              {/* force white count text: our Warm Obsidian theme overrides
+                  colorNeutralForegroundOnBrand to charcoal (for amber buttons),
+                  which on the red danger badge would be charcoal-on-red (~3.7:1).
+                  White on Fluent danger-red is ~4.9:1 (AA). */}
+              <CounterBadge count={unread} color="danger" size="small" overflowCount={9} style={{ color: "#ffffff" }} />
             </span>
           )}
         </button>
