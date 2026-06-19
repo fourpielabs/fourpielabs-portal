@@ -69,5 +69,17 @@ correctly at every breakpoint.
   task-checklist}` + `components/ui/*` leaves (DatePicker, FileDropzone, PersonAvatar, Skeleton,
   ConfirmDeleteDialog, date-range-picker, Markdown, sonner).
 
-## CUTOVER
-(Filled in by the cutover commit — fast-forward merge to main + post-merge re-checks.)
+## CUTOVER ✅ (local — main updated, ready to deploy)
+- **Fast-forward merge** `redesign/r5-motion → main` (main was an ancestor → clean ff, no merge
+  commit). The full redesign R0→R6 is now on `main`.
+- **Post-merge build: GREEN + tsc clean.** (The first attempt hit the known intermittent
+  Turbopack `failed to receive message` flake — NOT a code error; `rm -rf .next node_modules/.cache`
+  + rebuild → ✓ compiled in 46s. The identical tree built green repeatedly on the redesign branch.)
+- **Post-merge RLS on main: 267/267.**
+- **Post-merge isolation on main: PASS** — three.js + cal.com each in one async chunk, neither in
+  the shared baseline, 0 refs in `/login` initial HTML (the merge did not reshuffle them into the
+  baseline).
+- **No env/secret changes required** — main is deployable on the existing environment.
+
+**NOT pushed to origin.** The local merge is complete + verified, but pushing to `origin/main`
+triggers the Vercel production deploy — an outward-facing action held for explicit go-ahead.
