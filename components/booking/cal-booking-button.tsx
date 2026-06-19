@@ -71,6 +71,7 @@ export function CalBookingButton({
   return (
     <Button
       type="button"
+      variant="amber"
       className={className ?? "w-full"}
       onClick={openBooking}
       // exposed for verification (the metadata that maps the booking → client)

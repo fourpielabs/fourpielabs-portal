@@ -1,0 +1,17 @@
+[
+  {
+    "sev": "medium",
+    "where": "cprog /tasks?task=",
+    "what": "no dialog opened on task click"
+  },
+  {
+    "sev": "high",
+    "where": "cproj /program",
+    "what": "expected redirect → /dashboard, landed /program"
+  },
+  {
+    "sev": "high",
+    "where": "cproj /performance",
+    "what": "expected redirect → /dashboard, landed /performance"
+  }
+]

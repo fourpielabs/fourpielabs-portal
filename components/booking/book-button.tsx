@@ -14,7 +14,7 @@ const CalBookingButton = dynamic(
   {
     ssr: false,
     loading: () => (
-      <Button className="w-full" disabled>
+      <Button variant="amber" className="w-full" disabled>
         Book
       </Button>
     ),
@@ -55,7 +55,7 @@ export function BookButton({
   }
   if (bookingUrl) {
     return (
-      <Button asChild className={className ?? "w-full"}>
+      <Button asChild variant="amber" className={className ?? "w-full"}>
         <a href={bookingUrl} target="_blank" rel="noreferrer">
           Book
         </a>
