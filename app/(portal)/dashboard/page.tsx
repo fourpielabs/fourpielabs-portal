@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { labelOf, PROGRAMS } from "@/lib/constants";
 import { PersonAvatar } from "@/components/ui/person-avatar";
-import { ClientDashboard } from "@/components/client/client-dashboard";
+import { ClientDashboardR2 } from "@/components/redesign/client/client-dashboard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,11 +27,7 @@ export default async function DashboardPage() {
   const profile = await requireProfile();
 
   if (profile.role === "client" && profile.client_id) {
-    return (
-      <PageContainer width="standard">
-        <ClientDashboard clientId={profile.client_id} userName={profile.full_name} />
-      </PageContainer>
-    );
+    return <ClientDashboardR2 clientId={profile.client_id} userName={profile.full_name} />;
   }
 
   // staff (admin / team) home

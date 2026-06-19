@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useModalA11y } from "@/lib/use-modal-a11y";
 import type { NotificationItem } from "@/lib/actions/notifications";
 import { BrandLogo } from "@/components/ui/brand-logo";
+import { RouteTransition } from "@/components/motion/route-transition";
 import { FluentScope, ThemeToggle, useRedesignMode } from "@/components/redesign/themed-fluent";
 import { NotificationBell } from "@/components/redesign/shell/notification-bell";
 import { UserMenu } from "@/components/redesign/shell/user-menu";
@@ -159,8 +160,10 @@ export function ClientShell({
         {island}
       </header>
 
-      {/* OLD page body — rendered OUTSIDE any FluentProvider so it's untouched (R2/R3 converts it) */}
-      <main className="w-full flex-1 scroll-pb-36 pt-6 pb-36 sm:pt-10 sm:pb-10">{children}</main>
+      {/* page body — outside FluentProvider (converted bodies bring their own FluentScope) */}
+      <main className="w-full flex-1 scroll-pb-36 pt-6 pb-36 sm:pt-10 sm:pb-10">
+        <RouteTransition>{children}</RouteTransition>
+      </main>
 
       {/* mobile ember-glass bottom tab bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 px-3.5 pb-3.5 sm:hidden">
