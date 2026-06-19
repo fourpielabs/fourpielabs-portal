@@ -148,7 +148,7 @@ export default function AcceptInvitePage() {
           {errors.password ? (
             <p className="text-xs text-[#FCA5A5]">{errors.password.message}</p>
           ) : (
-            <p className="text-xs text-ink-3">
+            <p className="text-xs text-[#b3aca0]">
               At least 12 characters. A longer passphrase is strongest.
             </p>
           )}
