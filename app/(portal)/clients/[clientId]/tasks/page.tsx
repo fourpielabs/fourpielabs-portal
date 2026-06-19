@@ -2,7 +2,7 @@ import { requireClientAccess } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAssignableMembers, type TaskChecklistItem, type TimeEntry } from "@/lib/tasks";
-import { StaffTasksManager, type StaffTask } from "@/components/tasks/staff-tasks-manager";
+import { StaffTasksManager, type StaffTask } from "@/components/redesign/staff/staff-task-board";
 
 export default async function ClientTasksPage({
   params,

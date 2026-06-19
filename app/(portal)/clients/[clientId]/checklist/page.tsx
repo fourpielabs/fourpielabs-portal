@@ -3,7 +3,7 @@ import { requireClientAccess } from "@/lib/auth/guards";
 import {
   ChecklistEditor,
   type ChecklistItem,
-} from "@/components/checklist/checklist-editor";
+} from "@/components/redesign/staff/checklist-editor";
 
 export default async function ChecklistPage({
   params,
