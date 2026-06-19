@@ -1,144 +1,41 @@
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
-import {
-  MetricsCharts,
-  type DefLite,
-  type Entry,
-} from "@/components/metrics/metrics-charts";
-import { ClientReports, type ClientReport } from "@/components/client/client-reports";
-import { StatusChip } from "@/components/ui/status-chip";
-import { Card, CardContent } from "@/components/ui/card";
-import { PageContainer } from "@/components/layout/page-container";
-import { PageHeader } from "@/components/layout/page-header";
+import { formatReportPeriod } from "@/lib/format";
+import { RedesignPerformance, type PerfData } from "@/components/redesign/keystones/performance";
 
 export default async function ClientPerformancePage() {
   const profile = await requireRole(["client"]);
   const supabase = await createClient();
 
   // Program-only page — project clients are routed to their projects board.
-  const { data: typeRow } = await supabase
-    .from("client_clients")
-    .select("client_type")
-    .maybeSingle();
+  const { data: typeRow } = await supabase.from("client_clients").select("client_type").maybeSingle();
   if (typeRow?.client_type === "project") redirect("/dashboard");
 
-  const [{ data: defs }, { data: entries }, { data: competitors }, { data: reports }] =
-    await Promise.all([
-      supabase.from("metric_definitions").select("id, label, unit, sort_order").order("sort_order"),
-      supabase
-        .from("metric_entries")
-        .select("definition_id, period, value_numeric, value_text")
-        .order("period"),
-      supabase
-        .from("competitors")
-        .select("id, name_or_handle, niche, follower_count, avg_views, top_content_format, hook_style, whats_working, gap_notes, adapted_idea, priority")
-        .order("priority", { ascending: false }),
-      supabase
-        .from("reports")
-        .select("id, title, period_start, period_end, summary, pdf_path")
-        .order("period_end", { ascending: false }),
-    ]);
+  const [{ data: defs }, { data: entries }, { data: competitors }, { data: reports }] = await Promise.all([
+    supabase.from("metric_definitions").select("id, label, unit, sort_order").order("sort_order"),
+    supabase.from("metric_entries").select("definition_id, period, value_numeric, value_text").order("period"),
+    supabase
+      .from("competitors")
+      .select("id, name_or_handle, niche, follower_count, avg_views, top_content_format, hook_style, whats_working, gap_notes, adapted_idea, priority")
+      .order("priority", { ascending: false }),
+    supabase.from("reports").select("id, title, period_start, period_end, summary, pdf_path").order("period_end", { ascending: false }),
+  ]);
 
-  const allDefs = (defs ?? []) as DefLite[];
-  const numericDefs = allDefs.filter((d) => d.unit !== "text");
-  const textDefs = allDefs.filter((d) => d.unit === "text");
+  const allDefs = (defs ?? []) as { id: string; label: string; unit: string }[];
+  const data: PerfData = {
+    firstName: (profile.full_name ?? "there").split(" ")[0],
+    avatarSrc: profile.avatar_url,
+    clientId: profile.client_id ?? undefined,
+    numericDefs: allDefs.filter((d) => d.unit !== "text").map((d) => ({ id: d.id, label: d.label, unit: d.unit })),
+    textDefs: allDefs.filter((d) => d.unit === "text").map((d) => ({ id: d.id, label: d.label, unit: d.unit })),
+    entries: (entries ?? []).map((e) => ({ definition_id: e.definition_id, period: e.period, value_numeric: e.value_numeric, value_text: e.value_text })),
+    competitors: (competitors ?? []).map((c) => ({
+      id: c.id, name: c.name_or_handle, niche: c.niche, followers: c.follower_count, avgViews: c.avg_views,
+      topFormat: c.top_content_format, hook: c.hook_style, working: c.whats_working, gap: c.gap_notes, play: c.adapted_idea, priority: c.priority,
+    })),
+    reports: (reports ?? []).map((r) => ({ id: r.id, title: r.title, periodLabel: formatReportPeriod(r.period_start, r.period_end), summary: r.summary, pdfPath: r.pdf_path })),
+  };
 
-  return (
-    <PageContainer width="standard" stack>
-      <PageHeader
-        title="Your numbers, live"
-        description="Fresh metrics on the first of every month — straight from the sources we track."
-      />
-
-      <Card>
-        <CardContent>
-          <MetricsCharts numericDefs={numericDefs} textDefs={textDefs} entries={(entries ?? []) as Entry[]} />
-        </CardContent>
-      </Card>
-
-      {(competitors ?? []).length > 0 && (
-        <div className="flex flex-col gap-3">
-          <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">
-            Competitors
-          </h2>
-          <div className="grid items-stretch gap-4 sm:grid-cols-2">
-            {(competitors ?? []).map((c) => (
-              <Card key={c.id} className="h-full">
-                <CardContent className="flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-semibold">{c.name_or_handle}</div>
-                      {c.niche && <div className="text-xs text-ink-3">{c.niche}</div>}
-                    </div>
-                    <StatusChip kind="priority" value={c.priority} />
-                  </div>
-
-                  {(c.follower_count != null || c.avg_views != null) && (
-                    <div className="flex gap-6">
-                      {c.follower_count != null && (
-                        <div>
-                          <div className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">Followers</div>
-                          <div className="text-sm font-semibold tabular-nums">{c.follower_count.toLocaleString()}</div>
-                        </div>
-                      )}
-                      {c.avg_views != null && (
-                        <div>
-                          <div className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">Avg views</div>
-                          <div className="text-sm font-semibold tabular-nums">{c.avg_views.toLocaleString()}</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {(c.top_content_format || c.hook_style) && (
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      {c.top_content_format && (
-                        <div>
-                          <div className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">Top format</div>
-                          <div>{c.top_content_format}</div>
-                        </div>
-                      )}
-                      {c.hook_style && (
-                        <div>
-                          <div className="text-[11px] font-bold tracking-wider text-ink-3 uppercase">Hook style</div>
-                          <div>{c.hook_style}</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {c.whats_working && (
-                    <p className="text-sm">
-                      <span className="text-ink-3">What&apos;s working: </span>
-                      {c.whats_working}
-                    </p>
-                  )}
-                  {c.gap_notes && (
-                    <p className="text-sm">
-                      <span className="text-ink-3">The gap: </span>
-                      {c.gap_notes}
-                    </p>
-                  )}
-                  {c.adapted_idea && (
-                    <div className="rounded-xl bg-amber-50 p-3 text-sm">
-                      <div className="text-[11px] font-bold tracking-wider text-amber-800 uppercase">
-                        Our play
-                      </div>
-                      <p className="mt-1 text-amber-900">{c.adapted_idea}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div id="reports" className="flex scroll-mt-24 flex-col gap-3">
-        <h2 className="font-display text-xl font-semibold tracking-[-0.01em]">Reports</h2>
-        <ClientReports clientId={profile.client_id!} reports={(reports ?? []) as ClientReport[]} />
-      </div>
-    </PageContainer>
-  );
+  return <RedesignPerformance data={data} embedded />;
 }

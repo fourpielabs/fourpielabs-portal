@@ -4,10 +4,11 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { tokens } from "@fluentui/react-components";
 
-import { useRedesignMode } from "@/components/redesign/themed-fluent";
+import { useRedesignMode, FluentScope } from "@/components/redesign/themed-fluent";
 import { Shell, AmbientField, Measure, Eyebrow } from "@/components/redesign/ui";
 import { PreviewChrome, LivePill } from "@/components/redesign/chrome";
 import { StatusPill, DeltaChip } from "@/components/redesign/data-ui";
+import { DownloadButton } from "@/components/redesign/client/download-button";
 import { useReducedMotion } from "@/lib/motion";
 import { formatMetricValue, formatMonthShort, monthsBetween } from "@/lib/format";
 import type { ChartPoint } from "./perf-chart";
@@ -36,10 +37,11 @@ export type PerfData = {
     play: string | null;
     priority: string;
   }[];
-  reports: { id: string; title: string; periodLabel: string | null; summary: string | null }[];
+  reports: { id: string; title: string; periodLabel: string | null; summary: string | null; pdfPath?: string | null }[];
+  clientId?: string;
 };
 
-export function RedesignPerformance({ data }: { data: PerfData }) {
+export function RedesignPerformance({ data, embedded = false }: { data: PerfData; embedded?: boolean }) {
   const { mode } = useRedesignMode();
   const reduced = useReducedMotion() === true;
   const onDark = mode === "dark";
@@ -76,17 +78,30 @@ export function RedesignPerformance({ data }: { data: PerfData }) {
   }));
   const rowsNewestFirst = [...axis].reverse();
 
-  return (
-    <Shell>
-      <AmbientField mode={mode} />
-      <PreviewChrome
-        active="Performance"
-        onDark={onDark}
-        avatarName={data.firstName}
-        avatarSrc={data.avatarSrc}
-        rightSlot={<LivePill label="Live · updated monthly" onDark={onDark} />}
-      />
+  const Frame = ({ children }: { children: React.ReactNode }) =>
+    embedded ? (
+      <FluentScope>
+        <div aria-hidden style={{ position: "fixed", inset: 0, zIndex: 0 }}>
+          <AmbientField mode={mode} />
+        </div>
+        {children}
+      </FluentScope>
+    ) : (
+      <Shell>
+        <AmbientField mode={mode} />
+        <PreviewChrome
+          active="Performance"
+          onDark={onDark}
+          avatarName={data.firstName}
+          avatarSrc={data.avatarSrc}
+          rightSlot={<LivePill label="Live · updated monthly" onDark={onDark} />}
+        />
+        {children}
+      </Shell>
+    );
 
+  return (
+    <Frame>
       <Measure width="wide" style={{ position: "relative", zIndex: 1, paddingBlock: "clamp(1.75rem, 4vw, 2.75rem)", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         <div className="rd-rise">
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -266,7 +281,12 @@ export function RedesignPerformance({ data }: { data: PerfData }) {
                     <StatusPill value="published" mode={mode} />
                   </div>
                   {r.periodLabel && <span style={{ fontSize: "0.76rem", color: fg3 }}>{r.periodLabel}</span>}
-                  {r.summary && <p style={{ margin: 0, fontSize: "0.85rem", color: fg2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.summary}</p>}
+                  {r.summary && <p style={{ margin: 0, fontSize: "0.85rem", color: fg2, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.summary}</p>}
+                  {r.pdfPath && data.clientId && (
+                    <div style={{ marginTop: 4 }}>
+                      <DownloadButton clientId={data.clientId} path={r.pdfPath} label="Download PDF" appearance="outline" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -278,7 +298,7 @@ export function RedesignPerformance({ data }: { data: PerfData }) {
         .rd-comp-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
         @media (min-width: 760px) { .rd-comp-grid { grid-template-columns: 1fr 1fr; } }
       `}</style>
-    </Shell>
+    </Frame>
   );
 }
 

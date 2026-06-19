@@ -65,10 +65,14 @@ async function main() {
   {
     const ctx = await b.newContext({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: DSF });
     const p = await ctx.newPage(); await login(p, PROGRAM);
-    for (const [route, name] of [["/dashboard", "dashboard"], ["/deliverables", "deliverables"], ["/tasks", "tasks"], ["/settings", "settings"], ["/messages", "messages"]]) {
-      await p.goto(`${BASE}${route}`, { waitUntil: "domcontentloaded" }); await p.waitForTimeout(900);
+    const w2 = new Set(["performance", "program", "content", "calls", "documents"]);
+    for (const [route, name] of [["/dashboard", "dashboard"], ["/deliverables", "deliverables"], ["/tasks", "tasks"], ["/settings", "settings"], ["/messages", "messages"], ["/performance", "performance"], ["/program", "program"], ["/content", "content"], ["/calls-notes", "calls"], ["/documents", "documents"]]) {
+      await p.goto(`${BASE}${route}`, { waitUntil: "domcontentloaded" }); await p.waitForTimeout(1000);
       await audit(p, `program/${name}/light`);
-      await toggle(p); await audit(p, `program/${name}/dark`); await toggle(p);
+      if (w2.has(name)) await shot(p, `r2-${name}-1440-light`);
+      await toggle(p); await audit(p, `program/${name}/dark`);
+      if (w2.has(name)) await shot(p, `r2-${name}-1440-dark`);
+      await toggle(p);
     }
     // messages screenshots + send spot-check
     await p.goto(`${BASE}/messages`, { waitUntil: "domcontentloaded" }); await p.waitForTimeout(1000);

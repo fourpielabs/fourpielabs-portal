@@ -206,6 +206,26 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* markdown prose inside converted bodies — the shared <Markdown> is light-only, so
+   re-point its text at the Fluent theme tokens (mode-aware). Unlayered → beats the
+   Tailwind utility colors inside it. */
+.rd-prose,
+.rd-prose p,
+.rd-prose li,
+.rd-prose strong,
+.rd-prose h1,
+.rd-prose h2,
+.rd-prose h3,
+.rd-prose blockquote {
+  color: var(--colorNeutralForeground1);
+}
+.rd-prose code {
+  color: var(--colorNeutralForeground1);
+}
+.rd-prose a {
+  color: var(--colorBrandForeground1);
+}
+
 /* visible keyboard focus for custom (non-Fluent) interactive chrome — reuses the
    app's existing focus token so it matches the live product. Fluent components
    bring their own Tabster-driven focus indicator. */
