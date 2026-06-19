@@ -1,23 +1,6 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
-import { labelOf, PROGRAMS } from "@/lib/constants";
-import { PersonAvatar } from "@/components/ui/person-avatar";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { StatusChip } from "@/components/ui/status-chip";
-import { EmptyState } from "@/components/ui/empty-state";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { PageContainer } from "@/components/layout/page-container";
-import { PageHeader } from "@/components/layout/page-header";
+import { ClientsListBody, type ClientRow } from "@/components/redesign/staff/clients-list-body";
 
 export default async function ClientsPage() {
   // team workspace list — clients are redirected to /dashboard
@@ -57,121 +40,16 @@ export default async function ClientsPage() {
     return g ? `${g.done}/${g.total}` : "—";
   };
 
-  return (
-    <PageContainer width="standard" stack>
-      <PageHeader
-        title="Clients"
-        description={isAdmin ? "All clients." : "Clients you're assigned to."}
-        actions={
-          isAdmin ? (
-            <Button asChild>
-              <Link href="/clients/new">New client</Link>
-            </Button>
-          ) : undefined
-        }
-      />
+  const rows: ClientRow[] = (clients ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    program: c.program,
+    client_type: c.client_type,
+    status: c.status,
+    logo_url: c.logo_url,
+    progress: progress(c),
+  }));
 
-      {!clients || clients.length === 0 ? (
-        <EmptyState
-          title={isAdmin ? "No clients yet" : "No assigned clients yet"}
-          description={
-            isAdmin
-              ? "Create your first client to get started."
-              : "Once you're assigned to a client, they'll appear here."
-          }
-          action={
-            isAdmin ? (
-              <Button asChild size="sm">
-                <Link href="/clients/new">New client</Link>
-              </Button>
-            ) : undefined
-          }
-        />
-      ) : (
-        <>
-          {/* desktop: designed table */}
-          <div className="hidden overflow-hidden rounded-2xl border border-border shadow-e2 sm:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Program</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Progress</TableHead>
-                  <TableHead className="text-right">Manage</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {clients.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell>
-                      <Link href={`/clients/${c.id}`} className="flex items-center gap-3">
-                        <PersonAvatar name={c.name} src={c.logo_url} square size="md" className="shrink-0" />
-                        <span className="min-w-0">
-                          <span className="block truncate font-semibold">{c.name}</span>
-                          <span className="block truncate text-xs text-ink-3">{c.slug}</span>
-                        </span>
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      {c.client_type === "project" ? (
-                        <Badge variant="secondary">Project</Badge>
-                      ) : (
-                        <Badge variant="amber">{labelOf(PROGRAMS, c.program)}</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <StatusChip kind="client" value={c.status} />
-                    </TableCell>
-                    <TableCell className="tabular-nums text-ink-2">{progress(c)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/clients/${c.id}`}>Open</Link>
-                      </Button>
-                      {isAdmin && (
-                        <Button asChild variant="ghost" size="sm">
-                          <Link href={`/clients/${c.id}/settings`}>Settings</Link>
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* mobile: cards */}
-          <div className="grid gap-4 sm:hidden">
-            {clients.map((c) => (
-              <Link
-                key={c.id}
-                href={`/clients/${c.id}`}
-                className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-e1"
-              >
-                <div className="flex items-start gap-3">
-                  <PersonAvatar name={c.name} src={c.logo_url} square size="lg" className="shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold">{c.name}</div>
-                    <div className="truncate text-xs text-ink-3">{c.slug}</div>
-                  </div>
-                  <ArrowRight className="size-4 shrink-0 text-ink-faint" />
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {c.client_type === "project" ? (
-                    <Badge variant="secondary">Project</Badge>
-                  ) : (
-                    <Badge variant="amber">{labelOf(PROGRAMS, c.program)}</Badge>
-                  )}
-                  <StatusChip kind="client" value={c.status} />
-                  <span className="text-xs text-ink-3 tabular-nums">
-                    {c.client_type === "project" ? progress(c) : `Checklist ${progress(c)}`}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </>
-      )}
-    </PageContainer>
-  );
+  return <ClientsListBody clients={rows} isAdmin={isAdmin} />;
 }

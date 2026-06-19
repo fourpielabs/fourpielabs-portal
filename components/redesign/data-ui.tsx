@@ -11,13 +11,16 @@ export function humanize(v: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-type Tone = "success" | "amber" | "neutral" | "info";
+type Tone = "success" | "amber" | "neutral" | "info" | "danger";
 
 function toneOf(value: string): Tone {
-  const v = value.toLowerCase();
-  if (/(done|approved|delivered|published|complete|active|won)/.test(v)) return "success";
-  if (/(in_progress|in progress|review|scheduled|pending|proposed)/.test(v)) return "amber";
-  if (/(upcoming|draft|todo|backlog|new)/.test(v)) return "neutral";
+  // normalize underscores → spaces so word boundaries work (so "inactive" never
+  // matches "active", and "in_progress" matches "in progress").
+  const v = value.toLowerCase().replace(/_/g, " ");
+  if (/\b(done|approved|delivered|published|complete|completed|active|won|paid)\b/.test(v)) return "success";
+  if (/\b(churned|failed|cancelled|canceled|rejected|overdue|error|lost)\b/.test(v)) return "danger";
+  if (/\b(in progress|review|scheduled|pending|proposed|onboarding)\b/.test(v)) return "amber";
+  if (/\b(upcoming|draft|todo|backlog|new|paused|inactive|on hold|not started|empty)\b/.test(v)) return "neutral";
   return "info";
 }
 
@@ -27,12 +30,14 @@ const TONE_LIGHT: Record<Tone, { bg: string; fg: string; bd: string }> = {
   amber: { bg: "#fef3c7", fg: "#92400e", bd: "#fde68a" },
   neutral: { bg: "#f1efe8", fg: "#57534e", bd: "#e2dfd8" },
   info: { bg: "#dbeafe", fg: "#1d4ed8", bd: "#bfdbfe" },
+  danger: { bg: "#fee2e2", fg: "#991b1b", bd: "#fecaca" },
 };
 const TONE_DARK: Record<Tone, { bg: string; fg: string; bd: string }> = {
   success: { bg: "rgba(34,197,94,0.16)", fg: "#86efac", bd: "rgba(34,197,94,0.32)" },
   amber: { bg: "rgba(245,158,11,0.16)", fg: "#fcd34d", bd: "rgba(245,158,11,0.34)" },
   neutral: { bg: "rgba(255,255,255,0.08)", fg: "#cdc6ba", bd: "rgba(255,255,255,0.16)" },
   info: { bg: "rgba(96,165,250,0.16)", fg: "#bfdbfe", bd: "rgba(96,165,250,0.34)" },
+  danger: { bg: "rgba(239,68,68,0.16)", fg: "#fca5a5", bd: "rgba(239,68,68,0.34)" },
 };
 
 /** Small, mode-aware status pill (AA in both modes). */

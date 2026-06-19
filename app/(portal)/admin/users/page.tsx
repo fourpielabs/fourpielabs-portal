@@ -1,31 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/guards";
-import { labelOf, ROLES } from "@/lib/constants";
 import { formatRelative } from "@/lib/format";
-import { cn } from "@/lib/utils";
-import { PersonAvatar } from "@/components/ui/person-avatar";
-import { InviteForm } from "@/components/admin/invite-form";
-import { UserActiveToggle } from "@/components/admin/user-active-toggle";
-import { PendingInviteActions } from "@/components/admin/pending-invite-actions";
-import { StatusChip } from "@/components/ui/status-chip";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { PageContainer } from "@/components/layout/page-container";
-import { PageHeader } from "@/components/layout/page-header";
+import { StaffPageFrame, StaffPageHeader } from "@/components/redesign/staff/ui";
+import { UsersBody, type UserRow } from "@/components/redesign/staff/users-body";
 
 export default async function AdminUsersPage() {
   const me = await requireRole(["admin"]);
@@ -44,24 +22,14 @@ export default async function AdminUsersPage() {
       adminClient.auth.admin.listUsers({ perPage: 1000 }),
     ]);
 
-  // pending = invited but never accepted (no email_confirmed_at on the auth user)
   const confirmed = new Map(
     (authList.data?.users ?? []).map((u) => [u.id, Boolean(u.email_confirmed_at)]),
   );
   const isPending = (p: { id: string; is_active: boolean }) =>
     p.is_active && confirmed.get(p.id) === false;
-
   const lastActive = new Map(
     (authList.data?.users ?? []).map((u) => [u.id, u.last_sign_in_at ?? null]),
   );
-  const pendingCount = (profiles ?? []).filter(isPending).length;
-
-  const rolePill = (role: string) =>
-    role === "admin"
-      ? "bg-ink text-white"
-      : role === "team"
-        ? "bg-surface-2 text-ink-2"
-        : "border border-border-strong bg-surface text-ink-2";
 
   const clientName = new Map((clients ?? []).map((c) => [c.id, c.name]));
   const assignedByUser = new Map<string, string[]>();
@@ -70,10 +38,8 @@ export default async function AdminUsersPage() {
     list.push(clientName.get(a.client_id) ?? "—");
     assignedByUser.set(a.user_id, list);
   }
-
   function scopeFor(p: { id: string; role: string; client_id: string | null }) {
-    if (p.role === "client")
-      return p.client_id ? (clientName.get(p.client_id) ?? "—") : "—";
+    if (p.role === "client") return p.client_id ? (clientName.get(p.client_id) ?? "—") : "—";
     if (p.role === "team") {
       const list = assignedByUser.get(p.id) ?? [];
       return list.length ? list.join(", ") : "No assignments";
@@ -81,186 +47,33 @@ export default async function AdminUsersPage() {
     return "All clients";
   }
 
+  const all = profiles ?? [];
+  const pendingCount = all.filter(isPending).length;
+  const rows: UserRow[] = all.map((p) => {
+    const pending = isPending(p);
+    const la = lastActive.get(p.id);
+    return {
+      id: p.id,
+      name: p.full_name,
+      email: p.email,
+      role: p.role,
+      avatar_url: p.avatar_url,
+      isActive: p.is_active,
+      pending,
+      isSelf: p.id === me.id,
+      statusValue: !p.is_active ? "inactive" : pending ? "pending" : "active",
+      scope: scopeFor(p),
+      lastActive: la ? formatRelative(la) : null,
+    };
+  });
+
   return (
-    <PageContainer width="wide" stack>
-      <PageHeader
+    <StaffPageFrame max="90rem">
+      <StaffPageHeader
         title="Users"
-        description={
-          <span className="tabular-nums">
-            {(profiles ?? []).length} users · {pendingCount} pending invite
-            {pendingCount === 1 ? "" : "s"}
-          </span>
-        }
+        description={`${all.length} users · ${pendingCount} pending invite${pendingCount === 1 ? "" : "s"}`}
       />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Invite a staff user</CardTitle>
-          <CardDescription>
-            Sends a Supabase invitation to an admin or team member. Client portal
-            users are created with their client — see New client. If a send fails
-            you&apos;ll see a specific reason (also recorded in the audit log).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <InviteForm />
-        </CardContent>
-      </Card>
-
-      <div className="hidden overflow-x-auto rounded-2xl border border-border shadow-e2 md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Access</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last active</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(profiles ?? []).map((p) => {
-              const pending = isPending(p);
-              const self = p.id === me.id;
-              const statusValue = !p.is_active ? "inactive" : pending ? "pending" : "active";
-              return (
-                <TableRow
-                  key={p.id}
-                  className={
-                    pending ? "bg-[var(--pending-row)]" : !p.is_active ? "opacity-60" : ""
-                  }
-                >
-                  <TableCell className="font-medium">
-                    <span className="flex items-center gap-[11px]">
-                      <PersonAvatar
-                        name={p.full_name}
-                        email={p.email}
-                        src={p.avatar_url}
-                        size="md"
-                        className={cn(
-                          "shrink-0",
-                          pending && "after:border-dashed after:border-amber-400",
-                          !p.is_active && "opacity-70",
-                        )}
-                      />
-                      <span className="min-w-0">
-                        <span className="flex items-center gap-2">
-                          <span className={!p.is_active ? "text-ink-faint line-through" : ""}>
-                            {p.full_name ?? "—"}
-                          </span>
-                          {self && (
-                            <span className="rounded-full bg-amber-100 px-[7px] py-[1.5px] text-[9.5px] font-bold tracking-[0.05em] text-amber-800 uppercase">
-                              You
-                            </span>
-                          )}
-                        </span>
-                        <span className="block text-xs text-ink-3">{p.email}</span>
-                      </span>
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex rounded-full px-2.5 py-[3px] text-[11px] font-semibold ${rolePill(p.role)}`}>
-                      {labelOf(ROLES, p.role)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="max-w-[16rem] text-[13px] text-ink-3">
-                    {scopeFor(p)}
-                  </TableCell>
-                  <TableCell>
-                    <StatusChip kind="user" value={statusValue} />
-                  </TableCell>
-                  <TableCell className="text-[13px] text-ink-3 tabular-nums">
-                    {lastActive.get(p.id) ? formatRelative(lastActive.get(p.id)!) : "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {pending ? (
-                      <PendingInviteActions
-                        userId={p.id}
-                        label={p.full_name ?? p.email ?? "this user"}
-                      />
-                    ) : (
-                      <UserActiveToggle
-                        userId={p.id}
-                        isActive={p.is_active}
-                        isSelf={p.id === me.id}
-                        label={p.full_name ?? p.email ?? "this user"}
-                      />
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* mobile: cards (K6 table->cards at 390) */}
-      <div className="flex flex-col gap-3 md:hidden">
-        {(profiles ?? []).map((p) => {
-          const pending = isPending(p);
-          const self = p.id === me.id;
-          const statusValue = !p.is_active ? "inactive" : pending ? "pending" : "active";
-          return (
-            <div
-              key={p.id}
-              className={cn(
-                "rounded-2xl border border-border bg-surface p-4 shadow-e1",
-                pending && "bg-[var(--pending-row)]",
-                !p.is_active && "opacity-60",
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <PersonAvatar
-                  name={p.full_name}
-                  email={p.email}
-                  src={p.avatar_url}
-                  size="md"
-                  className={cn("shrink-0", pending && "after:border-dashed after:border-amber-400")}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className={cn("truncate font-medium", !p.is_active && "text-ink-faint line-through")}>
-                      {p.full_name ?? "—"}
-                    </span>
-                    {self && (
-                      <span className="rounded-full bg-amber-100 px-[7px] py-[1.5px] text-[9.5px] font-bold tracking-[0.05em] text-amber-800 uppercase">
-                        You
-                      </span>
-                    )}
-                  </div>
-                  <div className="truncate text-xs text-ink-3">{p.email}</div>
-                </div>
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className={`inline-flex rounded-full px-2.5 py-[3px] text-[11px] font-semibold ${rolePill(p.role)}`}>
-                  {labelOf(ROLES, p.role)}
-                </span>
-                <StatusChip kind="user" value={statusValue} />
-                <span className="text-xs text-ink-3">{scopeFor(p)}</span>
-              </div>
-              <div className="mt-1 text-xs text-ink-3 tabular-nums">
-                Last active {lastActive.get(p.id) ? formatRelative(lastActive.get(p.id)!) : "—"}
-              </div>
-              <div className="mt-3 [&_a]:h-11 [&_button]:h-11">
-                {pending ? (
-                  <PendingInviteActions
-                    userId={p.id}
-                    label={p.full_name ?? p.email ?? "this user"}
-                  />
-                ) : (
-                  <UserActiveToggle
-                    userId={p.id}
-                    isActive={p.is_active}
-                    isSelf={self}
-                    label={p.full_name ?? p.email ?? "this user"}
-                  />
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </PageContainer>
+      <UsersBody users={rows} />
+    </StaffPageFrame>
   );
 }

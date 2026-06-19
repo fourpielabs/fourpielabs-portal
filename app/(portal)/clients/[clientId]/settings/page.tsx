@@ -2,18 +2,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { type ClientUpdateValues } from "@/lib/schemas";
-import { ClientEditForm } from "@/components/clients/client-edit-form";
-import {
-  AssignmentManager,
-  type TeamMember,
-} from "@/components/clients/assignment-manager";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { type TeamMember } from "@/components/clients/assignment-manager";
+import { ClientSettingsBody } from "@/components/redesign/staff/client-settings-body";
 
 export default async function ClientSettingsPage({
   params,
@@ -64,36 +54,11 @@ export default async function ClientSettingsPage({
   const assignedIds = (assignments ?? []).map((a) => a.user_id);
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Details</CardTitle>
-          <CardDescription>
-            Core client info, program, and status. Setting status to Paused or
-            Churned is the soft-delete (no hard delete in v1).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ClientEditForm defaults={defaults} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Team assignments</CardTitle>
-          <CardDescription>
-            Assigned team members get full access to this client&apos;s
-            workspace (enforced by RLS).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AssignmentManager
-            clientId={client.id}
-            team={(team ?? []) as TeamMember[]}
-            assignedIds={assignedIds}
-          />
-        </CardContent>
-      </Card>
-    </div>
+    <ClientSettingsBody
+      defaults={defaults}
+      clientId={client.id}
+      team={(team ?? []) as TeamMember[]}
+      assignedIds={assignedIds}
+    />
   );
 }

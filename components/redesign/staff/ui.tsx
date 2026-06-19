@@ -5,9 +5,9 @@ import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import {
   Dialog, DialogSurface, DialogBody, DialogTitle, DialogActions, DialogTrigger,
-  EmberButton, Button, Eyebrow, tokens,
+  EmberButton, Button, Eyebrow, AmbientField, tokens,
 } from "@/components/redesign/ui";
-import { useRedesignMode } from "@/components/redesign/themed-fluent";
+import { FluentScope, useRedesignMode } from "@/components/redesign/themed-fluent";
 
 /**
  * R3 staff workspace kit — the shared ember-glass building blocks every converted
@@ -29,6 +29,64 @@ export function usePanel() {
     brand: tokens.colorBrandForeground1,
     border: onDark ? "#34302a" : "#e7e5e0",
   };
+}
+
+/**
+ * The frame every TOP-LEVEL staff page (clients list, admin/users, admin/audit, new
+ * client) opts into — these render OUTSIDE the per-client WorkspaceChrome, so they need
+ * their own FluentScope + ambient field + a readable container. (Per-client tab bodies
+ * are already inside the chrome's FluentScope and must NOT use this.)
+ */
+export function StaffPageFrame({
+  children, max = "75rem",
+}: {
+  children: React.ReactNode; max?: string;
+}) {
+  const { mode } = useRedesignMode();
+  return (
+    <FluentScope>
+      <div aria-hidden style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}>
+        <AmbientField mode={mode} />
+      </div>
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: max, marginInline: "auto", paddingInline: "var(--rd-page-px)", paddingBlock: "clamp(1rem,3vw,1.75rem)", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        {children}
+      </div>
+    </FluentScope>
+  );
+}
+
+/** Page heading for a top-level staff page (eyebrow-display title + description + actions). */
+export function StaffPageHeader({
+  title, description, actions,
+}: {
+  title: string; description?: React.ReactNode; actions?: React.ReactNode;
+}) {
+  const { fg1, fg3 } = usePanel();
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "1rem" }}>
+      <div style={{ minWidth: 0 }}>
+        <h1 className="rd-display" style={{ margin: 0, fontSize: "clamp(1.5rem,3.5vw,2rem)", fontWeight: 600, color: fg1, lineHeight: 1.05 }}>{title}</h1>
+        {description && <p style={{ margin: "0.3rem 0 0", fontSize: "0.9rem", color: fg3 }}>{description}</p>}
+      </div>
+      {actions}
+    </div>
+  );
+}
+
+/** A SOLID titled panel (heading + optional description + body) — for form sections. */
+export function TitledPanel({
+  title, description, children,
+}: {
+  title: string; description?: React.ReactNode; children: React.ReactNode;
+}) {
+  const { panel, fg1, fg3 } = usePanel();
+  return (
+    <section className={panel} style={{ borderRadius: 20, padding: "clamp(1.1rem,2.5vw,1.5rem)" }}>
+      <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 600, color: fg1 }}>{title}</h2>
+      {description && <p style={{ margin: "0.25rem 0 0", fontSize: "0.85rem", color: fg3 }}>{description}</p>}
+      <div style={{ marginTop: "1rem" }}>{children}</div>
+    </section>
+  );
 }
 
 /** Compact staff section header: muted count/label at left, primary action at right. */
