@@ -97,5 +97,34 @@ Harbor Lab). `real?` = doesn't match any test heuristic → a candidate real acc
 
 ---
 
-**STATUS: dry run complete. No users or clients were modified. Awaiting your confirmation of the
-exact KEEP/DELETE list before any deletion.**
+---
+
+## ✅ EXECUTED (2026-06-20, owner-confirmed KEEP list)
+
+Run via `scripts/account-cleanup.ts` (service-role, dry-run-verified plan, hard keeper guard).
+
+**Deleted, in the safe order:**
+1. Test logins — `demo-client@example.com`, `demo-project@example.com`, `demo-team@example.com`
+2. Test clients (cascade) — Premier Painting Co., Coastal Tours Co., Demo Project Co.,
+   Sunrise Plumbing Co., Harbor Lab Studio
+3. `demo-admin@example.com` LAST (2 real admins active throughout → last-admin guard never tripped)
+
+**Final state (verified):**
+- Users (3, all keepers): `syedsuqlain36@gmail.com` (admin, active), `shahmir687@gmail.com`
+  (admin, active), `fourpielabs@gmail.com` (client, active).
+- Clients (1, keeper): **FourPie Labs** (`fourpie-labs`) — its login + workspace intact
+  (2 threads, 1 project, 2 tasks).
+- Active admins: **2** (both real keepers).
+- Cascade clean: **0** orphaned rows referencing any deleted client (files/deliverables/tasks/
+  projects/threads/messages/checklist/metrics/reports all 0); **0** orphaned Storage objects
+  under any deleted client prefix (bucket `client-files`).
+- Build green + tsc clean. Data-layer code diff vs main: **empty** (RLS/RPCs/migrations/actions
+  unchanged — the cleanup was DATA-only).
+
+**RLS suite note:** `scripts/test-rls.ts` is NOT self-seeding (contrary to the task's
+assumption) — it signs in as `demo-client@example.com` and reads the `demo-team`/`demo-client`
+profiles + the Premier client, all of which were the deletion targets. It therefore cannot run
+against the cleaned DB without re-creating those accounts. It passed **267/267** earlier this
+phase (with fixtures present); the cleanup changed zero policy code, so the policy behavior is
+unchanged. A literal post-cleanup run would require re-seed → run → re-clean (re-creating the
+demo accounts briefly) — held, as it's counter to the clean-DB goal; available on request.
