@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
-import { ContentCalendar } from "@/components/content/content-calendar";
+import { ContentCalendar } from "@/components/redesign/staff/content-calendar";
 import { type ContentItem } from "@/components/content/content-dialog";
 
 export default async function ContentPage({

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
-import { ReportsManager, type Report } from "@/components/reports/reports-manager";
+import { ReportsManager, type Report } from "@/components/redesign/staff/reports-manager";
 
 export default async function ReportsPage({
   params,

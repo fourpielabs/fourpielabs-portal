@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
-import {
-  CallsManager,
-  type CallType,
-  type CallRecording,
+import { CallsManager } from "@/components/redesign/staff/calls-manager";
+import type {
+  CallType,
+  CallRecording,
 } from "@/components/calls/calls-manager";
 
 export default async function CallsPage({

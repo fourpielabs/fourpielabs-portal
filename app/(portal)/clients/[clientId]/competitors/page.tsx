@@ -1,9 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
-import {
-  CompetitorsManager,
-  type Competitor,
-} from "@/components/competitors/competitors-manager";
+import { CompetitorsManager } from "@/components/redesign/staff/competitors-manager";
+import { type Competitor } from "@/components/competitors/competitors-manager";
 
 export default async function CompetitorsPage({
   params,

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
-import { NotesManager, type MeetingNote } from "@/components/notes/notes-manager";
+import { NotesManager, type MeetingNote } from "@/components/redesign/staff/notes-manager";
 
 export default async function NotesPage({
   params,

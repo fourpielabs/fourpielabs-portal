@@ -2,18 +2,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
 import { type ProgramValues } from "@/lib/schemas";
-import { ProgramForm } from "@/components/program/program-form";
-import {
-  MilestonesEditor,
-  type Milestone,
-} from "@/components/program/milestones-editor";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { ProgramBody } from "@/components/redesign/staff/program-body";
+import { type Milestone } from "@/components/redesign/staff/milestones-editor";
 
 export default async function ProgramPage({
   params,
@@ -59,31 +49,10 @@ export default async function ProgramPage({
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Program overview</CardTitle>
-          <CardDescription>
-            What the client sees on their Program page.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ProgramForm defaults={defaults} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Journey &amp; milestones</CardTitle>
-          <CardDescription>The roadmap shown to the client.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <MilestonesEditor
-            clientId={clientId}
-            milestones={(milestones ?? []) as Milestone[]}
-          />
-        </CardContent>
-      </Card>
-    </div>
+    <ProgramBody
+      defaults={defaults}
+      clientId={clientId}
+      milestones={(milestones ?? []) as Milestone[]}
+    />
   );
 }

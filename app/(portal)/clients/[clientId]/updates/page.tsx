@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
-import { UpdatesList, type UpdateItem } from "@/components/updates/updates-list";
+import { UpdatesList, type UpdateItem } from "@/components/redesign/staff/updates-list";
 
 export default async function UpdatesPage({
   params,
