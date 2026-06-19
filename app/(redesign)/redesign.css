@@ -206,6 +206,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* visible keyboard focus for custom (non-Fluent) interactive chrome — reuses the
+   app's existing focus token so it matches the live product. Fluent components
+   bring their own Tabster-driven focus indicator. */
+.rd-focus:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-solid);
+}
+
 /* === ENTRANCE / HOVER (CSS-driven, reduced-motion SAFE by construction) =======
    The resting state is ALWAYS visible (opacity 1); the keyframe only adds a
    `from` state and uses fill-mode `backwards`, so once it ends the element is

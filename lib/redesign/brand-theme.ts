@@ -71,6 +71,9 @@ const baseLight = createLightTheme(amberBrandRamp);
 
 export const redesignLightTheme: Theme = {
   ...baseLight,
+  // match the app's typeface so Fluent chrome doesn't fall back to Segoe UI
+  fontFamilyBase: "var(--font-inter), Inter, system-ui, sans-serif",
+  fontFamilyNumeric: "var(--font-inter), Inter, system-ui, sans-serif",
   // warm neutral surfaces (components paint with these)
   colorNeutralBackground1: "#ffffff", // cards, inputs, popovers
   colorNeutralBackground1Hover: "#fbf9f4",
@@ -104,6 +107,8 @@ const baseDark = createDarkTheme(amberBrandRamp);
 
 export const redesignDarkTheme: Theme = {
   ...baseDark,
+  fontFamilyBase: "var(--font-inter), Inter, system-ui, sans-serif",
+  fontFamilyNumeric: "var(--font-inter), Inter, system-ui, sans-serif",
   // warm obsidian surfaces
   colorNeutralBackground1: "#1c1813", // cards, inputs on dark
   colorNeutralBackground1Hover: "#241f18",

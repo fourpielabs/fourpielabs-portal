@@ -9,6 +9,9 @@ import { useRedesignMode } from "@/components/redesign/themed-fluent";
  * classes in app/(redesign)/redesign.css. Keeping these in one place is the
  * "spend boldness in ONE place, keep everything else quiet" discipline: the glass
  * recipe lives here and on the KPI/auth surfaces, nowhere else.
+ *
+ * (Moved from components/redesign/ui.tsx into the ui/ layer in R1; re-exported by
+ * ui/index.ts so existing `@/components/redesign/ui` imports keep resolving.)
  */
 
 /** Full-bleed, full-height immersive shell. */
