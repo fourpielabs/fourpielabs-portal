@@ -107,11 +107,11 @@ export function RedesignPerformance({ data, embedded = false }: { data: PerfData
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             <Eyebrow tone={onDark ? "onDark" : "amber"}>Performance</Eyebrow>
             <h1 className="rd-display" style={{ margin: 0, fontSize: "clamp(1.9rem, 5vw, 2.8rem)", fontWeight: 600, lineHeight: 1.02, color: fg1 }}>
-              Your numbers, live.
+              The numbers that grow your business.
             </h1>
             <p style={{ margin: 0, fontSize: "0.98rem", color: fg2, maxWidth: "40rem" }}>
-              Fresh metrics on the first of every month, straight from the sources we track. Glass
-              stops at the door here — the data sits on solid, high-contrast surfaces.
+              Fresh numbers on the 1st of every month — leads, calls, rankings, and AEO citations,
+              straight from Google, Maps, and your ad accounts.
             </p>
           </div>
         </div>

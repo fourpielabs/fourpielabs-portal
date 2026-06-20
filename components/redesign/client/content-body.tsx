@@ -43,7 +43,7 @@ export function ContentBody({ items }: { items: ClientContentItem[] }) {
         <div className="rd-rise" style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
           <Eyebrow tone={onDark ? "onDark" : "amber"}>Content calendar</Eyebrow>
           <h1 className="rd-display" style={{ margin: 0, fontSize: "clamp(1.9rem,5vw,2.6rem)", fontWeight: 600, lineHeight: 1.02, color: fg1 }}>
-            What we&apos;re planning &amp; publishing.
+            The content we&apos;re publishing to get you found and cited.
           </h1>
         </div>
 

@@ -39,7 +39,7 @@ export function DeliverablesList({ deliverables, clientId }: { deliverables: Del
         <div className="rd-rise" style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
           <Eyebrow tone={onDark ? "onDark" : "amber"}>Deliverables</Eyebrow>
           <h1 className="rd-display" style={{ margin: 0, fontSize: "clamp(1.9rem,5vw,2.6rem)", fontWeight: 600, lineHeight: 1.02, color: fg1 }}>
-            Everything we&apos;re creating for you.
+            Everything we&apos;re building to win you more customers.
           </h1>
         </div>
 

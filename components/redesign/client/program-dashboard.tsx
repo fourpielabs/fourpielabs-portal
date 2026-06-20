@@ -107,7 +107,7 @@ export function ProgramDashboard({ data }: { data: ProgramDashData }) {
             {data.milestones.length > 0 && (
               <div className={panel} style={{ borderRadius: 20, padding: "1.3rem" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: "0.75rem" }}>
-                  <h2 className="rd-display" style={{ margin: 0, fontSize: "1.15rem", fontWeight: 600, color: fg1 }}>Your 90-day program</h2>
+                  <h2 className="rd-display" style={{ margin: 0, fontSize: "1.15rem", fontWeight: 600, color: fg1 }}>Your 90-day growth plan</h2>
                   {data.dayLabel && <StatusPill value="active" label={data.dayLabel} mode={mode} />}
                 </div>
                 <Progress pct={data.msPct} mode={mode} />

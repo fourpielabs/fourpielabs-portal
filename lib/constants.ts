@@ -5,7 +5,7 @@ export const INDUSTRIES = [
 ] as const;
 
 export const PROGRAMS = [
-  { value: "foundation", label: "Foundation" },
+  { value: "foundation", label: "Core" },
   { value: "pipeline", label: "Pipeline" },
   { value: "operating_system", label: "Operating System" },
   { value: "pulse", label: "Pulse" },

@@ -97,11 +97,43 @@ async function expectWriteDenied(
 }
 
 async function main() {
-  // --- fixtures -------------------------------------------------------------
-  const { data: premier } = await admin.from("clients").select("id").eq("slug", "premier-painting").single();
-  const { data: pulse } = await admin.from("clients").select("id").eq("slug", "coastal-tours").single();
+  // --- fixtures (SELF-PROVISIONED) ------------------------------------------
+  // The suite creates its OWN clients + users (the demo accounts were removed at
+  // launch), so it runs green against a clean production DB and tears everything
+  // down at the end — leaving zero residue. premier = a PROGRAM (pipeline) client;
+  // pulse = a PROGRAM (pulse) client.
+  const PREMIER_SLUG = "rls-premier", PULSE_SLUG = "rls-pulse";
+  const CLIENT_EMAIL = "rls-client@example.com", TEAM_EMAIL = "rls-team@example.com";
+  for (const s of [PREMIER_SLUG, PULSE_SLUG]) await admin.from("clients").delete().eq("slug", s);
+  const { data: premier } = await admin.from("clients")
+    .insert({ name: "RLS Premier", slug: PREMIER_SLUG, industry: "painting_contractor", program: "pipeline", status: "active", client_type: "program" })
+    .select("id").single();
+  const { data: pulse } = await admin.from("clients")
+    .insert({ name: "RLS Pulse", slug: PULSE_SLUG, industry: "other_local_service", program: "pulse", status: "active", client_type: "program" })
+    .select("id").single();
   const premierId = premier!.id;
   const pulseId = pulse!.id;
+
+  // client + team auth users (handle_new_user seeds profiles from metadata).
+  // profiles.id === auth.users.id, so these ids double as profile ids.
+  const ensureUser = async (email: string, meta: Record<string, unknown>) => {
+    const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const existing = list?.users.find((u) => u.email === email);
+    if (existing) await admin.auth.admin.deleteUser(existing.id);
+    const { data, error } = await admin.auth.admin.createUser({ email, password: PW, email_confirm: true, user_metadata: meta });
+    if (error) throw error;
+    return data.user!.id;
+  };
+  const clientUserId = await ensureUser(CLIENT_EMAIL, { role: "client", client_id: premierId, full_name: "RLS Client" });
+  const teamUserId = await ensureUser(TEAM_EMAIL, { role: "team", full_name: "RLS Team" });
+  // team is assigned to premier + pulse (NOT to the rls-unassigned client below)
+  await admin.from("client_assignments").insert([
+    { client_id: premierId, user_id: teamUserId },
+    { client_id: pulseId, user_id: teamUserId },
+  ]);
+  // program ids (for the program-catalog RLS checks + staff-assign tests)
+  const { data: progRows } = await admin.from("programs").select("id, key");
+  const progId = new Map((progRows ?? []).map((p) => [p.key as string, p.id as string]));
 
   await admin.from("clients").delete().eq("slug", "rls-unassigned");
   const { data: un } = await admin
@@ -179,8 +211,7 @@ async function main() {
   const premierInternal = await tid(premierId, "internal");
   const pulseShared = await tid(pulseId, "client_shared");
   const unShared = await tid(unId, "client_shared");
-  const { data: teamProf } = await admin.from("profiles").select("id").eq("email", "demo-team@example.com").single();
-  const teamUid = teamProf!.id as string;
+  const teamUid = teamUserId;
   // seed one message in each premier thread (service-role insert bypasses RLS)
   await admin.from("messages").delete().eq("client_id", premierId).like("body", "RLS%");
   await admin.from("messages").insert([
@@ -189,8 +220,7 @@ async function main() {
   ]);
 
   // --- notifications fixtures (service-role insert; no insert policy) --------
-  const { data: clientProf } = await admin.from("profiles").select("id").eq("email", "demo-client@example.com").single();
-  const clientProfileId = clientProf!.id as string;
+  const clientProfileId = clientUserId;
   await admin.from("notifications").delete().like("title", "RLSNOTE%");
   const { data: cNote } = await admin.from("notifications").insert({ user_id: clientProfileId, type: "message", title: "RLSNOTE-client" }).select("id").single();
   const { data: tNote } = await admin.from("notifications").insert({ user_id: teamUid, type: "message", title: "RLSNOTE-team" }).select("id").single();
@@ -273,7 +303,7 @@ async function main() {
 
   // ====================== AS CLIENT (demo-client / premier) =================
   const client = createClient(url, anonKey, { auth: { persistSession: false } });
-  await client.auth.signInWithPassword({ email: "demo-client@example.com", password: PW });
+  await client.auth.signInWithPassword({ email: CLIENT_EMAIL, password: PW });
   const clientUid = (await client.auth.getUser()).data.user?.id as string;
 
   // cross-client reads (pulse data) must be 0
@@ -706,7 +736,7 @@ async function main() {
 
   // ====================== AS TEAM (demo-team, unassigned client) ============
   const team = createClient(url, anonKey, { auth: { persistSession: false } });
-  await team.auth.signInWithPassword({ email: "demo-team@example.com", password: PW });
+  await team.auth.signInWithPassword({ email: TEAM_EMAIL, password: PW });
 
   for (const t of CLIENT_TABLES) await expectNoRows(team, "team→unassigned", t, unId);
   for (const { t, row } of insertPayloads(unId, unDef)) {
@@ -955,6 +985,76 @@ async function main() {
     rec("seeding", "PROGRAM client has its 2 threads (backfill)", progBoth, `${progTypes?.length ?? 0} threads`);
   }
 
+  // ====================== PROGRAM CATALOG (P1) ==============================
+  // catalog readable per role; client_programs = client SELECT-own + NO client
+  // write (self-assign blocked); staff (assigned) CAN assign; staff CANNOT assign
+  // to an unassigned client; anon cannot read the catalog.
+  {
+    const grp = "program";
+    const catRead = async (db: SupabaseClient, who: string, table: string, min: number) => {
+      const { data, error } = await db.from(table).select("id").limit(50);
+      rec(grp, `${who} reads ${table}`, !error && (data?.length ?? 0) >= min, error ? error.code ?? "error" : `${data?.length ?? 0} rows`);
+    };
+    await catRead(client, "client", "programs", 4);
+    await catRead(client, "client", "program_services", 1);
+    await catRead(client, "client", "program_kpis", 1);
+    await catRead(team, "team", "programs", 4);
+    {
+      const { data } = await anon.from("programs").select("id");
+      rec(grp, "anon CANNOT read catalog (to-authenticated)", (data?.length ?? 0) === 0, `${data?.length ?? 0} rows`);
+    }
+
+    // client_programs: client reads OWN only
+    {
+      const { data: own } = await client.from("client_programs").select("program_id").eq("client_id", premierId);
+      rec(grp, "client reads OWN client_programs", (own?.length ?? 0) === 1, `${own?.length ?? 0} rows`);
+      const { data: other } = await client.from("client_programs").select("program_id").eq("client_id", pulseId);
+      rec(grp, "client CANNOT read another client's program", (other?.length ?? 0) === 0, `${other?.length ?? 0} rows`);
+    }
+
+    // client CANNOT write client_programs (no client write policy)
+    {
+      const osId = progId.get("operating_system")!;
+      const { data, error } = await client.from("client_programs").insert({ client_id: premierId, program_id: osId }).select("client_id");
+      if (data?.length) {
+        await admin.from("client_programs").delete().eq("client_id", premierId).eq("program_id", osId);
+        rec(grp, "client CANNOT self-assign a program", false, "INSERT SUCCEEDED");
+      } else {
+        rec(grp, "client CANNOT self-assign a program", !!error, error?.code ?? "no-insert");
+      }
+      const { data: upd } = await client.from("client_programs").update({ assigned_by: clientProfileId }).eq("client_id", premierId).select("client_id");
+      rec(grp, "client UPDATE on client_programs affects 0 rows", (upd?.length ?? 0) === 0, `${upd?.length ?? 0} rows`);
+      const { data: del } = await client.from("client_programs").delete().eq("client_id", premierId).select("client_id");
+      rec(grp, "client DELETE on client_programs affects 0 rows", (del?.length ?? 0) === 0, `${del?.length ?? 0} rows`);
+    }
+
+    // staff (assigned team) CAN assign — add Pulse to premier, then clean up
+    {
+      const pulseProg = progId.get("pulse")!;
+      const { error } = await team.from("client_programs").insert({ client_id: premierId, program_id: pulseProg, assigned_by: teamUid });
+      rec(grp, "assigned team CAN assign a program", !error, error?.code ?? "ok");
+      await admin.from("client_programs").delete().eq("client_id", premierId).eq("program_id", pulseProg);
+    }
+    // team CANNOT assign to an UNASSIGNED client
+    {
+      const fId = progId.get("foundation")!;
+      const { data, error } = await team.from("client_programs").insert({ client_id: unId, program_id: fId }).select("client_id");
+      if (data?.length) {
+        await admin.from("client_programs").delete().eq("client_id", unId).eq("program_id", fId);
+        rec(grp, "team CANNOT assign to unassigned client", false, "INSERT SUCCEEDED");
+      } else {
+        rec(grp, "team CANNOT assign to unassigned client", !!error, error?.code ?? "no-insert");
+      }
+    }
+
+    // premier's original mirror row survived the denied client writes
+    {
+      const { data } = await admin.from("client_programs").select("program_id, programs(key)").eq("client_id", premierId);
+      const keys = (data ?? []).map((r: any) => r.programs.key);
+      rec(grp, "premier still has exactly its mirrored core tier", keys.length === 1 && keys[0] === "pipeline", keys.join(",") || "(none)");
+    }
+  }
+
   // --- cleanup --------------------------------------------------------------
   await admin.from("notification_preferences").delete().in("user_id", [clientProfileId, teamUid]);
   await admin.from("tasks").delete().like("title", "RLSTASK%");
@@ -974,6 +1074,16 @@ async function main() {
   await admin.from("deliverables").delete().eq("client_id", pulseId).like("title", "RLSXC%");
   await admin.from("reports").delete().eq("client_id", premierId).like("title", "RLSHIDE%");
   await admin.from("clients").delete().eq("id", unId);
+  // self-provisioned program clients + users (cascade removes their children)
+  await admin.from("clients").delete().eq("id", premierId);
+  await admin.from("clients").delete().eq("id", pulseId);
+  {
+    const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    for (const email of [CLIENT_EMAIL, TEAM_EMAIL]) {
+      const u = list?.users.find((x) => x.email === email);
+      if (u) await admin.auth.admin.deleteUser(u.id);
+    }
+  }
 
   // --- report ---------------------------------------------------------------
   const failed = results.filter((r) => !r.pass);
