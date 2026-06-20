@@ -1,18 +1,9 @@
-import Link from "next/link";
-import { ArrowRight, FileText, Users } from "lucide-react";
 import { requireProfile } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { labelOf, PROGRAMS } from "@/lib/constants";
-import { PersonAvatar } from "@/components/ui/person-avatar";
 import { ClientDashboardR2 } from "@/components/redesign/client/client-dashboard";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { StatusChip } from "@/components/ui/status-chip";
-import { EmptyState } from "@/components/ui/empty-state";
-import { PageContainer } from "@/components/layout/page-container";
-import { Stagger, StaggerItem } from "@/components/motion/motion-primitives";
+import { StaffHomeBody, type StaffHomeData } from "@/components/redesign/staff/staff-home-body";
 
 function relTime(iso: string | null): string {
   if (!iso) return "No activity yet";
@@ -86,140 +77,36 @@ export default async function DashboardPage() {
     lastAudit = audit?.[0]?.created_at ?? null;
   }
 
-  return (
-    <PageContainer width="standard" stack>
-      {/* preserved hero greeting (not the standard PageHeader) */}
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">
-          Welcome, {firstName}
-        </h1>
-        <p className="text-sm text-ink-2">
-          Your 4Pie Labs workspace. Pick a client to get started.
-        </p>
-      </div>
+  const homeData: StaffHomeData = {
+    firstName,
+    isAdmin,
+    usersTotal,
+    pendingInvites,
+    lastAuditLabel: lastAudit ? relTime(lastAudit).replace("Active", "Last event") : null,
+    clients: (clients ?? []).map((c) => {
+      const cl = checklistBy.get(c.id);
+      const pj = projectsBy.get(c.id);
+      const isProj = c.client_type === "project";
+      const meta = isProj
+        ? pj && pj.total > 0
+          ? `${pj.total} project${pj.total === 1 ? "" : "s"}${pj.active ? ` · ${pj.active} active` : ""}`
+          : null
+        : cl
+          ? `Checklist ${cl.done}/${cl.total}`
+          : null;
+      return {
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        logoUrl: c.logo_url,
+        isProject: isProj,
+        programLabel: labelOf(PROGRAMS, c.program),
+        status: c.status,
+        meta,
+        activity: relTime(lastActivity.get(c.id) ?? null),
+      };
+    }),
+  };
 
-      {isAdmin && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card size="sm">
-            <CardContent className="flex items-center gap-4">
-              <span className="inline-flex size-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                <Users className="size-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="font-semibold">Users</div>
-                <div className="text-xs text-ink-3 tabular-nums">
-                  {usersTotal} total
-                  {pendingInvites > 0
-                    ? ` · ${pendingInvites} pending invite${pendingInvites === 1 ? "" : "s"}`
-                    : ""}
-                </div>
-              </div>
-              <Button asChild size="sm" variant="outline">
-                <Link href="/admin/users">Manage</Link>
-              </Button>
-            </CardContent>
-          </Card>
-          <Card size="sm">
-            <CardContent className="flex items-center gap-4">
-              <span className="inline-flex size-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                <FileText className="size-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="font-semibold">Audit log</div>
-                <div className="text-xs text-ink-3">
-                  {lastAudit
-                    ? relTime(lastAudit).replace("Active", "Last event")
-                    : "No events yet"}
-                </div>
-              </div>
-              <Button asChild size="sm" variant="outline">
-                <Link href="/admin/audit">View</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      <div>
-        <h2 className="mb-3 text-[11px] font-bold tracking-wider text-ink-3 uppercase">
-          {isAdmin ? "All clients" : "Your clients"}
-        </h2>
-        {!clients || clients.length === 0 ? (
-          <EmptyState
-            icon={<Users />}
-            title={isAdmin ? "No clients yet" : "No assigned clients yet"}
-            description={
-              isAdmin
-                ? "Create your first client to get started."
-                : "Once you're assigned to a client, they'll appear here."
-            }
-            action={
-              isAdmin ? (
-                <Button asChild size="sm">
-                  <Link href="/clients/new">New client</Link>
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <Stagger as="div" className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {clients.map((c) => {
-              const cl = checklistBy.get(c.id);
-              const pj = projectsBy.get(c.id);
-              const isProj = c.client_type === "project";
-              return (
-                <StaggerItem key={c.id} lift className="h-full">
-                <Link
-                  href={`/clients/${c.id}`}
-                  className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-e2 transition-shadow hover:shadow-e3"
-                >
-                  <div className="flex items-start gap-3">
-                    <PersonAvatar name={c.name} src={c.logo_url} square size="lg" className="shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-semibold group-hover:text-amber-800">
-                        {c.name}
-                      </div>
-                      <div className="truncate text-xs text-ink-3">{c.slug}</div>
-                    </div>
-                    <ArrowRight className="size-4 shrink-0 text-ink-faint transition-colors group-hover:text-ink" />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {isProj ? (
-                      <Badge variant="secondary">Project</Badge>
-                    ) : (
-                      <Badge variant="amber">{labelOf(PROGRAMS, c.program)}</Badge>
-                    )}
-                    <StatusChip kind="client" value={c.status} />
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-ink-3 tabular-nums">
-                    {isProj
-                      ? pj &&
-                        pj.total > 0 && (
-                          <>
-                            <span>
-                              {pj.total} project{pj.total === 1 ? "" : "s"}
-                              {pj.active ? ` · ${pj.active} active` : ""}
-                            </span>
-                            <span>·</span>
-                          </>
-                        )
-                      : cl && (
-                          <>
-                            <span>
-                              Checklist {cl.done}/{cl.total}
-                            </span>
-                            <span>·</span>
-                          </>
-                        )}
-                    <span>{relTime(lastActivity.get(c.id) ?? null)}</span>
-                  </div>
-                </Link>
-                </StaggerItem>
-              );
-            })}
-          </Stagger>
-        )}
-      </div>
-    </PageContainer>
-  );
+  return <StaffHomeBody data={homeData} />;
 }
