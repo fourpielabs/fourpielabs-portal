@@ -133,8 +133,11 @@ function SidebarInner({
   notifItems: NotificationItem[];
 }) {
   const nav = navFor(role);
+  // layout via inline STYLE (not className): Fluent's applyStylesToPortals copies the
+  // FluentScope CLASSNAME onto menu portal clones, so a leaked `h-full` made the menu's
+  // portal wrapper full-viewport. Inline style fills the rail here but never reaches the clone.
   return (
-    <FluentScope className="flex h-full flex-col gap-4 p-3">
+    <FluentScope style={{ display: "flex", height: "100%", flexDirection: "column", gap: "1rem", padding: "0.75rem" }}>
       {/* brand + bell + theme toggle + collapse */}
       <div className={cn("flex pt-2", collapsed ? "flex-col items-center gap-1" : "items-center gap-1.5 px-2")}>
         {!collapsed && (
@@ -235,10 +238,17 @@ export function StaffShell({
 
   return (
     <div data-density="compact" className="rd-root flex min-h-screen">
-      {/* desktop ember-glass rail */}
+      {/* desktop ember-glass rail.
+          z-30: the rail is sticky chrome and MUST sit above the page's full-bleed ambient
+          field. ClientPageFrame / StaffPageFrame / WorkspaceChrome each render a
+          `position:fixed; inset:0; z-index:0` opaque field; the client TOP-NAV already
+          carries z-30, but the staff rail was missing it — so on every FRAMED route
+          (Clients, Users, Audit, the per-client workspace tabs) the field painted over the
+          rail and it vanished. The dashboard has no frame → no field → the rail showed,
+          which is exactly why ONLY the dashboard looked correct. One shell-level fix. */}
       <aside
         className={cn(
-          "rd-glass rd-glass--strong rd-glass--ember motion-state sticky top-0 hidden h-screen shrink-0 rounded-none border-y-0 border-l-0 lg:block",
+          "rd-glass rd-glass--strong rd-glass--ember motion-state sticky top-0 z-30 hidden h-screen shrink-0 rounded-none border-y-0 border-l-0 lg:block",
           onDark && "rd-glass--dark",
           collapsed ? "w-[76px]" : "w-[264px]",
         )}

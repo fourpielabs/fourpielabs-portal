@@ -46,6 +46,16 @@
   --rd-dur-base: 220ms;
 }
 
+/* FluentScope is always transparent (the glass/page background shows through). The inline
+   `style` sets that on the main render, but Fluent's `applyStylesToPortals` copies only the
+   CLASSNAME onto menu/popover portal clones — so without a CLASS the clone inherits
+   `fui-FluentProvider`'s opaque `colorNeutralBackground1` and paints a full-bleed cover over
+   the page when a menu opens. This class travels to the clone and keeps it transparent.
+   (Scoped to rd-fluentscope — NOT rd-root — so it never touches the auth shell's opaque field.) */
+.rd-fluentscope {
+  background-color: transparent !important;
+}
+
 /* === GLASS SURFACES ========================================================= */
 .rd-glass {
   position: relative;

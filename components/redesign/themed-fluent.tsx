@@ -76,7 +76,12 @@ export function FluentScope({
   return (
     <FluentProvider
       theme={mode === "dark" ? redesignDarkTheme : redesignLightTheme}
-      className={cn("rd-root", className)}
+      // `rd-fluentscope` keeps the background transparent — BUG: Fluent's
+      // `applyStylesToPortals` copies only the CLASSNAME (not the inline `style`) onto a
+      // menu/popover's portal wrapper, so the clone would inherit `fui-FluentProvider`'s
+      // opaque `colorNeutralBackground1` and paint a full-bleed cover over the page (the
+      // "user menu blanks the screen" bug). A class reaches the clone; inline style doesn't.
+      className={cn("rd-root", "rd-fluentscope", className)}
       style={{ background: "transparent", ...style }}
     >
       {children}
