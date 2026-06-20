@@ -1069,6 +1069,20 @@ async function main() {
       rec(grp, "deactivated KPI hidden from client (RLS is_active)", (hid?.length ?? 0) === 0, `${hid?.length ?? 0} rows`);
       await admin.from("metric_definitions").update({ is_active: true }).eq("client_id", premierId).eq("key", "ad_spend");
     }
+
+    // P3: the self-assign lock. A client CANNOT change their own program — neither
+    // client_programs (covered above) NOR the reconciliation field clients.program
+    // (staff-only). Billing/access-hole severity.
+    {
+      const { data: upd } = await client.from("clients").update({ program: "operating_system" }).eq("id", premierId).select("id");
+      rec(grp, "client CANNOT change own program (clients.program staff-only)", (upd?.length ?? 0) === 0, `${upd?.length ?? 0} rows`);
+      const { data: still } = await admin.from("clients").select("program").eq("id", premierId).single();
+      rec(grp, "premier program unchanged after client attempt", still?.program === "pipeline", `program=${still?.program}`);
+      // staff (assigned team) CAN change it — the action's write path — then revert
+      const { error: tErr } = await team.from("clients").update({ program: "operating_system" }).eq("id", premierId);
+      rec(grp, "assigned team CAN change program (write path)", !tErr, tErr?.code ?? "ok");
+      await admin.from("clients").update({ program: "pipeline" }).eq("id", premierId);
+    }
   }
 
   // --- cleanup --------------------------------------------------------------

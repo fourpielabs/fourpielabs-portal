@@ -3,6 +3,7 @@
 import { type ProgramValues } from "@/lib/schemas";
 import { ProgramForm } from "./program-form";
 import { MilestonesEditor, type Milestone } from "./milestones-editor";
+import { ProgramAssignmentControl, type ProgramAssignment } from "./program-assignment";
 import { usePanel } from "./ui";
 
 /**
@@ -15,10 +16,12 @@ export function ProgramBody({
   defaults,
   clientId,
   milestones,
+  assignment,
 }: {
   defaults: ProgramValues;
   clientId: string;
   milestones: Milestone[];
+  assignment: ProgramAssignment;
 }) {
   const { panel, fg1, fg3 } = usePanel();
 
@@ -28,6 +31,14 @@ export function ProgramBody({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <section className={panel} style={sectionStyle}>
+        <div>
+          <h2 className="rd-display" style={title}>Program plan</h2>
+          <p style={desc}>The client&rsquo;s program — drives their included services, &ldquo;what&rsquo;s included&rdquo; card, and KPI set. Staff-only.</p>
+        </div>
+        <ProgramAssignmentControl clientId={clientId} current={assignment} />
+      </section>
+
       <section className={panel} style={sectionStyle}>
         <div>
           <h2 className="rd-display" style={title}>Program overview</h2>

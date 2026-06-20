@@ -4,6 +4,7 @@ import { requireClientAccess } from "@/lib/auth/guards";
 import { type ProgramValues } from "@/lib/schemas";
 import { ProgramBody } from "@/components/redesign/staff/program-body";
 import { type Milestone } from "@/components/redesign/staff/milestones-editor";
+import { type ProgramAssignment } from "@/components/redesign/staff/program-assignment";
 
 export default async function ProgramPage({
   params,
@@ -14,11 +15,11 @@ export default async function ProgramPage({
   await requireClientAccess(clientId);
   const supabase = await createClient();
 
-  const [{ data: client }, { data: milestones }] = await Promise.all([
+  const [{ data: client }, { data: milestones }, { data: assigned }] = await Promise.all([
     supabase
       .from("clients")
       .select(
-        "id, service_type, investment, start_date, end_date, comms_channel, best_way_to_reach, response_time, call_scheduling_note, revision_policy, whats_included, whats_not_included",
+        "id, client_type, service_type, investment, start_date, end_date, comms_channel, best_way_to_reach, response_time, call_scheduling_note, revision_policy, whats_included, whats_not_included",
       )
       .eq("id", clientId)
       .single(),
@@ -29,9 +30,21 @@ export default async function ProgramPage({
       )
       .eq("client_id", clientId)
       .order("sort_order"),
+    supabase
+      .from("client_programs")
+      .select("is_parallel, programs(key, is_parallel)")
+      .eq("client_id", clientId),
   ]);
 
   if (!client) notFound();
+
+  // current program assignment: the one core tier (if any) + whether Pulse is on
+  const rows = (assigned ?? []) as unknown as { is_parallel: boolean; programs: { key: string; is_parallel: boolean } }[];
+  const coreRow = rows.find((r) => !r.programs.is_parallel);
+  const assignment = {
+    coreTier: (coreRow?.programs.key ?? null) as ProgramAssignment["coreTier"],
+    pulse: rows.some((r) => r.programs.is_parallel),
+  };
 
   const defaults: ProgramValues = {
     id: client.id,
@@ -53,6 +66,7 @@ export default async function ProgramPage({
       defaults={defaults}
       clientId={clientId}
       milestones={(milestones ?? []) as Milestone[]}
+      assignment={assignment}
     />
   );
 }
