@@ -1053,6 +1053,22 @@ async function main() {
       const keys = (data ?? []).map((r: any) => r.programs.key);
       rec(grp, "premier still has exactly its mirrored core tier", keys.length === 1 && keys[0] === "pipeline", keys.join(",") || "(none)");
     }
+
+    // program-driven KPIs (P2): premier (pipeline) materialized the catalog KPI
+    // set; the client reads it RLS-scoped (is_active only), staff-only writes hold.
+    {
+      const PIPE = ["leads","gbp_calls","top3_keywords","map_pack_keywords","aeo_citations","organic_traffic","key_learning","ad_spend","ad_conversions","cost_per_lead","calls_tracked"];
+      const { data: cDefs } = await client.from("metric_definitions").select("key, is_active");
+      const cKeys = (cDefs ?? []).map((r) => r.key as string);
+      const setEq = cKeys.length === PIPE.length && [...new Set(cKeys)].sort().join(",") === [...PIPE].sort().join(",");
+      rec(grp, "client metric_definitions == program KPI set (pipeline)", setEq, `${cKeys.length} keys`);
+      rec(grp, "client sees only ACTIVE defs", (cDefs ?? []).every((d) => d.is_active), `${(cDefs ?? []).filter((d) => !d.is_active).length} inactive visible`);
+      // deactivating a KPI hides it from the client (RLS is_active enforcement)
+      await admin.from("metric_definitions").update({ is_active: false }).eq("client_id", premierId).eq("key", "ad_spend");
+      const { data: hid } = await client.from("metric_definitions").select("key").eq("key", "ad_spend");
+      rec(grp, "deactivated KPI hidden from client (RLS is_active)", (hid?.length ?? 0) === 0, `${hid?.length ?? 0} rows`);
+      await admin.from("metric_definitions").update({ is_active: true }).eq("client_id", premierId).eq("key", "ad_spend");
+    }
   }
 
   // --- cleanup --------------------------------------------------------------

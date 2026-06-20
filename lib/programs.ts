@@ -52,6 +52,15 @@ export type ResolvedPrograms = {
   hasPulse: boolean;
 };
 
+export type ResolvedKpi = {
+  key: string;
+  label: string;
+  unit: string;
+  source: string;
+  programKey: string;
+  ord: number;
+};
+
 function orderServices(a: ResolvedService, b: ResolvedService) {
   const ta = a.tierOrder ?? 99;
   const tb = b.tierOrder ?? 99;
@@ -123,4 +132,51 @@ export async function resolveClientPrograms(
   notIncluded.sort(orderServices);
 
   return { assigned, included, notIncluded, coreTierOrder, hasPulse };
+}
+
+/**
+ * Resolve a client's KPI set from the catalog — the SAME stacking as services, so
+ * services AND KPIs flow through one consistent path. This mirrors the SQL
+ * `sync_client_program_metrics`, which materializes these into `metric_definitions`
+ * (where the team's entered numbers live). Use this for catalog framing/labels;
+ * the entered VALUES are read from metric_definitions/metric_entries.
+ *
+ * Deduped by stable key (e.g. key_learning spans the core stack + Pulse); the
+ * lowest ordinal wins so a key resolves once.
+ */
+export async function resolveClientKpis(
+  supabase: SupabaseClient,
+  clientId: string,
+  fallbackProgramKey?: string | null,
+): Promise<ResolvedKpi[]> {
+  const [{ data: programs }, { data: kpis }, { data: assignments }] = await Promise.all([
+    supabase.from("programs").select("id, key, tier_order, is_parallel").eq("is_active", true),
+    supabase.from("program_kpis").select("program_id, key, label, unit, source, sort_order").eq("is_active", true),
+    supabase.from("client_programs").select("program_id").eq("client_id", clientId),
+  ]);
+
+  const allPrograms = (programs ?? []) as Pick<ProgramRow, "id" | "key" | "tier_order" | "is_parallel">[];
+  const byId = new Map(allPrograms.map((p) => [p.id, p]));
+  let assignedIds = new Set((assignments ?? []).map((a) => a.program_id as string));
+  if (assignedIds.size === 0 && fallbackProgramKey) {
+    const fb = allPrograms.find((p) => p.key === fallbackProgramKey);
+    if (fb) assignedIds = new Set([fb.id]);
+  }
+  const assigned = allPrograms.filter((p) => assignedIds.has(p.id));
+  const coreTierOrder = assigned
+    .filter((p) => !p.is_parallel && p.tier_order != null)
+    .reduce<number | null>((max, p) => (max == null || (p.tier_order as number) > max ? (p.tier_order as number) : max), null);
+  const hasPulse = assigned.some((p) => p.is_parallel);
+  const includes = (p: { id: string; tier_order: number | null; is_parallel: boolean }) =>
+    p.is_parallel ? hasPulse && assignedIds.has(p.id) : coreTierOrder != null && (p.tier_order ?? Infinity) <= coreTierOrder;
+
+  const best = new Map<string, ResolvedKpi>();
+  for (const k of (kpis ?? []) as { program_id: string; key: string; label: string; unit: string; source: string; sort_order: number }[]) {
+    const p = byId.get(k.program_id);
+    if (!p || !includes(p)) continue;
+    const ord = (p.tier_order ?? 99) * 100 + k.sort_order;
+    const cur = best.get(k.key);
+    if (!cur || ord < cur.ord) best.set(k.key, { key: k.key, label: k.label, unit: k.unit, source: k.source, programKey: p.key, ord });
+  }
+  return [...best.values()].sort((a, b) => a.ord - b.ord);
 }
