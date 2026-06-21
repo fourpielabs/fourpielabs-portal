@@ -12,6 +12,7 @@
 // --- custom primitives (behavior Fluent lacks / bespoke CTA) ---
 export { Button, EmberButton } from "./button";
 export { Segmented, type SegmentedOption } from "./segmented";
+export { BaseModal, type BaseModalProps } from "./base-modal";
 
 // --- forms (SOLID) ---
 export {
