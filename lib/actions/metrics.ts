@@ -44,6 +44,7 @@ export async function createMetricDefinitionAction(
       label: v.label,
       unit: v.unit,
       is_active: v.is_active,
+      target: v.target ?? null,
       sort_order: (last?.sort_order ?? 0) + 1,
     })
     .select("id")
@@ -78,7 +79,7 @@ export async function updateMetricDefinitionAction(
   const supabase = await createClient();
   const { error } = await supabase
     .from("metric_definitions")
-    .update({ key: v.key, label: v.label, unit: v.unit, is_active: v.is_active })
+    .update({ key: v.key, label: v.label, unit: v.unit, is_active: v.is_active, target: v.target ?? null })
     .eq("id", id)
     .eq("client_id", clientId);
   if (error) {

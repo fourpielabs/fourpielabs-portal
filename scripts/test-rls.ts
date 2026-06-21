@@ -1083,6 +1083,18 @@ async function main() {
       rec(grp, "assigned team CAN change program (write path)", !tErr, tErr?.code ?? "ok");
       await admin.from("clients").update({ program: "pipeline" }).eq("id", premierId);
     }
+
+    // Value Proof KPI TARGETS: staff-write / client-read (the metric_definitions lock).
+    {
+      await admin.from("metric_definitions").update({ target: 100 }).eq("client_id", premierId).eq("key", "leads");
+      const { data: tRead } = await client.from("metric_definitions").select("target").eq("key", "leads").maybeSingle();
+      rec(grp, "client can READ a KPI target", Number(tRead?.target) === 100, `target=${tRead?.target}`);
+      const { data: tUpd } = await client.from("metric_definitions").update({ target: 5 }).eq("client_id", premierId).eq("key", "leads").select("id");
+      rec(grp, "client CANNOT set a KPI target (staff-only)", (tUpd?.length ?? 0) === 0, `${tUpd?.length ?? 0} rows`);
+      const { data: tAfter } = await admin.from("metric_definitions").select("target").eq("client_id", premierId).eq("key", "leads").single();
+      rec(grp, "target unchanged after client attempt", Number(tAfter?.target) === 100, `target=${tAfter?.target}`);
+      await admin.from("metric_definitions").update({ target: null }).eq("client_id", premierId).eq("key", "leads");
+    }
   }
 
   // --- cleanup --------------------------------------------------------------

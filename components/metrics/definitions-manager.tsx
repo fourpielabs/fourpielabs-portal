@@ -43,6 +43,7 @@ export type MetricDef = {
   unit: "number" | "currency" | "percent" | "text";
   is_active: boolean;
   sort_order: number;
+  target?: number | null;
 };
 
 function slugifyKey(s: string) {
@@ -75,6 +76,7 @@ function DefDialog({
       key: def?.key ?? "",
       unit: def?.unit ?? "number",
       is_active: def?.is_active ?? true,
+      target: def?.target ?? null,
     },
   });
 
@@ -143,6 +145,17 @@ function DefDialog({
                 )}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="md-target">Target (optional)</Label>
+            <Input
+              id="md-target"
+              type="number"
+              step="any"
+              {...register("target", { setValueAs: (v) => (v === "" || v == null ? null : Number(v)) })}
+              placeholder="e.g. 100 — powers the client pacing bar"
+            />
+            <p className="text-xs text-ink-3">A goal for this KPI. Shown to the client as an &ldquo;on track&rdquo; bar on their Results view. Leave blank for none.</p>
           </div>
           <div className="flex items-center gap-2">
             <Controller

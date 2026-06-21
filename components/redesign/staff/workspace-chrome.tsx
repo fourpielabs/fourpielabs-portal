@@ -49,6 +49,7 @@ export function WorkspaceChrome({
         { href: `${base}/projects`, label: "Projects" },
         { href: `${base}/deliverables`, label: "Deliverables" },
         { href: `${base}/tasks`, label: "Tasks" },
+        { href: `${base}/metrics`, label: "Metrics" },
         { href: `${base}/calls`, label: "Calls" },
       ]
     : [

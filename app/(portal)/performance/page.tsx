@@ -8,9 +8,9 @@ export default async function ClientPerformancePage() {
   const profile = await requireRole(["client"]);
   const supabase = await createClient();
 
-  // Program-only page — project clients are routed to their projects board.
+  // Program-only page — project clients get their Value Proof "Results" view instead.
   const { data: typeRow } = await supabase.from("client_clients").select("client_type").maybeSingle();
-  if (typeRow?.client_type === "project") redirect("/dashboard");
+  if (typeRow?.client_type === "project") redirect("/results");
 
   const [{ data: defs }, { data: entries }, { data: competitors }, { data: reports }] = await Promise.all([
     supabase.from("metric_definitions").select("id, label, unit, sort_order").order("sort_order"),

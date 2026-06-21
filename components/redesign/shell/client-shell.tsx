@@ -34,6 +34,7 @@ const TOP: Item[] = [
   { href: "/program", label: "Program" },
   { href: "/content", label: "Content" },
   { href: "/performance", label: "Performance" },
+  { href: "/results", label: "Results" },
   { href: "/deliverables", label: "Deliverables" },
   { href: "/tasks", label: "Tasks" },
   { href: "/calls-notes", label: "Calls & Notes" },
@@ -54,6 +55,7 @@ const MORE: { href: string; label: string; icon: typeof Package }[] = [
 ];
 const BOTTOM_PROJECT: { href: string; label: string; icon: typeof Package }[] = [
   { href: "/dashboard", label: "Home", icon: Home },
+  { href: "/results", label: "Results", icon: BarChart3 },
   { href: "/messages", label: "Messages", icon: MessageSquare },
   { href: "/deliverables", label: "Deliverables", icon: Package },
   { href: "/calls-notes", label: "Calls", icon: Phone },
@@ -62,7 +64,9 @@ const MORE_PROJECT: { href: string; label: string; icon: typeof Package }[] = [
   { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/documents", label: "Documents", icon: FileText },
 ];
+// /performance + /program + /content are program-only; /results is project-only.
 const PROGRAM_ONLY = new Set(["/program", "/performance", "/content"]);
+const PROJECT_ONLY = new Set(["/results"]);
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -92,7 +96,7 @@ export function ClientShell({
   const moreRef = useModalA11y<HTMLDivElement>(moreOpen, () => setMoreOpen(false));
 
   const isProject = clientType === "project";
-  const top = isProject ? TOP.filter((i) => !PROGRAM_ONLY.has(i.href)) : TOP;
+  const top = isProject ? TOP.filter((i) => !PROGRAM_ONLY.has(i.href)) : TOP.filter((i) => !PROJECT_ONLY.has(i.href));
   const bottom = isProject ? BOTTOM_PROJECT : BOTTOM;
   const more = isProject ? MORE_PROJECT : MORE;
   const moreActive = more.some((mi) => isActive(pathname, mi.href));

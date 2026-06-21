@@ -287,6 +287,10 @@ export const metricDefinitionSchema = z.object({
     .regex(/^[a-z0-9_]+$/, "Lowercase letters, numbers, underscores"),
   unit: z.enum(["number", "currency", "percent", "text"]),
   is_active: z.boolean(),
+  // optional staff-set goal (Value Proof pacing bar). The form's `setValueAs`
+  // converts a blank input → null, so no schema transform is needed (keeping the
+  // resolver's input/output types identical for react-hook-form).
+  target: z.number().nullable().optional(),
 });
 export type MetricDefinitionValues = z.infer<typeof metricDefinitionSchema>;
 

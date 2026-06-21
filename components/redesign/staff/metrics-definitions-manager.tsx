@@ -52,6 +52,7 @@ function DefDialog({
       key: def?.key ?? "",
       unit: def?.unit ?? "number",
       is_active: def?.is_active ?? true,
+      target: def?.target ?? null,
     },
   });
 
@@ -103,6 +104,11 @@ function DefDialog({
           </Field>
         )} />
       </FieldGrid>
+      <Controller control={control} name="target" render={({ field }) => (
+        <Field label="Target (optional) — shown to the client as a pacing bar">
+          <Input type="number" value={field.value == null ? "" : String(field.value)} onChange={(_, d) => field.onChange(d.value === "" ? null : Number(d.value))} placeholder="e.g. 100" />
+        </Field>
+      )} />
       <Controller control={control} name="is_active" render={({ field }) => (
         <Field label="Active">
           <div style={{ display: "flex", height: 32, alignItems: "center" }}>

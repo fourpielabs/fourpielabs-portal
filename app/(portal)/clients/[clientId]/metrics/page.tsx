@@ -29,7 +29,7 @@ export default async function MetricsPage({
     await Promise.all([
       supabase
         .from("metric_definitions")
-        .select("id, key, label, unit, is_active, sort_order")
+        .select("id, key, label, unit, is_active, sort_order, target")
         .eq("client_id", clientId)
         .order("sort_order"),
       supabase
