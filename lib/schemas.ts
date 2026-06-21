@@ -133,11 +133,15 @@ export type TaskClientUpdateValues = z.infer<typeof taskClientUpdateSchema>;
 export const taskStaffSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   description: z.string().trim().optional(),
-  status: z.enum(["todo", "in_progress", "done"]),
+  status: z.enum(["todo", "in_progress", "review", "done"]),
   assignee_id: optionalUuid,
   due_date: optionalDate,
   visible_to_client: z.boolean(),
   source_message_id: optionalUuid,
+  // Track D — staff-set advanced flags (optional; default false/null)
+  is_milestone: z.boolean().optional(),
+  blocked_by_client: z.boolean().optional(),
+  blocked_reason: z.string().trim().optional(),
 });
 export type TaskStaffValues = z.infer<typeof taskStaffSchema>;
 

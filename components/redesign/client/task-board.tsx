@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ListChecks, MessageSquare, Plus, User } from "lucide-react";
+import { Columns3, List, ListChecks, MessageSquare, Plus, User } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import type { TaskMember } from "@/lib/tasks";
 import { Eyebrow, StatusPill, EmberButton, Button, tokens } from "@/components/redesign/ui";
@@ -11,9 +12,24 @@ import { useRedesignMode } from "@/components/redesign/themed-fluent";
 import { ClientPageFrame } from "@/components/redesign/client/page-frame";
 import { type ClientTaskRow } from "@/components/tasks/client-task-board";
 import { ClientTaskDialog } from "@/components/tasks/client-task-dialog";
-import { TaskDetailDialog } from "@/components/redesign/staff/task-detail-dialog";
+import { TaskDetailDialog, type TaskDep } from "@/components/redesign/staff/task-detail-dialog";
 
+// @hello-pangea/dnd is heavy → the board lands in its own lazy chunk (ssr:false).
+const TaskKanban = dynamic(() => import("./task-kanban").then((m) => m.TaskKanban), { ssr: false });
+
+type Dep = { id: string; task_id: string; blocked_by_task_id: string };
 export type { ClientTaskRow };
+
+/** ViewToggle — shared List/Board switch (both roles). */
+export function ViewToggle({ view, onChange, onDark }: { view: "list" | "board"; onChange: (v: "list" | "board") => void; onDark: boolean }) {
+  const border = onDark ? "#34302a" : "#e7e5e0";
+  const btn = (v: "list" | "board", icon: React.ReactNode, label: string) => (
+    <button type="button" onClick={() => onChange(v)} aria-pressed={view === v} className="rd-focus" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "0.35rem 0.7rem", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", border: "none", background: view === v ? (onDark ? "rgba(245,158,11,0.16)" : "#fef3c7") : "transparent", color: view === v ? (onDark ? "#fcd34d" : "#92400e") : (onDark ? "#b3aca0" : "#6f6c66") }}>
+      {icon} {label}
+    </button>
+  );
+  return <div style={{ display: "inline-flex", borderRadius: 999, border: `1px solid ${border}`, overflow: "hidden" }}>{btn("list", <List size={14} />, "List")}{btn("board", <Columns3 size={14} />, "Board")}</div>;
+}
 
 /**
  * R2 client task board (re-skinned). INVARIANTS preserved: task status is a READ-ONLY
@@ -23,7 +39,7 @@ export type { ClientTaskRow };
  * and TaskDetailDialog (role="client" → editable title/description only + checklist),
  * reused verbatim — the write paths are unchanged.
  */
-export function TaskBoard({ tasks, members }: { tasks: ClientTaskRow[]; members: TaskMember[] }) {
+export function TaskBoard({ tasks, members, deps = [] }: { tasks: ClientTaskRow[]; members: TaskMember[]; deps?: Dep[] }) {
   const router = useRouter();
   const params = useSearchParams();
   const { mode } = useRedesignMode();
@@ -32,9 +48,14 @@ export function TaskBoard({ tasks, members }: { tasks: ClientTaskRow[]; members:
   const fg2 = tokens.colorNeutralForeground2;
   const fg3 = tokens.colorNeutralForeground3;
   const panel = onDark ? "rd-solid--dark" : "rd-solid";
+  const [view, setView] = React.useState<"list" | "board">("list");
 
   const openId = params.get("task");
   const openTask = openId ? tasks.find((t) => t.id === openId) ?? null : null;
+  const titleById = new Map(tasks.map((t) => [t.id, { title: t.title, status: t.status as string }]));
+  const openDeps: TaskDep[] = openTask
+    ? deps.filter((d) => d.task_id === openTask.id).map((d) => ({ id: d.id, blocker_id: d.blocked_by_task_id, title: titleById.get(d.blocked_by_task_id)?.title ?? "—", status: titleById.get(d.blocked_by_task_id)?.status ?? "todo" }))
+    : [];
 
   const addBtn = <ClientTaskDialog members={members} trigger={<EmberButton icon={<Plus size={16} />}>Add task</EmberButton>} />;
 
@@ -48,7 +69,12 @@ export function TaskBoard({ tasks, members }: { tasks: ClientTaskRow[]; members:
               What we&apos;re working on together.
             </h1>
           </div>
-          {tasks.length > 0 && addBtn}
+          {tasks.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+              <ViewToggle view={view} onChange={setView} onDark={onDark} />
+              {addBtn}
+            </div>
+          )}
         </div>
 
         {tasks.length === 0 ? (
@@ -58,6 +84,13 @@ export function TaskBoard({ tasks, members }: { tasks: ClientTaskRow[]; members:
             <p style={{ margin: 0, fontSize: "0.9rem", color: fg3, maxWidth: "24rem" }}>Add a task for your team, or we&apos;ll add the ones we need from you.</p>
             {addBtn}
           </div>
+        ) : view === "board" ? (
+          <TaskKanban
+            role="client"
+            tasks={tasks.map((t) => ({ id: t.id, title: t.title, status: t.status, assigneeName: t.assigneeName, due_date: t.due_date, is_milestone: t.is_milestone, blocked_by_client: t.blocked_by_client, client_signed_off_at: t.client_signed_off_at }))}
+            deps={deps.map((d) => ({ task_id: d.task_id, blocked_by_task_id: d.blocked_by_task_id }))}
+            onOpen={(id) => router.push(`/tasks?task=${id}`, { scroll: false })}
+          />
         ) : (
           <ul className="rd-task-grid" style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {tasks.map((t, i) => {
@@ -85,7 +118,7 @@ export function TaskBoard({ tasks, members }: { tasks: ClientTaskRow[]; members:
         )}
 
         {openTask && (
-          <TaskDetailDialog task={openTask} role="client" members={members} checklist={openTask.checklist} open onOpenChange={(v) => { if (!v) router.push("/tasks", { scroll: false }); }} />
+          <TaskDetailDialog task={openTask} role="client" members={members} checklist={openTask.checklist} deps={openDeps} open onOpenChange={(v) => { if (!v) router.push("/tasks", { scroll: false }); }} />
         )}
       </div>
       <style>{`.rd-task-grid{display:grid;gap:1rem;grid-template-columns:1fr;} @media(min-width:900px){.rd-task-grid{grid-template-columns:1fr 1fr;}}`}</style>

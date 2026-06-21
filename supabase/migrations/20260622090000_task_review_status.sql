@@ -1,0 +1,14 @@
+-- =============================================================================
+-- 20260622090000_task_review_status.sql  (Track D — the "Review" task status)
+--
+-- Extend task_status: todo → in_progress → REVIEW → done. ADDITIVE — existing
+-- 'todo'/'in_progress'/'done' rows are unaffected. In its OWN migration so the new
+-- enum value is committed before any later migration could reference it (Postgres
+-- forbids using a freshly-added enum value in the same transaction).
+--
+-- The status lock is UNCHANGED by this: clients still have NO status-write path
+-- (tasks_client_select is read-only; the client status RPC was already dropped).
+-- 'review' is just another value only staff can set (direct writes under the
+-- tasks for-all policies).
+-- =============================================================================
+alter type public.task_status add value if not exists 'review' before 'done';

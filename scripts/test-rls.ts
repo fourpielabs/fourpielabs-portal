@@ -1148,6 +1148,49 @@ async function main() {
     }
   }
 
+  // --- advanced tasks (Track D): status lock across 'review', deps, sign-off ----
+  {
+    const grp = "advanced_tasks";
+    // fixtures: a milestone task + a blocker + a dependency (admin / service role)
+    await admin.from("tasks").delete().like("title", "RLSADV%");
+    const { data: mst } = await admin.from("tasks").insert({ client_id: premierId, title: "RLSADV-milestone", visible_to_client: true, is_milestone: true }).select("id").single();
+    const { data: blk } = await admin.from("tasks").insert({ client_id: premierId, title: "RLSADV-blocker", visible_to_client: true, status: "todo" }).select("id").single();
+    const mstId = mst!.id as string, blkId = blk!.id as string;
+    const { data: dep } = await admin.from("task_dependencies").insert({ task_id: mstId, blocked_by_task_id: blkId }).select("id").single();
+
+    // CENTRAL: client cannot set status — incl. the new 'review' — via direct write
+    const su = await client.from("tasks").update({ status: "review" }).eq("id", mstId).select("id");
+    rec(grp, "client CANNOT set status='review' (lock holds across new value)", (su.data?.length ?? 0) === 0, `${su.data?.length ?? 0} rows`);
+
+    // dependencies: client reads deps on a VISIBLE task; cannot write them
+    const { data: cDeps } = await client.from("task_dependencies").select("id").eq("task_id", mstId);
+    rec(grp, "client reads deps on a visible task", (cDeps?.length ?? 0) === 1, `${cDeps?.length ?? 0} rows`);
+    const di = await client.from("task_dependencies").insert({ task_id: mstId, blocked_by_task_id: blkId }).select("id");
+    if (di.data?.[0]?.id) await admin.from("task_dependencies").delete().eq("id", di.data[0].id);
+    rec(grp, "client CANNOT create a dependency", !!di.error || (di.data?.length ?? 0) === 0, di.error?.code ?? `${di.data?.length ?? 0} rows`);
+    const dd = await client.from("task_dependencies").delete().eq("id", dep!.id).select("id");
+    rec(grp, "client CANNOT delete a dependency (0 rows)", (dd.data?.length ?? 0) === 0, `${dd.data?.length ?? 0} rows`);
+
+    // sign-off: client signs off OWN milestone → sets timestamp, NEVER status
+    const so = await client.rpc("sign_off_milestone", { p_task_id: mstId });
+    rec(grp, "client can sign off OWN milestone", !so.error, so.error?.message ?? "ok");
+    const { data: after } = await admin.from("tasks").select("client_signed_off_at, status").eq("id", mstId).single();
+    rec(grp, "sign-off records timestamp but does NOT change status", !!after?.client_signed_off_at && after?.status === "todo", `signed=${!!after?.client_signed_off_at} status=${after?.status}`);
+    // non-milestone sign-off rejected
+    const soN = await client.rpc("sign_off_milestone", { p_task_id: visTaskId });
+    rec(grp, "sign-off on a NON-milestone rejected", !!soN.error, soN.error?.message ?? "(unexpectedly ok)");
+    // cross-client sign-off rejected (pulse task)
+    const soX = await client.rpc("sign_off_milestone", { p_task_id: xcTaskId });
+    rec(grp, "cross-client sign-off rejected", !!soX.error, soX.error?.message ?? "(unexpectedly ok)");
+
+    // staff CAN set status='review' (the staff path is unchanged)
+    const ts = await team.from("tasks").update({ status: "review" }).eq("id", mstId).select("id");
+    rec(grp, "assigned team CAN set status='review'", (ts.data?.length ?? 0) === 1, `${ts.data?.length ?? 0} rows`);
+
+    // cleanup
+    await admin.from("tasks").delete().like("title", "RLSADV%");
+  }
+
   // --- cleanup --------------------------------------------------------------
   await admin.from("notification_preferences").delete().in("user_id", [clientProfileId, teamUid]);
   await admin.from("tasks").delete().like("title", "RLSTASK%");

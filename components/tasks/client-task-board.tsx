@@ -21,7 +21,7 @@ export type ClientTaskRow = {
   id: string;
   title: string;
   description: string | null;
-  status: "todo" | "in_progress" | "done";
+  status: "todo" | "in_progress" | "review" | "done";
   assignee_id: string | null;
   assigneeName: string | null;
   due_date: string | null;
@@ -30,6 +30,10 @@ export type ClientTaskRow = {
   createdByName: string | null;
   created_at: string;
   checklist: TaskChecklistItem[];
+  is_milestone?: boolean;
+  blocked_by_client?: boolean;
+  blocked_reason?: string | null;
+  client_signed_off_at?: string | null;
 };
 
 export function ClientTaskBoard({

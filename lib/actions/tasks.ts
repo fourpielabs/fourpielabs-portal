@@ -73,6 +73,9 @@ export async function staffCreateTaskAction(
       due_date: clean(v.due_date),
       visible_to_client: src.visible,
       source_message_id: clean(v.source_message_id),
+      is_milestone: v.is_milestone ?? false,
+      blocked_by_client: v.blocked_by_client ?? false,
+      blocked_reason: clean(v.blocked_reason),
       created_by: me.id,
     })
     .select("id")
@@ -116,6 +119,9 @@ export async function staffUpdateTaskAction(
       assignee_id: assigneeId,
       due_date: clean(v.due_date),
       visible_to_client: v.visible_to_client,
+      // is_milestone / blocked_* are managed by staffSetTaskFlagsAction (the detail
+      // dialog's Advanced controls), NOT this full-edit form — so a title/status
+      // edit never resets them.
     })
     .eq("id", id)
     .eq("client_id", clientId);
@@ -155,6 +161,58 @@ export async function staffSetTaskStatusAction(
     clientId,
     metadata: { status },
   });
+  revalidateStaffTasks(clientId);
+  return { ok: true };
+}
+
+// ---- staff: milestone / blocked-by-client flags (detail-dialog Advanced) -------
+export async function staffSetTaskFlagsAction(
+  clientId: string,
+  id: string,
+  flags: { is_milestone?: boolean; blocked_by_client?: boolean; blocked_reason?: string | null },
+): Promise<Result> {
+  const me = await requireClientAccess(clientId);
+  const patch: Record<string, unknown> = {};
+  if (typeof flags.is_milestone === "boolean") patch.is_milestone = flags.is_milestone;
+  if (typeof flags.blocked_by_client === "boolean") patch.blocked_by_client = flags.blocked_by_client;
+  if (flags.blocked_reason !== undefined) patch.blocked_reason = clean(flags.blocked_reason);
+  if (Object.keys(patch).length === 0) return { ok: true };
+  const supabase = await createClient();
+  const { error } = await supabase.from("tasks").update(patch).eq("id", id).eq("client_id", clientId);
+  if (error) return { ok: false, error: error.message };
+  await logAudit({ actorId: me.id, action: "task.updated", entity: "task", entityId: id, clientId, metadata: { flags: patch } });
+  revalidateStaffTasks(clientId);
+  return { ok: true };
+}
+
+// ---- task dependencies (staff-managed; same-client enforced by a DB trigger) ----
+export async function addTaskDependencyAction(
+  clientId: string,
+  taskId: string,
+  blockedByTaskId: string,
+): Promise<Result> {
+  const me = await requireClientAccess(clientId);
+  if (taskId === blockedByTaskId) return { ok: false, error: "A task can't block itself." };
+  const supabase = await createClient();
+  // both tasks must belong to THIS client (RLS scopes the read; the DB trigger re-checks)
+  const { data: rows } = await supabase.from("tasks").select("id").eq("client_id", clientId).in("id", [taskId, blockedByTaskId]);
+  if ((rows?.length ?? 0) !== 2) return { ok: false, error: "Both tasks must belong to this client." };
+  const { error } = await supabase.from("task_dependencies").insert({ task_id: taskId, blocked_by_task_id: blockedByTaskId, created_by: me.id });
+  if (error) {
+    if (error.code === "23505") return { ok: false, error: "That dependency already exists." };
+    return { ok: false, error: error.message };
+  }
+  await logAudit({ actorId: me.id, action: "task.dependency_changed", entity: "task", entityId: taskId, clientId, metadata: { added: blockedByTaskId } });
+  revalidateStaffTasks(clientId);
+  return { ok: true };
+}
+
+export async function removeTaskDependencyAction(clientId: string, depId: string): Promise<Result> {
+  const me = await requireClientAccess(clientId);
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("task_dependencies").delete().eq("id", depId).select("task_id");
+  if (error) return { ok: false, error: error.message };
+  await logAudit({ actorId: me.id, action: "task.dependency_changed", entity: "task", entityId: data?.[0]?.task_id ?? null, clientId, metadata: { removed: depId } });
   revalidateStaffTasks(clientId);
   return { ok: true };
 }

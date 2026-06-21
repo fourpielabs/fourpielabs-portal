@@ -41,6 +41,10 @@ export type StaffTaskRow = {
   due_date: string | null;
   visible_to_client: boolean;
   source_message_id: string | null;
+  is_milestone?: boolean;
+  blocked_by_client?: boolean;
+  blocked_reason?: string | null;
+  client_signed_off_at?: string | null;
 };
 
 const NONE = "__none__";

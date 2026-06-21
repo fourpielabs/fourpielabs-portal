@@ -111,6 +111,8 @@ export const AUDIT_ACTION_GROUPS = {
     "task.time_completed",
     "task.time_edited",
     "task.time_deleted",
+    "task.dependency_changed",
+    "milestone.signed_off",
   ],
   Updates: ["update.created", "update.updated", "update.deleted", "update.flags_changed"],
   Files: ["file.uploaded", "file.visibility_changed", "file.deleted"],

@@ -11,15 +11,16 @@ export default async function MyTasksPage() {
   // tasks + subtasks + the assignee circle in parallel. RLS scopes tasks to the
   // client's own client_id AND visible_to_client; the task_checklist_items SELECT
   // policy mirrors it (items only on a visible own task), so a bare select is safe.
-  const [{ data: tasks }, { data: items }, members] = await Promise.all([
+  const [{ data: tasks }, { data: items }, { data: deps }, members] = await Promise.all([
     supabase
       .from("tasks")
-      .select("id, title, description, status, assignee_id, due_date, source_message_id, created_by, created_at")
+      .select("id, title, description, status, assignee_id, due_date, source_message_id, created_by, created_at, is_milestone, blocked_by_client, blocked_reason, client_signed_off_at")
       .order("created_at", { ascending: false }),
     supabase
       .from("task_checklist_items")
       .select("id, task_id, title, is_done, sort_order")
       .order("sort_order", { ascending: true }),
+    supabase.from("task_dependencies").select("id, task_id, blocked_by_task_id"),
     profile.client_id ? getAssignableMembers(profile.client_id) : Promise.resolve([]),
   ]);
   const nameById = new Map(members.map((m) => [m.id, m.name]));
@@ -45,7 +46,11 @@ export default async function MyTasksPage() {
     // and the client source-link goes to /messages regardless — type is unused here.
     sourceThreadType: t.source_message_id ? "client_shared" : null,
     checklist: checklistByTask.get(t.id) ?? [],
+    is_milestone: t.is_milestone ?? false,
+    blocked_by_client: t.blocked_by_client ?? false,
+    blocked_reason: t.blocked_reason,
+    client_signed_off_at: t.client_signed_off_at,
   }));
 
-  return <TaskBoard tasks={list} members={members} />;
+  return <TaskBoard tasks={list} members={members} deps={(deps ?? []) as { id: string; task_id: string; blocked_by_task_id: string }[]} />;
 }

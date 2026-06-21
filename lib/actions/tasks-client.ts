@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth/guards";
@@ -24,6 +25,36 @@ const orNull = (v: string | undefined | null) => (v && v.length > 0 ? v : null);
  * client's circle, a source message is the client's OWN client_shared message. The
  * action is convenience only.
  */
+/**
+ * FORMAL milestone sign-off — a client records acceptance of a milestone task.
+ * This is a LOGGED acceptance, NOT a legally-binding e-signature (a separate
+ * DocuSign-class integration). It writes ONLY client_signed_off_at via the
+ * sign_off_milestone RPC (own-client + visible + milestone-gated) — it does NOT
+ * change task status (the lock holds). IP + timestamp + user are recorded to the
+ * audit log here (the server has the request IP; the RPC stamps the timestamp).
+ */
+export async function signOffMilestoneAction(taskId: string): Promise<Result> {
+  const profile = await requireProfile();
+  if (profile.role !== "client") return { ok: false, error: "Only clients can sign off." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("sign_off_milestone", { p_task_id: taskId });
+  if (error) return { ok: false, error: error.message };
+
+  const h = await headers();
+  const ip = (h.get("x-forwarded-for")?.split(",")[0].trim()) || h.get("x-real-ip") || "unknown";
+  await logAudit({
+    actorId: profile.id,
+    action: "milestone.signed_off",
+    entity: "task",
+    entityId: taskId,
+    clientId: profile.client_id,
+    metadata: { ip, signed_at: new Date().toISOString(), user_id: profile.id, kind: "formal_logged_acceptance" },
+  });
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 export async function createTaskAction(
   input: TaskClientCreateValues,
 ): Promise<Result<{ id: string }>> {

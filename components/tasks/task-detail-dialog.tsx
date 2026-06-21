@@ -42,7 +42,7 @@ export type DetailTask = {
   id: string;
   title: string;
   description: string | null;
-  status: "todo" | "in_progress" | "done";
+  status: "todo" | "in_progress" | "review" | "done";
   assignee_id: string | null;
   assigneeName: string | null;
   due_date: string | null;

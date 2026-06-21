@@ -13,14 +13,15 @@ export default async function ClientTasksPage({
   const me = await requireClientAccess(clientId);
   const supabase = await createClient();
 
-  const [{ data: tasks }, members] = await Promise.all([
+  const [{ data: tasks }, { data: depRows }, members] = await Promise.all([
     supabase
       .from("tasks")
       .select(
-        "id, title, description, status, assignee_id, due_date, visible_to_client, source_message_id, created_by, created_at",
+        "id, title, description, status, assignee_id, due_date, visible_to_client, source_message_id, created_by, created_at, is_milestone, blocked_by_client, blocked_reason, client_signed_off_at",
       )
       .eq("client_id", clientId)
       .order("created_at", { ascending: false }),
+    supabase.from("task_dependencies").select("id, task_id, blocked_by_task_id"),
     getAssignableMembers(clientId),
   ]);
 
@@ -94,11 +95,15 @@ export default async function ClientTasksPage({
     sourceThreadType: t.source_message_id ? threadTypeById.get(t.source_message_id) ?? null : null,
     checklist: checklistByTask.get(t.id) ?? [],
     timeEntries: timeByTask.get(t.id) ?? [],
+    is_milestone: t.is_milestone ?? false,
+    blocked_by_client: t.blocked_by_client ?? false,
+    blocked_reason: t.blocked_reason,
+    client_signed_off_at: t.client_signed_off_at,
   }));
 
   return (
     <div className="space-y-4">
-      <StaffTasksManager clientId={clientId} currentUserId={me.id} tasks={list} members={members} />
+      <StaffTasksManager clientId={clientId} currentUserId={me.id} tasks={list} members={members} deps={(depRows ?? []) as { id: string; task_id: string; blocked_by_task_id: string }[]} />
     </div>
   );
 }

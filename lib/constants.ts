@@ -43,6 +43,7 @@ export const PROJECT_STATUSES = [
 export const TASK_STATUSES = [
   { value: "todo", label: "To do" },
   { value: "in_progress", label: "In progress" },
+  { value: "review", label: "Review" },
   { value: "done", label: "Done" },
 ] as const;
 
