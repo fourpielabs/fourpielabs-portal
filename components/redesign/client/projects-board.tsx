@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FolderKanban, Plus } from "lucide-react";
+import { CheckSquare, FolderKanban, Plus, Sparkles } from "lucide-react";
 import { tokens } from "@/components/redesign/ui";
 import { Eyebrow, StatusPill, EmberButton, Button } from "@/components/redesign/ui";
 import { formatDate } from "@/lib/format";
@@ -10,6 +10,7 @@ import { ClientPageFrame } from "@/components/redesign/client/page-frame";
 import { ProjectDialog, type ProjectRow } from "@/components/client/project-dialog";
 
 type Deliverable = { id: string; title: string; typeLabel: string; status: string };
+export type BoardTask = { id: string; title: string; status: string; due_date: string | null };
 export type BoardProject = ProjectRow & { due_date: string | null };
 
 export type ProjectsData = {
@@ -17,6 +18,7 @@ export type ProjectsData = {
   clientName: string | null;
   projects: BoardProject[];
   deliverablesByProject: Record<string, Deliverable[]>;
+  tasks: BoardTask[];
 };
 
 const PRIORITY_TONE: Record<string, { fg: string; bg: string }> = {
@@ -62,8 +64,32 @@ export function ProjectsBoard({ data }: { data: ProjectsData }) {
               Welcome back, {data.firstName}.
             </h1>
           </div>
-          <ProjectDialog trigger={<EmberButton icon={<Plus size={16} />}>Add project</EmberButton>} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <EmberButton as="a" href="/intake" icon={<Sparkles size={16} />}>Start a project</EmberButton>
+            <ProjectDialog trigger={<Button appearance="outline" icon={<Plus size={16} />}>Quick add</Button>} />
+          </div>
         </div>
+
+        {/* open to-dos (incl. the auto-created "Pending assets" task) */}
+        {data.tasks.length > 0 && (
+          <div className={`${panel} rd-rise`} style={{ borderRadius: 18, padding: "1.1rem 1.2rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: "0.75rem" }}>
+              <CheckSquare size={16} color="#b45309" />
+              <h2 className="rd-display" style={{ margin: 0, fontSize: "1.02rem", fontWeight: 600, color: fg1 }}>Your to-dos</h2>
+            </div>
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+              {data.tasks.map((t) => (
+                <li key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "0.5rem 0", borderTop: `1px solid ${divider}` }}>
+                  <span style={{ minWidth: 0, fontSize: "0.88rem", color: fg1 }}>{t.title}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    {t.due_date && <span style={{ fontSize: "0.74rem", color: fg3 }}>{formatDate(t.due_date)}</span>}
+                    <StatusPill value={t.status} mode={mode} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {data.projects.length === 0 ? (
           <div className={panel} style={{ borderRadius: 20, padding: "3rem 2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
@@ -71,8 +97,8 @@ export function ProjectsBoard({ data }: { data: ProjectsData }) {
               <FolderKanban size={22} />
             </span>
             <div className="rd-display" style={{ fontSize: "1.25rem", fontWeight: 600, color: fg1 }}>No projects yet</div>
-            <p style={{ margin: 0, fontSize: "0.9rem", color: fg3, maxWidth: "24rem" }}>Add your first project and we&apos;ll take it from there.</p>
-            <ProjectDialog trigger={<EmberButton icon={<Plus size={16} />}>Add project</EmberButton>} />
+            <p style={{ margin: 0, fontSize: "0.9rem", color: fg3, maxWidth: "24rem" }}>Start your first project — our quick intake captures everything and books your kickoff.</p>
+            <EmberButton as="a" href="/intake" icon={<Sparkles size={16} />}>Start a project</EmberButton>
           </div>
         ) : (
           <div className="rd-proj-grid">

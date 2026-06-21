@@ -115,6 +115,7 @@ export const AUDIT_ACTION_GROUPS = {
   Updates: ["update.created", "update.updated", "update.deleted", "update.flags_changed"],
   Files: ["file.uploaded", "file.visibility_changed", "file.deleted"],
   Program: ["program.updated", "program.assignment_changed"],
+  Intake: ["intake.submitted", "intake.asset_uploaded"],
 } as const;
 
 export type AuditAction =
