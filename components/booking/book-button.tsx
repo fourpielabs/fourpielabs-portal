@@ -33,6 +33,7 @@ export function BookButton({
   clientId,
   callTypeId,
   className,
+  extraMetadata,
 }: {
   bookingUrl: string | null;
   name: string | null;
@@ -40,6 +41,7 @@ export function BookButton({
   clientId: string;
   callTypeId: string;
   className?: string;
+  extraMetadata?: Record<string, string>;
 }) {
   if (isCalLink(bookingUrl)) {
     return (
@@ -50,6 +52,7 @@ export function BookButton({
         clientId={clientId}
         callTypeId={callTypeId}
         className={className}
+        extraMetadata={extraMetadata}
       />
     );
   }

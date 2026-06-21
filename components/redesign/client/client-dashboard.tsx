@@ -24,13 +24,15 @@ export async function ClientDashboardR2({ clientId, userName }: { clientId: stri
   const { data: typeRow } = await supabase.from("client_clients").select("client_type").maybeSingle();
 
   if (typeRow?.client_type === "project") {
-    const [{ data: client }, { data: projects }, { data: deliverables }] = await Promise.all([
+    const [{ data: client }, { data: projects }, { data: deliverables }, { data: tasks }] = await Promise.all([
       supabase.from("client_clients").select("name").maybeSingle(),
       supabase
         .from("projects")
         .select("id, title, description, status, priority, start_date, due_date, target_date, created_at")
         .order("created_at", { ascending: false }),
       supabase.from("deliverables").select("id, title, type, status, project_id").order("created_at", { ascending: false }),
+      // client-visible open to-dos (incl. the auto-created "Pending assets" task)
+      supabase.from("tasks").select("id, title, status, due_date").neq("status", "done").order("created_at", { ascending: false }),
     ]);
     const byProject: Record<string, { id: string; title: string; typeLabel: string; status: string }[]> = {};
     for (const d of deliverables ?? []) {
@@ -42,6 +44,7 @@ export async function ClientDashboardR2({ clientId, userName }: { clientId: stri
       clientName: client?.name ?? null,
       projects: (projects ?? []) as BoardProject[],
       deliverablesByProject: byProject,
+      tasks: (tasks ?? []) as ProjectsData["tasks"],
     };
     return <ProjectsBoard data={data} />;
   }

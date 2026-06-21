@@ -24,6 +24,7 @@ export function CalBookingButton({
   callTypeId,
   className,
   children,
+  extraMetadata,
 }: {
   calLink: string;
   name: string | null;
@@ -32,6 +33,8 @@ export function CalBookingButton({
   callTypeId: string;
   className?: string;
   children?: React.ReactNode;
+  // optional context merged into the booking metadata (e.g. intake service/projectId)
+  extraMetadata?: Record<string, string>;
 }) {
   // Preload embed.js on mount so the first click opens instantly. We DON'T call
   // cal("ui") here — applying UI before any modal/iframe exists throws Cal's
@@ -48,7 +51,7 @@ export function CalBookingButton({
     theme: "light" as const,
     ...(name ? { name } : {}),
     ...(email ? { email } : {}),
-    metadata: { clientId, callTypeId },
+    metadata: { clientId, callTypeId, ...(extraMetadata ?? {}) },
   };
 
   async function openBooking() {

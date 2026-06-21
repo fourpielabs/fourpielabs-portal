@@ -490,6 +490,57 @@ async function main() {
     );
   }
 
+  // --- intake (Track C): client RPC-only, own-scope; staff read; project-gated -
+  {
+    const grp = "intake";
+    // config readable by the (project) client
+    const { data: cfg } = await projClient.from("intake_config").select("id").eq("is_active", true);
+    rec(grp, "project client can read intake_config", (cfg?.length ?? 0) >= 1, `${cfg?.length ?? 0} rows`);
+
+    // save_intake (own project-client) → ok; creates a draft
+    const sv = await projClient.rpc("save_intake", { p_service: "web_dev", p_answers: { title: "RLSINTAKE" }, p_estimate_min: 3000, p_estimate_max: 9000, p_current_step: 1 });
+    rec(grp, "project client save_intake (own) ok", !sv.error, sv.error?.message ?? "");
+
+    // reads OWN intake; cross-client invisible
+    const ownI = await projClient.from("project_intakes").select("id").eq("client_id", projId);
+    rec(grp, "client reads OWN intake", (ownI.data?.length ?? 0) >= 1, `${ownI.data?.length ?? 0} rows`);
+    const xI = await projClient.from("project_intakes").select("id").eq("client_id", premierId);
+    rec(grp, "client cross-client intake read 0", (xI.data?.length ?? 0) === 0, `${xI.data?.length ?? 0} rows`);
+
+    // direct INSERT/UPDATE denied — no client write policy (RPC is the only path)
+    const di = await projClient.from("project_intakes").insert({ client_id: projId, status: "draft", answers: {} }).select("id");
+    if (di.data?.[0]?.id) await admin.from("project_intakes").delete().eq("id", di.data[0].id);
+    rec(grp, "client direct INSERT project_intakes denied", !!di.error || (di.data?.length ?? 0) === 0, di.error?.code ?? `${di.data?.length ?? 0} rows`);
+    const du = await projClient.from("project_intakes").update({ service: "hack" }).eq("client_id", projId).select("id");
+    rec(grp, "client direct UPDATE project_intakes denied (0 rows)", (du.data?.length ?? 0) === 0, `${du.data?.length ?? 0} rows`);
+
+    // a PROGRAM client cannot use the intake (project-type-gated RPC)
+    const pg = await client.rpc("save_intake", { p_service: "web_dev", p_answers: {}, p_estimate_min: 1, p_estimate_max: 2, p_current_step: 0 });
+    rec(grp, "program client save_intake REJECTED (project-only)", !!pg.error, pg.error?.message ?? "(unexpectedly ok)");
+    // intake config staff-only write
+    const cw = await projClient.from("intake_config").update({ version: 99 }).neq("id", "00000000-0000-0000-0000-000000000000").select("id");
+    rec(grp, "client cannot write intake_config (0 rows)", (cw.data?.length ?? 0) === 0, `${cw.data?.length ?? 0} rows`);
+
+    // submit_intake → a real project + a Pending-assets task (missing assets)
+    const sub = await projClient.rpc("submit_intake", {
+      p_service: "web_dev", p_answers: { title: "RLSINTAKE-proj" }, p_estimate_min: 3000, p_estimate_max: 9000,
+      p_title: "RLSINTAKE-proj", p_description: "brief", p_priority: "high", p_target_date: null, p_missing_assets: ["Logo"],
+    });
+    const projectId = (Array.isArray(sub.data) ? sub.data[0] : sub.data) as string | null;
+    rec(grp, "project client submit_intake creates a project", !sub.error && !!projectId, sub.error?.message ?? `project=${projectId}`);
+    if (projectId) {
+      const { data: pr } = await admin.from("projects").select("status, client_id").eq("id", projectId).single();
+      rec(grp, "submitted project is own-client + status proposed (lock intact)", pr?.client_id === projId && pr?.status === "proposed", `client=${pr?.client_id === projId} status=${pr?.status}`);
+      const { data: tk } = await admin.from("tasks").select("id, visible_to_client").eq("client_id", projId).like("title", "Pending assets%");
+      rec(grp, "Pending-assets task auto-created + client-visible", (tk?.length ?? 0) === 1 && tk?.[0]?.visible_to_client === true, `${tk?.length ?? 0} task(s)`);
+      // cleanup (teardown also cascades when rls-project is deleted)
+      if (tk?.[0]?.id) await admin.from("tasks").delete().eq("id", tk[0].id);
+      await admin.from("project_intakes").delete().eq("project_id", projectId);
+      await admin.from("projects").delete().eq("id", projectId);
+    }
+    await admin.from("project_intakes").delete().eq("client_id", projId);
+  }
+
   // --- messaging: client (demo-client / premier) ----------------------------
   {
     // reads OWN client_shared thread only — internal invisible
