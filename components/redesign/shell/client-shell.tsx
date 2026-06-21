@@ -161,7 +161,10 @@ export function ClientShell({
       </header>
 
       {/* page body — outside FluentProvider (converted bodies bring their own FluentScope) */}
-      <main className="w-full flex-1 scroll-pb-36 pt-6 pb-36 sm:pt-10 sm:pb-10">
+      {/* `isolate`: same guarantee as the staff rail — the page's fixed ambient
+          field is confined to <main>'s stacking context, so it can never out-stack
+          the top/bottom nav chrome (z-30 siblings). Parity hardening. */}
+      <main className="w-full flex-1 scroll-pb-36 pt-6 pb-36 sm:pt-10 sm:pb-10 isolate">
         <RouteTransition>{children}</RouteTransition>
       </main>
 

@@ -268,7 +268,16 @@ export function StaffShell({
         />
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* `isolate`: the content column is its own stacking context, so a page's
+          full-bleed ambient field (position:fixed; z-index:0) — or ANY future
+          page z-index — can never out-stack the sticky rail (z-30, a sibling in
+          .rd-root, which is NOT a stacking context). This is the layout-level
+          root-cause guarantee the per-route z-30 patch relied on implicitly:
+          the rail is now above page content BY CONSTRUCTION, not by arithmetic.
+          (isolation does NOT create a containing block for fixed elements, so the
+          ember field still sizes to the viewport + shows through the rail glass —
+          zero visual change.) */}
+      <div className="flex min-w-0 flex-1 flex-col isolate">
         {/* mobile ember-glass top bar */}
         <header
           className={cn(

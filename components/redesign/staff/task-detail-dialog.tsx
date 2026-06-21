@@ -86,10 +86,13 @@ export function TaskDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={(_, d) => onOpenChange(d.open)}>
-      <DialogSurface style={{ maxHeight: "90vh", overflowY: "auto" }}>
-        <DialogBody>
+      {/* Surface constrained to the viewport (width + height); the SINGLE scroll
+          region is the inner content div, with actions pinned below it — no
+          double-scrollbars, no horizontal overflow on mobile (390w). */}
+      <DialogSurface style={{ width: "min(600px, 92vw)", maxWidth: "min(600px, 92vw)", maxHeight: "88vh", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
+        <DialogBody style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, gap: 0 }}>
           <DialogTitle style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Task detail</DialogTitle>
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20, overflowY: "auto", overflowX: "hidden", minHeight: 0, flex: 1, paddingRight: 4 }}>
             {/* TITLE + STATUS */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -112,8 +115,8 @@ export function TaskDetailDialog({
             </div>
 
             {/* ASSIGNEE + DUE */}
-            <div style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr 1fr" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
                 <Eyebrow tone="muted">Assignee</Eyebrow>
                 {isStaff ? (
                   <Select value={assignee} onChange={(e) => setAssignee(e.target.value)} aria-label="Assignee">
@@ -124,7 +127,7 @@ export function TaskDetailDialog({
                   <p style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, color: fg1 }}><User size={14} color={fg3} /> {task.assigneeName ?? "Unassigned"}</p>
                 )}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
                 <Eyebrow tone="muted">Due date</Eyebrow>
                 {isStaff ? (
                   <DatePicker value={due} onChange={setDue} />
@@ -161,7 +164,7 @@ export function TaskDetailDialog({
             )}
           </div>
 
-          <DialogActions>
+          <DialogActions style={{ flexShrink: 0, paddingTop: 16 }}>
             <EmberButton onClick={save} loading={submitting}>Save</EmberButton>
           </DialogActions>
         </DialogBody>
