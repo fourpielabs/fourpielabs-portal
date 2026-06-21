@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
+import { ChevronsUpDown, LogOut, Moon, Settings, Sun } from "lucide-react";
 import {
   Avatar,
   Menu,
@@ -14,6 +14,7 @@ import {
   tokens,
 } from "@fluentui/react-components";
 import { cn } from "@/lib/utils";
+import { useRedesignMode } from "@/components/redesign/themed-fluent";
 
 /**
  * R1 ember-glass user menu. Wiring preserved: the hidden POST form to /auth/signout
@@ -28,6 +29,7 @@ export function UserMenu({
   role,
   collapsed = false,
   tone = "light",
+  themeToggle = false,
 }: {
   name: string | null;
   email: string | null;
@@ -36,9 +38,12 @@ export function UserMenu({
   role?: string | null;
   collapsed?: boolean;
   tone?: "light" | "dark";
+  /** show a light/dark theme toggle inside the menu (staff shells only) */
+  themeToggle?: boolean;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+  const { mode, toggle } = useRedesignMode();
   const dark = tone === "dark";
   const display = name ?? email ?? "Account";
   const avatar = (
@@ -106,6 +111,14 @@ export function UserMenu({
             <MenuItem icon={<Settings size={16} />} onClick={() => router.push("/settings")}>
               Profile &amp; settings
             </MenuItem>
+            {themeToggle && (
+              <MenuItem
+                icon={mode === "light" ? <Moon size={16} /> : <Sun size={16} />}
+                onClick={toggle}
+              >
+                {mode === "light" ? "Dark mode" : "Light mode"}
+              </MenuItem>
+            )}
             <MenuItem icon={<LogOut size={16} />} onClick={() => formRef.current?.requestSubmit()}>
               Sign out
             </MenuItem>

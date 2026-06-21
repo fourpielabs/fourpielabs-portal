@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { m } from "motion/react";
-import { ChevronDown, MoreHorizontal } from "lucide-react";
+import { ChevronDown, Settings } from "lucide-react";
 import { spring, useReducedMotion } from "@/lib/motion";
 import { labelOf, PROGRAMS } from "@/lib/constants";
 import { formatMonthYear } from "@/lib/format";
@@ -110,8 +110,8 @@ export function WorkspaceChrome({
             </p>
           </div>
           {isAdmin && (
-            <Link href={`${base}/settings`} aria-label="Client settings" className="rd-focus" style={{ marginLeft: "auto", display: "inline-flex", width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 999, border: `1px solid ${onDark ? "#37322a" : "#d6d3cd"}`, color: fg3 }}>
-              <MoreHorizontal size={16} />
+            <Link href={`${base}/settings`} aria-label="Client settings" title="Client settings" className="rd-focus" style={{ marginLeft: "auto", display: "inline-flex", width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 999, border: `1px solid ${onDark ? "#37322a" : "#d6d3cd"}`, color: fg3 }}>
+              <Settings size={16} />
             </Link>
           )}
         </div>

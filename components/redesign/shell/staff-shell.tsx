@@ -30,7 +30,7 @@ import { initials } from "@/lib/format";
 import type { NotificationItem } from "@/lib/actions/notifications";
 import { BrandLogo } from "@/components/ui/brand-logo";
 import { RouteTransition } from "@/components/motion/route-transition";
-import { FluentScope, ThemeToggle, useRedesignMode } from "@/components/redesign/themed-fluent";
+import { FluentScope, useRedesignMode } from "@/components/redesign/themed-fluent";
 import { NotificationBell } from "@/components/redesign/shell/notification-bell";
 import { UserMenu } from "@/components/redesign/shell/user-menu";
 
@@ -138,15 +138,13 @@ function SidebarInner({
   // portal wrapper full-viewport. Inline style fills the rail here but never reaches the clone.
   return (
     <FluentScope style={{ display: "flex", height: "100%", flexDirection: "column", gap: "1rem", padding: "0.75rem" }}>
-      {/* brand + bell + theme toggle + collapse */}
+      {/* brand + collapse (bell now lives in the top bar; theme in the user menu) */}
       <div className={cn("flex pt-2", collapsed ? "flex-col items-center gap-1" : "items-center gap-1.5 px-2")}>
         {!collapsed && (
           <Link href="/dashboard" onClick={onNavigate} className="rd-focus min-w-0 flex-1 rounded-md">
             <BrandLogo dark={onDark} className="text-lg" />
           </Link>
         )}
-        <NotificationBell tone={onDark ? "dark" : "light"} initialUnread={notifUnread} initialItems={notifItems} />
-        <ThemeToggle tone={onDark ? "dark" : "light"} />
         {onToggleCollapse && (
           <button
             type="button"
@@ -206,7 +204,7 @@ function SidebarInner({
         })}
       </nav>
 
-      <UserMenu name={name} email={email} avatarUrl={avatarUrl} bubble role={role} collapsed={collapsed} tone={onDark ? "dark" : "light"} />
+      <UserMenu name={name} email={email} avatarUrl={avatarUrl} bubble role={role} collapsed={collapsed} tone={onDark ? "dark" : "light"} themeToggle />
     </FluentScope>
   );
 }
@@ -278,6 +276,19 @@ export function StaffShell({
           ember field still sizes to the viewport + shows through the rail glass —
           zero visual change.) */}
       <div className="flex min-w-0 flex-1 flex-col isolate">
+        {/* desktop top bar — notification bell pinned top-right (sidebar carries the
+            rest of the chrome; theme toggle now lives in the user menu) */}
+        <header
+          className={cn(
+            "rd-glass rd-glass--strong sticky top-0 z-30 hidden items-center justify-end rounded-none border-x-0 border-t-0 px-6 py-2.5 lg:flex",
+            onDark && "rd-glass--dark",
+          )}
+        >
+          <FluentScope className="inline-flex items-center">
+            <NotificationBell tone={onDark ? "dark" : "light"} initialUnread={notifUnread} initialItems={notifItems} />
+          </FluentScope>
+        </header>
+
         {/* mobile ember-glass top bar */}
         <header
           className={cn(
@@ -301,7 +312,6 @@ export function StaffShell({
           </Link>
           <div className="ml-auto">
             <FluentScope className="inline-flex items-center gap-1">
-              <ThemeToggle tone={onDark ? "dark" : "light"} />
               <NotificationBell tone={onDark ? "dark" : "light"} initialUnread={notifUnread} initialItems={notifItems} />
             </FluentScope>
           </div>
