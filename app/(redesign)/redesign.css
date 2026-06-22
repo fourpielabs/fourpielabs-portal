@@ -92,6 +92,21 @@
   pointer-events: none;
 }
 
+/* CASCADE FIX — restore the `sticky` utility on glass chrome.
+   `.rd-glass` sets `position: relative` (so the ember `::before` + any absolute
+   children anchor to the pane). This file is UNLAYERED, while Tailwind v4 emits its
+   utilities inside cascade layers — and unlayered rules beat ANY layered rule of equal
+   specificity regardless of source order. So `.rd-glass`'s `relative` silently won over
+   Tailwind's `.sticky { position: sticky }` on every element that carries BOTH classes:
+   the staff/admin rail and the top bars all computed `position: relative` and scrolled
+   away with the page (the rail looked right at the top of a page / on the non-scrolling
+   dashboard, then detached as content scrolled — it was never actually pinned).
+   This higher-specificity (0,2,0) unlayered rule re-asserts the utility's intent.
+   `top`/`z-index`/`inset` aren't set by `.rd-glass`, so those utilities already apply. */
+.rd-glass.sticky {
+  position: sticky;
+}
+
 /* === SOLID SURFACES (where glass is FORBIDDEN: tables, forms, running text) === */
 .rd-solid {
   background-color: #ffffff;
