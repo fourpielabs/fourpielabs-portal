@@ -15,7 +15,7 @@ import { TaskChecklist } from "@/components/tasks/task-checklist";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TaskTimer } from "@/components/redesign/staff/task-timer";
 import {
-  Dialog, DialogSurface, DialogTitle, DialogBody, DialogActions,
+  BaseModal,
   Input, Textarea, Select, Switch, EmberButton, StatusPill, Eyebrow, tokens,
 } from "@/components/redesign/ui";
 import { useRedesignMode } from "@/components/redesign/themed-fluent";
@@ -124,14 +124,14 @@ export function TaskDetailDialog({
   const border = onDark ? "#34302a" : "#e7e5e0";
 
   return (
-    <Dialog open={open} onOpenChange={(_, d) => onOpenChange(d.open)}>
-      {/* Surface constrained to the viewport (width + height); the SINGLE scroll
-          region is the inner content div, with actions pinned below it — no
-          double-scrollbars, no horizontal overflow on mobile (390w). */}
-      <DialogSurface style={{ width: "min(600px, 92vw)", maxWidth: "min(600px, 92vw)", maxHeight: "88vh", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
-        <DialogBody style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, gap: 0 }}>
-          <DialogTitle style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Task detail</DialogTitle>
-          <div style={{ display: "flex", flexDirection: "column", gap: 20, overflowY: "auto", overflowX: "hidden", minHeight: 0, flex: 1, paddingRight: 4 }}>
+    <BaseModal
+      isOpen={open}
+      onClose={() => onOpenChange(false)}
+      footer={<EmberButton onClick={save} loading={submitting}>Save</EmberButton>}
+    >
+      {/* one inner column owns the section spacing; BaseModal provides the surface,
+          the SINGLE scroll region, the pinned footer, and the labeled close X. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {/* TITLE + STATUS */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -275,13 +275,7 @@ export function TaskDetailDialog({
             {isStaff && clientId && currentUserId && (
               <TaskTimer clientId={clientId} taskId={task.id} currentUserId={currentUserId} entries={timeEntries ?? []} />
             )}
-          </div>
-
-          <DialogActions style={{ flexShrink: 0, paddingTop: 16 }}>
-            <EmberButton onClick={save} loading={submitting}>Save</EmberButton>
-          </DialogActions>
-        </DialogBody>
-      </DialogSurface>
-    </Dialog>
+      </div>
+    </BaseModal>
   );
 }

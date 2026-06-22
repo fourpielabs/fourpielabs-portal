@@ -19,7 +19,7 @@ import {
 import { uploadMessageAttachmentAction } from "@/lib/actions/message-attachments";
 import {
   Button, EmberButton, Popover, PopoverTrigger, PopoverSurface,
-  Dialog, DialogTrigger, DialogSurface, DialogTitle, DialogBody, DialogContent, DialogActions, tokens,
+  BaseModal, tokens,
 } from "@/components/redesign/ui";
 import { useRedesignMode } from "@/components/redesign/themed-fluent";
 import { ClientPageFrame } from "@/components/redesign/client/page-frame";
@@ -251,21 +251,7 @@ export function Conversation({
                     {mine && !m.id.startsWith("tmp-") && editingId !== m.id && (
                       <>
                         <button type="button" onClick={() => startEdit(m)} aria-label="Edit message" className="rd-focus" style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center", justifyContent: "center", borderRadius: 999, border: "none", background: "none", cursor: "pointer", color: fg3 }}><Pencil size={12} /></button>
-                        <Dialog>
-                          <DialogTrigger disableButtonEnhancement>
-                            <button type="button" aria-label="Delete message" className="rd-focus" style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center", justifyContent: "center", borderRadius: 999, border: "none", background: "none", cursor: "pointer", color: fg3 }}><Trash2 size={12} /></button>
-                          </DialogTrigger>
-                          <DialogSurface>
-                            <DialogBody>
-                              <DialogTitle>Delete this message?</DialogTitle>
-                              <DialogContent>It will be removed for everyone. This can&apos;t be undone.</DialogContent>
-                              <DialogActions>
-                                <DialogTrigger disableButtonEnhancement><Button appearance="secondary">Cancel</Button></DialogTrigger>
-                                <EmberButton onClick={() => deleteMessage(m)}>Delete</EmberButton>
-                              </DialogActions>
-                            </DialogBody>
-                          </DialogSurface>
-                        </Dialog>
+                        <DeleteMessageButton color={fg3} onConfirm={() => deleteMessage(m)} />
                       </>
                     )}
                   </div>
@@ -374,5 +360,28 @@ function ClientFrame({ children }: { children: React.ReactNode }) {
     <ClientPageFrame width="standard">
       <div style={{ paddingBlock: "clamp(0.5rem,2vw,1rem)" }}>{children}</div>
     </ClientPageFrame>
+  );
+}
+
+// Per-message delete confirm — owns its own open state so it standardizes on BaseModal
+// (the old inline Fluent DialogTrigger was self-contained). Delete wiring unchanged.
+function DeleteMessageButton({ color, onConfirm }: { color: string; onConfirm: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" aria-label="Delete message" onClick={() => setOpen(true)} className="rd-focus" style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center", justifyContent: "center", borderRadius: 999, border: "none", background: "none", cursor: "pointer", color }}><Trash2 size={12} /></button>
+      <BaseModal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        title="Delete this message?"
+        size="sm"
+        footer={<>
+          <Button appearance="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+          <EmberButton onClick={() => { setOpen(false); onConfirm(); }}>Delete</EmberButton>
+        </>}
+      >
+        <p style={{ margin: 0, fontSize: 14, color: tokens.colorNeutralForeground2 }}>It will be removed for everyone. This can&apos;t be undone.</p>
+      </BaseModal>
+    </>
   );
 }

@@ -5,7 +5,7 @@ import { Upload } from "lucide-react";
 
 import { formatMonthYear } from "@/lib/format";
 import {
-  Segmented, Button, Dialog, DialogSurface, DialogBody, DialogTitle, DialogTrigger,
+  Segmented, Button, BaseModal,
 } from "@/components/redesign/ui";
 import { DefinitionsManager, type MetricDef } from "./metrics-definitions-manager";
 import { MonthlyEntryGrid, type ActiveDef } from "./monthly-entry-grid";
@@ -62,19 +62,12 @@ export function MetricsWorkspace({
           ]}
         />
         {mode === "enter" && (
-          <Dialog open={csvOpen} onOpenChange={(_, d) => setCsvOpen(d.open)}>
-            <DialogTrigger disableButtonEnhancement>
-              <Button appearance="outline" icon={<Upload size={16} />}>Import CSV</Button>
-            </DialogTrigger>
-            <DialogSurface style={{ maxWidth: 720, maxHeight: "90vh", overflowY: "auto" }}>
-              <DialogBody>
-                <DialogTitle>Import metrics from CSV</DialogTitle>
-                <div style={{ paddingTop: 12 }}>
-                  <CsvImport clientId={clientId} defs={csvDefs} currentMonth={currentMonth} />
-                </div>
-              </DialogBody>
-            </DialogSurface>
-          </Dialog>
+          <>
+            <Button appearance="outline" icon={<Upload size={16} />} onClick={() => setCsvOpen(true)}>Import CSV</Button>
+            <BaseModal isOpen={csvOpen} onClose={() => setCsvOpen(false)} title="Import metrics from CSV" size="lg">
+              <CsvImport clientId={clientId} defs={csvDefs} currentMonth={currentMonth} />
+            </BaseModal>
+          </>
         )}
       </div>
 
