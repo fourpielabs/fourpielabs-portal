@@ -11,7 +11,7 @@ import { staffCreateTaskAction, staffUpdateTaskAction } from "@/lib/actions/task
 import { TASK_STATUSES } from "@/lib/constants";
 import type { TaskMember } from "@/lib/tasks";
 import { Input, Textarea, Select, Switch } from "@/components/redesign/ui";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateField } from "@/components/redesign/ui/date-field";
 import { FormDialog, Field, FieldGrid, usePanel } from "./ui";
 
 export type StaffTaskRow = {
@@ -112,7 +112,7 @@ export function TaskFormDialog({
       </FieldGrid>
       <Controller control={control} name="due_date" render={({ field }) => (
         <Field label="Due date">
-          <DatePicker value={field.value ?? ""} onChange={field.onChange} />
+          <DateField value={field.value ?? ""} onChange={field.onChange} />
         </Field>
       )} />
       <Controller control={control} name="visible_to_client" render={({ field }) => (

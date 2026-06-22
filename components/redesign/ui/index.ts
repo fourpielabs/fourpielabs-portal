@@ -13,6 +13,7 @@
 export { Button, EmberButton } from "./button";
 export { Segmented, type SegmentedOption } from "./segmented";
 export { BaseModal, type BaseModalProps } from "./base-modal";
+export { DateField } from "./date-field";
 
 // --- forms (SOLID) ---
 export {

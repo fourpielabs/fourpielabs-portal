@@ -17,7 +17,7 @@ import {
   setMilestoneStatusAction,
 } from "@/lib/actions/milestones";
 import { Input, Textarea, Select, Switch, EmberButton } from "@/components/redesign/ui";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateField } from "@/components/redesign/ui/date-field";
 import { usePanel, EmptyPanel, ConfirmDelete, IconButton, FormDialog, Field, FieldGrid } from "./ui";
 
 export type Milestone = {
@@ -103,7 +103,7 @@ function MilestoneDialog({
         )} />
         <Controller control={control} name="due_date" render={({ field }) => (
           <Field label="Due date">
-            <DatePicker value={field.value ?? ""} onChange={field.onChange} />
+            <DateField value={field.value ?? ""} onChange={field.onChange} />
           </Field>
         )} />
         <Controller control={control} name="status" render={({ field }) => (

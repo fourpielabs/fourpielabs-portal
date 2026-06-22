@@ -4,24 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { BaseModal, EmberButton, Input, tokens } from "@/components/redesign/ui";
 
 /**
- * Type-to-confirm destructive dialog. The action button stays DISABLED until the
- * admin types `confirmPhrase` exactly — stronger than a one-click confirm, for
- * irreversible deletes. `description` should spell out the blast radius in plain
- * words. `onConfirm` returns the action Result.
+ * Type-to-confirm destructive dialog (Warm Obsidian / Fluent). The action button stays
+ * DISABLED until the admin types `confirmPhrase` exactly — stronger than a one-click
+ * confirm, for irreversible deletes. `description` should spell out the blast radius in
+ * plain words (use plain text / <strong>, NOT Tailwind color classes, so it stays AA in
+ * light + dark). `onConfirm` returns the action Result. The type-to-confirm guard is
+ * preserved verbatim; only the chrome/fields were converted off shadcn to Fluent.
  */
 export function ConfirmDeleteDialog({
   trigger,
@@ -58,47 +49,44 @@ export function ConfirmDeleteDialog({
     router.refresh();
   }
 
+  const fg1 = tokens.colorNeutralForeground1, fg2 = tokens.colorNeutralForeground2;
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        setOpen(o);
-        if (!o) setValue("");
-      }}
-    >
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription asChild>
-            <div className="space-y-2 text-sm text-ink-2">{description}</div>
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-1.5">
-          <Label htmlFor="confirm-phrase">
-            Type <span className="font-semibold text-ink">{confirmPhrase}</span> to confirm
-          </Label>
-          <Input
-            id="confirm-phrase"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            autoComplete="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            placeholder={confirmPhrase}
-          />
-        </div>
-        <DialogFooter>
-          <Button
-            variant="destructive"
+    <>
+      <span style={{ display: "contents" }} onClick={() => setOpen(true)}>{trigger}</span>
+      <BaseModal
+        isOpen={open}
+        onClose={() => { setOpen(false); setValue(""); }}
+        title={title}
+        size="sm"
+        footer={
+          <EmberButton
             disabled={!matches || pending}
             loading={pending}
             onClick={run}
+            style={{ background: "linear-gradient(180deg,#dc2626,#b91c1c)" }}
           >
             {confirmLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </EmberButton>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 14, color: fg2 }}>{description}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label htmlFor="confirm-phrase" style={{ fontSize: 13, color: fg2 }}>
+              Type <strong style={{ color: fg1 }}>{confirmPhrase}</strong> to confirm
+            </label>
+            <Input
+              id="confirm-phrase"
+              value={value}
+              onChange={(_, d) => setValue(d.value)}
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              placeholder={confirmPhrase}
+            />
+          </div>
+        </div>
+      </BaseModal>
+    </>
   );
 }

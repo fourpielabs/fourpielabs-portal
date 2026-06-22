@@ -12,7 +12,7 @@ import { TASK_STATUSES } from "@/lib/constants";
 import { formatDate, formatDateTime } from "@/lib/format";
 import type { TaskMember, TaskChecklistItem, TimeEntry } from "@/lib/tasks";
 import { TaskChecklist } from "@/components/tasks/task-checklist";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateField } from "@/components/redesign/ui/date-field";
 import { TaskTimer } from "@/components/redesign/staff/task-timer";
 import {
   BaseModal,
@@ -169,7 +169,7 @@ export function TaskDetailDialog({
               <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
                 <Eyebrow tone="muted">Due date</Eyebrow>
                 {isStaff ? (
-                  <DatePicker value={due} onChange={setDue} />
+                  <DateField value={due} onChange={setDue} />
                 ) : (
                   <p style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, color: fg1 }}><Calendar size={14} color={fg3} /> {task.due_date ? formatDate(task.due_date) : "No due date"}</p>
                 )}

@@ -11,7 +11,7 @@ import { createDeliverableAction, updateDeliverableAction } from "@/lib/actions/
 import { uploadClientFileAction } from "@/lib/actions/storage";
 import { DELIVERABLE_TYPES, DELIVERABLE_STATUSES } from "@/lib/constants";
 import { Input, Textarea, Select, Switch, Checkbox } from "@/components/redesign/ui";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateField } from "@/components/redesign/ui/date-field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormDialog, Field, FieldGrid } from "./ui";
 
@@ -133,7 +133,7 @@ export function DeliverableDialog({
         )} />
         <Controller control={control} name="due_date" render={({ field }) => (
           <Field label="Due date">
-            <DatePicker value={field.value ?? ""} onChange={field.onChange} />
+            <DateField value={field.value ?? ""} onChange={field.onChange} />
           </Field>
         )} />
         <Controller control={control} name="visible_to_client" render={({ field }) => (

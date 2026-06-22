@@ -10,7 +10,7 @@ import { clientUpdateSchema, type ClientUpdateValues } from "@/lib/schemas";
 import { updateClientAction } from "@/lib/actions/clients";
 import { INDUSTRIES, PROGRAMS, CLIENT_STATUSES } from "@/lib/constants";
 import { Input, Textarea, Select, EmberButton } from "@/components/redesign/ui";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateField } from "@/components/redesign/ui/date-field";
 import { TitledPanel, Field, FieldGrid, usePanel } from "./ui";
 import { AssignmentManager, type TeamMember } from "./assignment-manager";
 
@@ -68,7 +68,7 @@ export function ClientEditForm({ defaults }: { defaults: ClientUpdateValues }) {
         )} />
         <Controller control={control} name="start_date" render={({ field }) => (
           <Field label="Start date">
-            <DatePicker value={field.value ?? ""} onChange={field.onChange} />
+            <DateField value={field.value ?? ""} onChange={field.onChange} />
           </Field>
         )} />
       </FieldGrid>

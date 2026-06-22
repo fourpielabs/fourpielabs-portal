@@ -9,36 +9,18 @@ import { toast } from "sonner";
 import { taskClientCreateSchema, type TaskClientCreateValues } from "@/lib/schemas";
 import { createTaskAction } from "@/lib/actions/tasks-client";
 import type { TaskMember } from "@/lib/tasks";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { DatePicker } from "@/components/ui/date-picker";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Input, Textarea, Select, DateField } from "@/components/redesign/ui";
+import { FormDialog, Field, FieldGrid } from "@/components/redesign/staff/ui";
 
 const NONE = "__none__";
 const roleLabel = (r: TaskMember["role"]) =>
   r === "client" ? "You / your team" : "Your 4Pie team";
 
 /**
- * Client-side "Add task" dialog. Writes go through the create_task RPC (client
- * wrapper in lib/actions/tasks-client.ts). Clients can create + assign within
- * their circle; editing fields beyond status isn't a client capability (only
- * create + status change exist as client RPCs).
+ * Client-side "Add task" dialog (Warm Obsidian / Fluent). Writes go through the
+ * create_task RPC (createTaskAction). INVARIANT: clients create + assign within their
+ * circle but CANNOT set status — there is deliberately NO status control here (status is
+ * server-set to 'todo'); the converted body keeps that exactly. RHF + zod + RPC unchanged.
  */
 export function ClientTaskDialog({
   members,
@@ -52,7 +34,6 @@ export function ClientTaskDialog({
   const [submitting, setSubmitting] = useState(false);
 
   const {
-    register,
     handleSubmit,
     control,
     reset,
@@ -74,66 +55,46 @@ export function ClientTaskDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add a task</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="ct-title">Title</Label>
-            <Input id="ct-title" {...register("title")} placeholder="Send over our new logo" />
-            {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ct-desc">Details</Label>
-            <Textarea id="ct-desc" rows={3} {...register("description")} placeholder="Any context?" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Assign to</Label>
-              <Controller
-                control={control}
-                name="assignee_id"
-                render={({ field }) => (
-                  <Select
-                    value={field.value && field.value.length ? field.value : NONE}
-                    onValueChange={(val) => field.onChange(val === NONE ? "" : val)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>Unassigned</SelectItem>
-                      {members.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name} · {roleLabel(m.role)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Due date</Label>
-              <Controller
-                control={control}
-                name="due_date"
-                render={({ field }) => (
-                  <DatePicker value={field.value} onChange={field.onChange} />
-                )}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" loading={submitting}>
-              {submitting ? "Adding…" : "Add task"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      title="Add a task"
+      trigger={trigger}
+      open={open}
+      onOpenChange={setOpen}
+      onSubmit={handleSubmit(onSubmit)}
+      submitting={submitting}
+      submitLabel="Add task"
+    >
+      <Field label="Title" error={errors.title?.message}>
+        <Controller control={control} name="title" render={({ field }) => (
+          <Input value={field.value} onChange={(_, d) => field.onChange(d.value)} placeholder="Send over our new logo" />
+        )} />
+      </Field>
+      <Field label="Details">
+        <Controller control={control} name="description" render={({ field }) => (
+          <Textarea rows={3} value={field.value ?? ""} onChange={(_, d) => field.onChange(d.value)} resize="vertical" placeholder="Any context?" />
+        )} />
+      </Field>
+      <FieldGrid>
+        <Field label="Assign to">
+          <Controller control={control} name="assignee_id" render={({ field }) => (
+            <Select
+              value={field.value && field.value.length ? field.value : NONE}
+              onChange={(e) => field.onChange(e.target.value === NONE ? "" : e.target.value)}
+              aria-label="Assign to"
+            >
+              <option value={NONE}>Unassigned</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>{m.name} · {roleLabel(m.role)}</option>
+              ))}
+            </Select>
+          )} />
+        </Field>
+        <Field label="Due date">
+          <Controller control={control} name="due_date" render={({ field }) => (
+            <DateField value={field.value} onChange={field.onChange} />
+          )} />
+        </Field>
+      </FieldGrid>
+    </FormDialog>
   );
 }

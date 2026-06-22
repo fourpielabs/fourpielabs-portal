@@ -13,7 +13,7 @@ import {
 } from "@/lib/actions/content";
 import { CONTENT_PLATFORMS, CONTENT_STATUSES } from "@/lib/constants";
 import { Input, Textarea, Select, Switch } from "@/components/redesign/ui";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateField } from "@/components/redesign/ui/date-field";
 import { FormDialog, Field, FieldGrid } from "./ui";
 
 export type ContentItem = {
@@ -117,7 +117,7 @@ export function ContentDialog({
         )} />
         <Controller control={control} name="publish_date" render={({ field }) => (
           <Field label="Publish date">
-            <DatePicker value={field.value ?? ""} onChange={field.onChange} />
+            <DateField value={field.value ?? ""} onChange={field.onChange} />
           </Field>
         )} />
       </FieldGrid>

@@ -8,20 +8,8 @@ import { toast } from "sonner";
 
 import { updateSchema, type UpdateValues } from "@/lib/schemas";
 import { createUpdateAction, updateUpdateAction } from "@/lib/actions/updates";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Input, Textarea, Switch, tokens } from "@/components/redesign/ui";
+import { FormDialog, Field } from "@/components/redesign/staff/ui";
 
 export type UpdateRow = {
   id: string;
@@ -31,6 +19,11 @@ export type UpdateRow = {
   visible_to_client: boolean;
 };
 
+/**
+ * Update composer (Warm Obsidian / Fluent via the shared FormDialog). RHF + zod +
+ * create/updateUpdateAction wiring is unchanged — only the chrome/fields were converted
+ * off shadcn (register → Controller-bound Fluent fields) so it reads correctly in dark.
+ */
 export function UpdateDialog({
   clientId,
   update,
@@ -44,7 +37,6 @@ export function UpdateDialog({
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const {
-    register,
     handleSubmit,
     control,
     reset,
@@ -72,57 +64,42 @@ export function UpdateDialog({
     router.refresh();
   }
 
+  const toggle: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, color: tokens.colorNeutralForeground1, cursor: "pointer" };
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{update ? "Edit update" : "Post an update"}</DialogTitle>
-          <DialogDescription>
-            Markdown supported. Visible to the client unless turned off.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="u-title">Title</Label>
-            <Input id="u-title" {...register("title")} />
-            {errors.title && (
-              <p className="text-sm text-destructive">{errors.title.message}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="u-body">Body (markdown)</Label>
-            <Textarea id="u-body" rows={5} {...register("body")} />
-          </div>
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <Controller
-                control={control}
-                name="pinned"
-                render={({ field }) => (
-                  <Switch checked={field.value} onCheckedChange={field.onChange} />
-                )}
-              />
-              <Label>Pinned</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Controller
-                control={control}
-                name="visible_to_client"
-                render={({ field }) => (
-                  <Switch checked={field.value} onCheckedChange={field.onChange} />
-                )}
-              />
-              <Label>Visible to client</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" loading={submitting}>
-              {submitting ? "Saving…" : update ? "Save" : "Post update"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      title={update ? "Edit update" : "Post an update"}
+      description="Markdown supported. Visible to the client unless turned off."
+      trigger={trigger}
+      open={open}
+      onOpenChange={setOpen}
+      onSubmit={handleSubmit(onSubmit)}
+      submitting={submitting}
+      submitLabel={update ? "Save" : "Post update"}
+    >
+      <Field label="Title" error={errors.title?.message}>
+        <Controller control={control} name="title" render={({ field }) => (
+          <Input value={field.value} onChange={(_, d) => field.onChange(d.value)} />
+        )} />
+      </Field>
+      <Field label="Body (markdown)" error={errors.body?.message}>
+        <Controller control={control} name="body" render={({ field }) => (
+          <Textarea rows={5} value={field.value ?? ""} onChange={(_, d) => field.onChange(d.value)} resize="vertical" />
+        )} />
+      </Field>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 24, paddingTop: 2 }}>
+        <label style={toggle}>
+          <Controller control={control} name="pinned" render={({ field }) => (
+            <Switch checked={field.value} onChange={(_, d) => field.onChange(d.checked)} />
+          )} />
+          Pinned
+        </label>
+        <label style={toggle}>
+          <Controller control={control} name="visible_to_client" render={({ field }) => (
+            <Switch checked={field.value} onChange={(_, d) => field.onChange(d.checked)} />
+          )} />
+          Visible to client
+        </label>
+      </div>
+    </FormDialog>
   );
 }

@@ -16,26 +16,8 @@ import {
   updateProjectAction,
 } from "@/lib/actions/projects";
 import { PROJECT_PRIORITIES } from "@/lib/constants";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { DatePicker } from "@/components/ui/date-picker";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Input, Textarea, Select, DateField } from "@/components/redesign/ui";
+import { FormDialog, Field, FieldGrid } from "@/components/redesign/staff/ui";
 
 export type ProjectRow = {
   id: string;
@@ -50,6 +32,12 @@ export type ProjectRow = {
   created_at: string;
 };
 
+/**
+ * Client project create/edit dialog (Warm Obsidian / Fluent). INVARIANT: clients set
+ * title + brief + priority + target_date — NEVER status or the staff due_date (both
+ * absent from the client RPC; the project-status lock holds). There is deliberately NO
+ * status control in this form; the card shows status read-only. RHF + zod + RPC unchanged.
+ */
 export function ProjectDialog({
   project,
   trigger,
@@ -63,15 +51,11 @@ export function ProjectDialog({
   const isEdit = Boolean(project);
 
   const {
-    register,
     handleSubmit,
     control,
     reset,
     formState: { errors },
   } = useForm<ProjectUpdateValues>({
-    // Clients set title + brief + priority + target_date — NEVER status or the
-    // staff due_date (both absent from the client RPC; the status lock holds). The
-    // card badge shows status read-only.
     resolver: zodResolver(
       (isEdit ? projectUpdateSchema : projectCreateSchema) as typeof projectUpdateSchema,
     ),
@@ -109,69 +93,41 @@ export function ProjectDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit project" : "Add a project"}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="p-title">Title</Label>
-            <Input id="p-title" {...register("title")} placeholder="New website" />
-            {errors.title && (
-              <p className="text-sm text-destructive">{errors.title.message}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="p-desc">Brief</Label>
-            <Textarea
-              id="p-desc"
-              rows={4}
-              {...register("description")}
-              placeholder="What's the goal of this project? Add as much context as you like."
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Priority</Label>
-              <Controller
-                control={control}
-                name="priority"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROJECT_PRIORITIES.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>
-                          {o.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Target date</Label>
-              <Controller
-                control={control}
-                name="target_date"
-                render={({ field }) => (
-                  <DatePicker value={field.value ?? ""} onChange={field.onChange} />
-                )}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" loading={submitting}>
-              {submitting ? "Saving…" : isEdit ? "Save" : "Add project"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      title={isEdit ? "Edit project" : "Add a project"}
+      trigger={trigger}
+      open={open}
+      onOpenChange={setOpen}
+      onSubmit={handleSubmit(onSubmit)}
+      submitting={submitting}
+      submitLabel={isEdit ? "Save" : "Add project"}
+    >
+      <Field label="Title" error={errors.title?.message}>
+        <Controller control={control} name="title" render={({ field }) => (
+          <Input value={field.value} onChange={(_, d) => field.onChange(d.value)} placeholder="New website" />
+        )} />
+      </Field>
+      <Field label="Brief">
+        <Controller control={control} name="description" render={({ field }) => (
+          <Textarea rows={4} value={field.value ?? ""} onChange={(_, d) => field.onChange(d.value)} resize="vertical" placeholder="What's the goal of this project? Add as much context as you like." />
+        )} />
+      </Field>
+      <FieldGrid>
+        <Field label="Priority">
+          <Controller control={control} name="priority" render={({ field }) => (
+            <Select value={field.value} onChange={(e) => field.onChange(e.target.value)} aria-label="Priority">
+              {PROJECT_PRIORITIES.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </Select>
+          )} />
+        </Field>
+        <Field label="Target date">
+          <Controller control={control} name="target_date" render={({ field }) => (
+            <DateField value={field.value ?? ""} onChange={field.onChange} />
+          )} />
+        </Field>
+      </FieldGrid>
+    </FormDialog>
   );
 }

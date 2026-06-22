@@ -74,11 +74,11 @@ export function UserActiveToggle({ userId, isActive, isSelf, label }: Props) {
       onConfirm={() => deleteUserAction(userId)}
       description={
         <>
-          <p>
-            This <span className="font-semibold text-ink">permanently deletes</span> their
-            account. It can&apos;t be undone — use Deactivate if you just want to block access.
+          <p style={{ margin: 0 }}>
+            This <strong>permanently deletes</strong> their account. It can&apos;t be undone — use
+            Deactivate if you just want to block access.
           </p>
-          <p>
+          <p style={{ margin: 0 }}>
             Their notifications, preferences, and client assignments are erased. Anything they
             created (deliverables, messages, reports, files…) is kept but shown as
             &ldquo;Removed user&rdquo;. The audit log is preserved.

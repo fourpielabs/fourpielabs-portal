@@ -8,38 +8,20 @@ import { Lock } from "lucide-react";
 import { createTaskAction } from "@/lib/actions/tasks-client";
 import { staffCreateTaskAction } from "@/lib/actions/tasks";
 import type { TaskMember } from "@/lib/tasks";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { DatePicker } from "@/components/ui/date-picker";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { BaseModal, Input, Textarea, Select, Switch, EmberButton, DateField, tokens } from "@/components/redesign/ui";
+import { FieldGrid, Field } from "@/components/redesign/staff/ui";
+import { useRedesignMode } from "@/components/redesign/themed-fluent";
 
 const NONE = "__none__";
 const roleLabel = (r: TaskMember["role"]) => (r === "client" ? "Client" : r === "admin" ? "Admin" : "Team");
 
 /**
- * Create-task dialog — the single create-task entry point, opened from the chat
- * composer toolbar. A client creates on their own client (create_task RPC); staff via
- * staffCreateTaskAction. SOURCE-LESS (no source_message_id) — a general task, not message-
- * linked. On the INTERNAL thread the task is forced staff-only (`audience` → default
- * visible=false; the action re-checks server-side, so it can't be spoofed) — the internal-
- * thread boundary extends to tasks. Controlled `open` so the toolbar owns the trigger.
+ * Create-task dialog (Warm Obsidian / Fluent) — the single create-task entry point from
+ * the chat composer. A client creates on their own client (create_task RPC); staff via
+ * staffCreateTaskAction. INVARIANT preserved: on the INTERNAL thread the task is forced
+ * staff-only (visible defaults to false; the staff action re-checks the message's real
+ * thread_type server-side, so it can't be spoofed) — the internal-thread boundary extends
+ * to tasks. Controlled `open` (the composer owns the trigger). Logic/RPC unchanged.
  */
 export function TaskCreateDialog({
   open,
@@ -59,6 +41,8 @@ export function TaskCreateDialog({
   initialTitle: string;
 }) {
   const router = useRouter();
+  const { mode } = useRedesignMode();
+  const onDark = mode === "dark";
   const isInternal = audience === "internal";
   const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState("");
@@ -67,9 +51,7 @@ export function TaskCreateDialog({
   const [due, setDue] = useState("");
   const [visible, setVisible] = useState(!isInternal);
 
-  // Seed the form when it opens — the composer is modal-blocked while open, so
-  // initialTitle (the current draft) is frozen at open time. Derived on the open
-  // transition ("adjust state when a prop changes") instead of an effect.
+  // Seed the form when it opens — initialTitle (the current draft) is frozen at open time.
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
@@ -104,73 +86,53 @@ export function TaskCreateDialog({
     router.refresh();
   }
 
+  const fg1 = tokens.colorNeutralForeground1, fg3 = tokens.colorNeutralForeground3;
+  const border = onDark ? "#34302a" : "#e7e5e0";
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create task</DialogTitle>
-          <DialogDescription>
-            {isInternal
-              ? "This task will be internal — staff-only. The client never sees it."
-              : "Add a task for this client."}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="tc-title">Title</Label>
-            <Input id="tc-title" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="tc-desc">Description</Label>
-            <Textarea
-              id="tc-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              placeholder="Optional — add any detail or context."
-              className="resize-none"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Assignee</Label>
-              <Select value={assignee} onValueChange={setAssignee}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>Unassigned</SelectItem>
-                  {members.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name} · {roleLabel(m.role)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Due date</Label>
-              <DatePicker value={due} onChange={setDue} />
-            </div>
-          </div>
-          {role === "staff" && isInternal && (
-            <p className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-[12px] font-semibold text-amber-800">
-              <Lock className="size-3.5" /> Internal — staff-only task
-            </p>
-          )}
-          {role === "staff" && !isInternal && (
-            <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border px-3 py-2.5">
-              <span className="text-sm font-medium">Visible to the client</span>
-              <Switch checked={visible} onCheckedChange={setVisible} aria-label="Visible to the client" />
-            </label>
-          )}
-        </div>
-        <DialogFooter>
-          <Button onClick={submit} loading={submitting}>
-            {submitting ? "Creating…" : "Create task"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <BaseModal
+      isOpen={open}
+      onClose={() => onOpenChange(false)}
+      title="Create task"
+      size="md"
+      footer={<EmberButton onClick={submit} loading={submitting}>Create task</EmberButton>}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <p style={{ margin: 0, fontSize: 13, color: fg3 }}>
+          {isInternal
+            ? "This task will be internal — staff-only. The client never sees it."
+            : "Add a task for this client."}
+        </p>
+        <Field label="Title">
+          <Input value={title} onChange={(_, d) => setTitle(d.value)} autoFocus />
+        </Field>
+        <Field label="Description">
+          <Textarea value={description} onChange={(_, d) => setDescription(d.value)} rows={3} resize="vertical" placeholder="Optional — add any detail or context." />
+        </Field>
+        <FieldGrid>
+          <Field label="Assignee">
+            <Select value={assignee} onChange={(e) => setAssignee(e.target.value)} aria-label="Assignee">
+              <option value={NONE}>Unassigned</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>{m.name} · {roleLabel(m.role)}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Due date">
+            <DateField value={due} onChange={setDue} />
+          </Field>
+        </FieldGrid>
+        {role === "staff" && isInternal && (
+          <p style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start", borderRadius: 10, border: `1px solid ${onDark ? "rgba(245,158,11,0.4)" : "#fcd34d"}`, background: onDark ? "rgba(245,158,11,0.12)" : "#fffbeb", padding: "6px 10px", fontSize: 12, fontWeight: 700, color: onDark ? "#fcd34d" : "#92400e" }}>
+            <Lock size={14} /> Internal — staff-only task
+          </p>
+        )}
+        {role === "staff" && !isInternal && (
+          <label style={{ display: "flex", cursor: "pointer", alignItems: "center", justifyContent: "space-between", gap: 16, borderRadius: 12, border: `1px solid ${border}`, padding: "0.6rem 0.85rem" }}>
+            <span style={{ fontSize: 14, fontWeight: 500, color: fg1 }}>Visible to the client</span>
+            <Switch checked={visible} onChange={(_, d) => setVisible(d.checked)} aria-label="Visible to the client" />
+          </label>
+        )}
+      </div>
+    </BaseModal>
   );
 }

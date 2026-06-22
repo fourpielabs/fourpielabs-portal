@@ -12,27 +12,8 @@ import {
   staffUpdateProjectAction,
 } from "@/lib/actions/projects";
 import { PROJECT_STATUSES, PROJECT_PRIORITIES } from "@/lib/constants";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { DatePicker } from "@/components/ui/date-picker";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Input, Textarea, Select, DateField } from "@/components/redesign/ui";
+import { FormDialog, Field, FieldGrid } from "@/components/redesign/staff/ui";
 
 export type StaffProjectRow = {
   id: string;
@@ -45,6 +26,13 @@ export type StaffProjectRow = {
   target_date: string | null;
 };
 
+/**
+ * STAFF project create/edit dialog (Warm Obsidian / Fluent). Staff manage everything —
+ * including status + the staff start/due schedule (this is the staff write path via
+ * staffCreate/UpdateProjectAction; the status control here is correct — the client lock
+ * applies only to the client ProjectDialog). RHF + zod + actions unchanged; the legacy
+ * DateRangePicker was replaced with two themed DateFields (start / due) so it reads in dark.
+ */
 export function ProjectFormDialog({
   clientId,
   project,
@@ -60,11 +48,8 @@ export function ProjectFormDialog({
   const isEdit = Boolean(project);
 
   const {
-    register,
     handleSubmit,
     control,
-    setValue,
-    watch,
     reset,
     formState: { errors },
   } = useForm<ProjectStaffValues>({
@@ -94,108 +79,58 @@ export function ProjectFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit project" : "New project"}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="sp-title">Title</Label>
-            <Input id="sp-title" {...register("title")} placeholder="New website" />
-            {errors.title && (
-              <p className="text-sm text-destructive">{errors.title.message}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="sp-desc">Brief</Label>
-            <Textarea
-              id="sp-desc"
-              rows={3}
-              {...register("description")}
-              placeholder="What's the scope of this project?"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Controller
-                control={control}
-                name="status"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROJECT_STATUSES.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>
-                          {o.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Priority</Label>
-              <Controller
-                control={control}
-                name="priority"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROJECT_PRIORITIES.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>
-                          {o.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>
-                Schedule <span className="font-normal text-ink-3">(staff start – due)</span>
-              </Label>
-              <DateRangePicker
-                from={watch("start_date")}
-                to={watch("due_date")}
-                placeholder="Start – due"
-                onChange={(f, t) => {
-                  setValue("start_date", f, { shouldDirty: true, shouldValidate: true });
-                  setValue("due_date", t, { shouldDirty: true, shouldValidate: true });
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>
-                Client target <span className="font-normal text-ink-3">(their desired date)</span>
-              </Label>
-              <Controller
-                control={control}
-                name="target_date"
-                render={({ field }) => (
-                  <DatePicker value={field.value ?? ""} onChange={field.onChange} />
-                )}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" loading={submitting}>
-              {submitting ? "Saving…" : isEdit ? "Save" : "Create"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      title={isEdit ? "Edit project" : "New project"}
+      trigger={trigger}
+      open={open}
+      onOpenChange={setOpen}
+      onSubmit={handleSubmit(onSubmit)}
+      submitting={submitting}
+      submitLabel={isEdit ? "Save" : "Create"}
+    >
+      <Field label="Title" error={errors.title?.message}>
+        <Controller control={control} name="title" render={({ field }) => (
+          <Input value={field.value} onChange={(_, d) => field.onChange(d.value)} placeholder="New website" />
+        )} />
+      </Field>
+      <Field label="Brief">
+        <Controller control={control} name="description" render={({ field }) => (
+          <Textarea rows={3} value={field.value ?? ""} onChange={(_, d) => field.onChange(d.value)} resize="vertical" placeholder="What's the scope of this project?" />
+        )} />
+      </Field>
+      <FieldGrid>
+        <Field label="Status">
+          <Controller control={control} name="status" render={({ field }) => (
+            <Select value={field.value} onChange={(e) => field.onChange(e.target.value)} aria-label="Status">
+              {PROJECT_STATUSES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </Select>
+          )} />
+        </Field>
+        <Field label="Priority">
+          <Controller control={control} name="priority" render={({ field }) => (
+            <Select value={field.value} onChange={(e) => field.onChange(e.target.value)} aria-label="Priority">
+              {PROJECT_PRIORITIES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </Select>
+          )} />
+        </Field>
+      </FieldGrid>
+      <FieldGrid>
+        <Field label="Start date (staff)">
+          <Controller control={control} name="start_date" render={({ field }) => (
+            <DateField value={field.value ?? ""} onChange={field.onChange} />
+          )} />
+        </Field>
+        <Field label="Due date (staff)">
+          <Controller control={control} name="due_date" render={({ field }) => (
+            <DateField value={field.value ?? ""} onChange={field.onChange} />
+          )} />
+        </Field>
+      </FieldGrid>
+      <Field label="Client target (their desired date)">
+        <Controller control={control} name="target_date" render={({ field }) => (
+          <DateField value={field.value ?? ""} onChange={field.onChange} />
+        )} />
+      </Field>
+    </FormDialog>
   );
 }

@@ -24,7 +24,7 @@ import {
   setCallRecordingVisibilityAction,
 } from "@/lib/actions/calls";
 import { Input, Switch, EmberButton, Button } from "@/components/redesign/ui";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateField } from "@/components/redesign/ui/date-field";
 import { usePanel, EmptyPanel, ConfirmDelete, IconButton, FormDialog, Field, FieldGrid } from "./ui";
 
 export type CallType = {
@@ -188,7 +188,7 @@ function RecordingDialog({
       <FieldGrid>
         <Controller control={control} name="call_date" render={({ field }) => (
           <Field label="Date">
-            <DatePicker value={field.value ?? ""} onChange={field.onChange} />
+            <DateField value={field.value ?? ""} onChange={field.onChange} />
           </Field>
         )} />
         <Controller control={control} name="call_type" render={({ field }) => (

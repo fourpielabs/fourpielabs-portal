@@ -17,7 +17,7 @@ import {
 import { formatDate } from "@/lib/format";
 import { Markdown } from "@/components/markdown";
 import { Input, Textarea, Switch, Button } from "@/components/redesign/ui";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateField } from "@/components/redesign/ui/date-field";
 import { usePanel, EmptyPanel, FormDialog, Field, FieldGrid, ConfirmDelete, IconButton } from "./ui";
 
 export type MeetingNote = {
@@ -87,7 +87,7 @@ function NoteDialog({
         )} />
         <Controller control={control} name="meeting_date" render={({ field }) => (
           <Field label="Date">
-            <DatePicker value={field.value ?? ""} onChange={field.onChange} />
+            <DateField value={field.value ?? ""} onChange={field.onChange} />
           </Field>
         )} />
       </FieldGrid>
