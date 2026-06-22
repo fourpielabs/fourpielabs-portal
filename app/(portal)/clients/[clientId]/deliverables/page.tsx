@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
 import { DeliverablesList } from "@/components/redesign/staff/deliverables-manager";
-import { type DeliverableRow } from "@/components/deliverables/deliverable-dialog";
+import { type DeliverableRow } from "@/components/redesign/staff/deliverable-form-dialog";
 
 export default async function DeliverablesPage({
   params,

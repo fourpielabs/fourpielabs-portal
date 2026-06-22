@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/guards";
 import { type ClientUpdateValues } from "@/lib/schemas";
-import { type TeamMember } from "@/components/clients/assignment-manager";
+import { type TeamMember } from "@/components/redesign/staff/assignment-manager";
 import { ClientSettingsBody } from "@/components/redesign/staff/client-settings-body";
 
 export default async function ClientSettingsPage({

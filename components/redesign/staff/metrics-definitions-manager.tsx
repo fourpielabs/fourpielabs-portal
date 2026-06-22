@@ -18,9 +18,15 @@ import { METRIC_UNITS, labelOf } from "@/lib/constants";
 import { Input, Select, Switch, Button } from "@/components/redesign/ui";
 import { usePanel, EmptyPanel, IconButton, FormDialog, Field, FieldGrid } from "./ui";
 
-// Re-export the row type from the original module so callers keep one import shape.
-export type { MetricDef } from "@/components/metrics/definitions-manager";
-import type { MetricDef } from "@/components/metrics/definitions-manager";
+export type MetricDef = {
+  id: string;
+  key: string;
+  label: string;
+  unit: "number" | "currency" | "percent" | "text";
+  is_active: boolean;
+  sort_order: number;
+  target?: number | null;
+};
 
 function slugifyKey(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");

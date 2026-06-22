@@ -15,9 +15,21 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormDialog, Field, FieldGrid } from "./ui";
 
-// Re-export the row type from the original module so callers keep one import shape.
-export type { DeliverableRow, ProjectOption } from "@/components/deliverables/deliverable-dialog";
-import type { DeliverableRow, ProjectOption } from "@/components/deliverables/deliverable-dialog";
+export type DeliverableRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  type: DeliverableValues["type"];
+  status: DeliverableValues["status"];
+  due_date: string | null;
+  preview_url: string | null;
+  visible_to_client: boolean;
+  file_path: string | null;
+  client_approved_at: string | null;
+  project_id: string | null;
+};
+
+export type ProjectOption = { id: string; title: string };
 
 const NO_PROJECT = "__none__";
 

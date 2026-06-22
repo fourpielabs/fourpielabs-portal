@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireClientAccess } from "@/lib/auth/guards";
-import { type MetricDef } from "@/components/metrics/definitions-manager";
-import { type ActiveDef } from "@/components/metrics/monthly-entry-grid";
+import { type MetricDef } from "@/components/redesign/staff/metrics-definitions-manager";
+import { type ActiveDef } from "@/components/redesign/staff/monthly-entry-grid";
 import { MetricsWorkspace } from "@/components/redesign/staff/metrics-workspace";
-import { type DefLite, type Entry } from "@/components/metrics/metrics-charts";
+import { type DefLite, type Entry } from "@/components/redesign/staff/metrics-charts";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 

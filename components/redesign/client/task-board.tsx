@@ -6,11 +6,10 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Columns3, List, ListChecks, MessageSquare, Plus, User } from "lucide-react";
 import { formatDate } from "@/lib/format";
-import type { TaskMember } from "@/lib/tasks";
+import type { TaskMember, TaskChecklistItem } from "@/lib/tasks";
 import { Eyebrow, StatusPill, EmberButton, Button, tokens } from "@/components/redesign/ui";
 import { useRedesignMode } from "@/components/redesign/themed-fluent";
 import { ClientPageFrame } from "@/components/redesign/client/page-frame";
-import { type ClientTaskRow } from "@/components/tasks/client-task-board";
 import { ClientTaskDialog } from "@/components/tasks/client-task-dialog";
 import { TaskDetailDialog, type TaskDep } from "@/components/redesign/staff/task-detail-dialog";
 
@@ -18,7 +17,7 @@ import { TaskDetailDialog, type TaskDep } from "@/components/redesign/staff/task
 const TaskKanban = dynamic(() => import("./task-kanban").then((m) => m.TaskKanban), { ssr: false });
 
 type Dep = { id: string; task_id: string; blocked_by_task_id: string };
-export type { ClientTaskRow };
+export type ClientTaskRow = { id: string; title: string; description: string | null; status: "todo" | "in_progress" | "review" | "done"; assignee_id: string | null; assigneeName: string | null; due_date: string | null; source_message_id: string | null; sourceThreadType: "client_shared" | "internal" | null; createdByName: string | null; created_at: string; checklist: TaskChecklistItem[]; is_milestone?: boolean; blocked_by_client?: boolean; blocked_reason?: string | null; client_signed_off_at?: string | null; };
 
 /** ViewToggle — shared List/Board switch (both roles). */
 export function ViewToggle({ view, onChange, onDark }: { view: "list" | "board"; onChange: (v: "list" | "board") => void; onDark: boolean }) {

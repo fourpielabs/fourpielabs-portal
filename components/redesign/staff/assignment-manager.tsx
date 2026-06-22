@@ -11,9 +11,7 @@ import {
 } from "@/components/redesign/ui";
 import { usePanel } from "./ui";
 
-// Re-export the team-member type from the original module so callers keep one import shape.
-export type { TeamMember } from "@/components/clients/assignment-manager";
-import type { TeamMember } from "@/components/clients/assignment-manager";
+export type TeamMember = { id: string; full_name: string | null; email: string | null; };
 
 type Props = {
   clientId: string;

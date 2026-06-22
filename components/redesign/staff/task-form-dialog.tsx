@@ -14,9 +14,20 @@ import { Input, Textarea, Select, Switch } from "@/components/redesign/ui";
 import { DatePicker } from "@/components/ui/date-picker";
 import { FormDialog, Field, FieldGrid, usePanel } from "./ui";
 
-// keep the existing row type as the single source of truth
-export type { StaffTaskRow } from "@/components/tasks/task-form-dialog";
-import type { StaffTaskRow } from "@/components/tasks/task-form-dialog";
+export type StaffTaskRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  status: TaskStaffValues["status"];
+  assignee_id: string | null;
+  due_date: string | null;
+  visible_to_client: boolean;
+  source_message_id: string | null;
+  is_milestone?: boolean;
+  blocked_by_client?: boolean;
+  blocked_reason?: string | null;
+  client_signed_off_at?: string | null;
+};
 
 const NONE = "__none__";
 const roleLabel = (r: TaskMember["role"]) => (r === "client" ? "Client" : r === "admin" ? "Admin" : "Team");

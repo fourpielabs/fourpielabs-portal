@@ -18,9 +18,20 @@ import { COMPETITOR_PRIORITIES } from "@/lib/constants";
 import { Input, Textarea, Select, Switch, Button, EmberButton } from "@/components/redesign/ui";
 import { usePanel, EmptyPanel, ConfirmDelete, IconButton, FormDialog, Field, FieldGrid } from "./ui";
 
-// Re-export the row type from the original module so callers keep one import shape.
-export type { Competitor } from "@/components/competitors/competitors-manager";
-import type { Competitor } from "@/components/competitors/competitors-manager";
+export type Competitor = {
+  id: string;
+  name_or_handle: string;
+  niche: string | null;
+  follower_count: number | null;
+  avg_views: number | null;
+  top_content_format: string | null;
+  hook_style: string | null;
+  whats_working: string | null;
+  gap_notes: string | null;
+  adapted_idea: string | null;
+  priority: "low" | "medium" | "high";
+  visible_to_client: boolean;
+};
 
 /** Mode-aware priority pill (mirrors the StatusChip priority palette). */
 function PriorityPill({ priority }: { priority: Competitor["priority"] }) {

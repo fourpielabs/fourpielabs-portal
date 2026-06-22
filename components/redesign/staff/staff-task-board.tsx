@@ -20,10 +20,17 @@ import { ViewToggle } from "@/components/redesign/client/task-board";
 const TaskKanban = dynamic(() => import("@/components/redesign/client/task-kanban").then((m) => m.TaskKanban), { ssr: false });
 type Dep = { id: string; task_id: string; blocked_by_task_id: string };
 import { TaskChecklistProgress } from "@/components/tasks/task-checklist";
+import type { TaskChecklistItem, TimeEntry } from "@/lib/tasks";
 import { usePanel, EmptyPanel, ConfirmDelete } from "./ui";
-import type { StaffTask } from "@/components/tasks/staff-tasks-manager";
 
-export type { StaffTask };
+export type StaffTask = StaffTaskRow & {
+  assigneeName: string | null;
+  createdByName: string | null;
+  created_at: string;
+  sourceThreadType: "client_shared" | "internal" | null;
+  checklist: TaskChecklistItem[];
+  timeEntries: TimeEntry[];
+};
 
 /** R3 staff tasks board (re-skinned). Optimistic status/delete + ?task= detail verbatim. */
 export function StaffTasksManager({

@@ -14,9 +14,12 @@ import { labelOf, METRIC_UNITS } from "@/lib/constants";
 import { formatMonthYear } from "@/lib/format";
 import { usePanel, EmptyPanel } from "./ui";
 
-// Re-export the row type so callers keep one import shape.
-export type { ActiveDef } from "@/components/metrics/monthly-entry-grid";
-import type { ActiveDef } from "@/components/metrics/monthly-entry-grid";
+export type ActiveDef = {
+  id: string;
+  key: string;
+  label: string;
+  unit: "number" | "currency" | "percent" | "text";
+};
 
 function fieldError(unit: string, raw: string): string | null {
   if (unit === "text") return null;

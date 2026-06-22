@@ -4,7 +4,7 @@ import { CallsManager } from "@/components/redesign/staff/calls-manager";
 import type {
   CallType,
   CallRecording,
-} from "@/components/calls/calls-manager";
+} from "@/components/redesign/staff/calls-manager";
 
 export default async function CallsPage({
   params,

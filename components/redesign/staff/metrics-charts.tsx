@@ -18,9 +18,17 @@ const MetricsLineChart = dynamic(
   { ssr: false, loading: () => <div style={{ height: "100%", width: "100%" }} aria-hidden /> },
 );
 
-// Re-export the shared types so the orchestrator/page keep one import shape.
-export type { DefLite, Entry } from "@/components/metrics/metrics-charts";
-import type { DefLite, Entry } from "@/components/metrics/metrics-charts";
+export type DefLite = {
+  id: string;
+  label: string;
+  unit: "number" | "currency" | "percent" | "text";
+};
+export type Entry = {
+  definition_id: string;
+  period: string;
+  value_numeric: number | null;
+  value_text: string | null;
+};
 
 /**
  * R3 client-preview surface (re-skin of components/metrics/metrics-charts.tsx) — what

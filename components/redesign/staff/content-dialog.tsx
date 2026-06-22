@@ -16,9 +16,20 @@ import { Input, Textarea, Select, Switch } from "@/components/redesign/ui";
 import { DatePicker } from "@/components/ui/date-picker";
 import { FormDialog, Field, FieldGrid } from "./ui";
 
-// Re-export the row type from the original module so callers keep one import shape.
-export type { ContentItem } from "@/components/content/content-dialog";
-import type { ContentItem } from "@/components/content/content-dialog";
+export type ContentItem = {
+  id: string;
+  title: string;
+  platform: ContentItemValues["platform"];
+  content_type: string | null;
+  status: ContentItemValues["status"];
+  publish_date: string | null;
+  cta: string | null;
+  core_message: string | null;
+  notes: string | null;
+  asset_url: string | null;
+  views_after_posting: number | null;
+  visible_to_client: boolean;
+};
 
 /** R3 content dialog (re-skinned). create/update wiring + RHF preserved verbatim. */
 export function ContentDialog({

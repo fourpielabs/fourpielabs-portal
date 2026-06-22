@@ -20,9 +20,16 @@ import { Input, Textarea, Select, Switch, EmberButton } from "@/components/redes
 import { DatePicker } from "@/components/ui/date-picker";
 import { usePanel, EmptyPanel, ConfirmDelete, IconButton, FormDialog, Field, FieldGrid } from "./ui";
 
-// Re-export the Milestone type from the original module so callers keep one import shape.
-export type { Milestone } from "@/components/program/milestones-editor";
-import type { Milestone } from "@/components/program/milestones-editor";
+export type Milestone = {
+  id: string;
+  title: string;
+  description: string | null;
+  phase_label: string | null;
+  status: "upcoming" | "in_progress" | "done";
+  due_date: string | null;
+  visible_to_client: boolean;
+  sort_order: number;
+};
 
 const STATUSES = [
   { value: "upcoming", label: "Upcoming" },

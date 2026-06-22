@@ -9,12 +9,14 @@ import { setUpdateFlagsAction, deleteUpdateAction } from "@/lib/actions/updates"
 import { formatDate } from "@/lib/format";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/redesign/ui";
-import { UpdateDialog } from "@/components/updates/update-dialog";
+import { UpdateDialog, type UpdateRow } from "@/components/updates/update-dialog";
 import { usePanel, EmptyPanel, ConfirmDelete, IconButton } from "./ui";
 
-// Re-export the row type from the original module so callers keep one import shape.
-export type { UpdateItem } from "@/components/updates/updates-list";
-import type { UpdateItem } from "@/components/updates/updates-list";
+export type UpdateItem = UpdateRow & {
+  author_id: string | null;
+  author_name: string;
+  created_at: string;
+};
 
 /** R3 staff updates list (re-skinned, SOLID cards). All wiring verbatim. */
 export function UpdatesList({

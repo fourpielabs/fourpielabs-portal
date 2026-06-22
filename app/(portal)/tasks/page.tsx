@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { getAssignableMembers, type TaskChecklistItem } from "@/lib/tasks";
-import type { ClientTaskRow } from "@/components/tasks/client-task-board";
+import type { ClientTaskRow } from "@/components/redesign/client/task-board";
 import { TaskBoard } from "@/components/redesign/client/task-board";
 
 export default async function MyTasksPage() {
