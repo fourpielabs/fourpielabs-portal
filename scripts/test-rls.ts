@@ -324,6 +324,41 @@ async function main() {
     rec("assignments", "client reads 0 client_assignments rows", (rd.data?.length ?? 0) === 0, `${rd.data?.length ?? 0} rows`);
   }
 
+  // 3c: CLIENT FIELD PERMISSIONS — the floor must hold even with MAX permission granted.
+  {
+    const G = "client_perms";
+    const origUrl = (await admin.from("clients").select("website_url, internal_notes, status, name, program").eq("id", premierId).single()).data;
+    // admin grants MAX (both curated safe fields)
+    await admin.from("client_field_permissions").upsert({ client_id: premierId, can_edit_website_url: true, can_edit_comms_channel: true }, { onConflict: "client_id" });
+    // granted SAFE field is editable via the gated RPC
+    const ok = await client.rpc("client_update_profile_field", { p_field: "website_url", p_value: "https://granted.rls.example.com" });
+    rec(G, "granted safe field (website_url) editable via RPC", !ok.error, ok.error?.message ?? "");
+    const persisted = await admin.from("clients").select("website_url").eq("id", premierId).single();
+    rec(G, "granted edit persisted", persisted.data?.website_url === "https://granted.rls.example.com");
+    // LOCKED fields are NOT addressable even with max permission — the RPC raises
+    for (const f of ["status", "program", "internal_notes", "name", "client_type", "due_date"]) {
+      const r = await client.rpc("client_update_profile_field", { p_field: f, p_value: "x" });
+      rec(G, `RPC rejects locked field '${f}' under max-permission (floor)`, !!r.error, r.error ? "" : "NO ERROR!");
+    }
+    const after = await admin.from("clients").select("status, program, internal_notes, name").eq("id", premierId).single();
+    rec(G, "locked columns unchanged after locked-field attempts", after.data?.internal_notes === origUrl?.internal_notes && after.data?.name === origUrl?.name && after.data?.status === origUrl?.status && after.data?.program === origUrl?.program);
+    // non-granted safe field denied (deny-by-default): revoke comms_channel, attempt → raises
+    await admin.from("client_field_permissions").upsert({ client_id: premierId, can_edit_website_url: true, can_edit_comms_channel: false }, { onConflict: "client_id" });
+    const ng = await client.rpc("client_update_profile_field", { p_field: "comms_channel", p_value: "spam" });
+    rec(G, "non-granted safe field denied (deny-by-default)", !!ng.error, ng.error ? "" : "NO ERROR!");
+    // client cannot self-grant: direct write to client_field_permissions denied (no client policy)
+    const sg = await client.from("client_field_permissions").upsert({ client_id: premierId, can_edit_comms_channel: true }, { onConflict: "client_id" }).select("client_id");
+    rec(G, "client cannot self-grant (direct write denied)", !!sg.error || (sg.data?.length ?? 0) === 0, sg.error?.code ?? `${sg.data?.length ?? 0} rows`);
+    const stillNo = await admin.from("client_field_permissions").select("can_edit_comms_channel").eq("client_id", premierId).single();
+    rec(G, "self-grant did not take effect", stillNo.data?.can_edit_comms_channel === false);
+    // no-direct-client-write: client cannot UPDATE clients directly even with permission
+    const du = await client.from("clients").update({ website_url: "https://direct.evil" }).eq("id", premierId).select("id");
+    rec(G, "client direct UPDATE clients denied (no-direct-write)", !!du.error || (du.data?.length ?? 0) === 0, du.error?.code ?? `${du.data?.length ?? 0} rows`);
+    // restore + cleanup
+    await admin.from("clients").update({ website_url: origUrl?.website_url ?? null }).eq("id", premierId);
+    await admin.from("client_field_permissions").delete().eq("client_id", premierId);
+  }
+
   // hidden/unpublished invisible
   {
     const { data: d } = await client.from("deliverables").select("title");
@@ -825,6 +860,12 @@ async function main() {
     const del = await team.from("client_assignments").delete().eq("client_id", premierId).eq("user_id", teamUid).select("client_id");
     const still = await admin.from("client_assignments").select("client_id").eq("client_id", premierId).eq("user_id", teamUid);
     rec("assignments", "team cannot unassign (delete client_assignments no-op)", (del.data?.length ?? 0) === 0 && (still.data?.length ?? 0) === 1, `deleted=${del.data?.length ?? 0} remain=${still.data?.length ?? 0}`);
+  }
+  // 3c: team cannot grant client edit-permissions (client_field_permissions is admin-only write)
+  {
+    const tg = await team.from("client_field_permissions").upsert({ client_id: premierId, can_edit_website_url: true }, { onConflict: "client_id" }).select("client_id");
+    rec("client_perms", "team cannot grant client permissions (direct write denied)", !!tg.error || (tg.data?.length ?? 0) === 0, tg.error?.code ?? `${tg.data?.length ?? 0} rows`);
+    if ((tg.data?.length ?? 0) > 0) await admin.from("client_field_permissions").delete().eq("client_id", premierId);
   }
   // projects: ASSIGNED team (demo-team ↔ premier) can read + write premier's
   {

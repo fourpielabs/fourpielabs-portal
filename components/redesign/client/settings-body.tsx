@@ -13,7 +13,10 @@ import { sendPasswordResetAction } from "@/lib/actions/auth";
 import { uploadAvatarAction, removeAvatarAction } from "@/lib/actions/profile";
 import { updateEmailPreferencesAction } from "@/lib/actions/notification-preferences";
 import { emailPrefTypesForRole } from "@/lib/notification-prefs";
+import { clientUpdateProfileFieldAction } from "@/lib/actions/client-permissions";
+import { CLIENT_EDITABLE_FIELDS, type ClientEditableField, type ClientFieldPermissions } from "@/lib/client-fields";
 import { Avatar, Button, EmberButton, Input, Field, Switch, Eyebrow, tokens } from "@/components/redesign/ui";
+import { Lock } from "lucide-react";
 import { useRedesignMode } from "@/components/redesign/themed-fluent";
 import { ClientPageFrame } from "@/components/redesign/client/page-frame";
 
@@ -26,12 +29,16 @@ export function SettingsBody({
   role,
   avatarUrl,
   prefs,
+  businessProfile,
+  fieldPermissions,
 }: {
   fullName: string | null;
   email: string | null;
   role: string;
   avatarUrl: string | null;
   prefs: Record<string, boolean | null>;
+  businessProfile?: { website_url: string | null; comms_channel: string | null };
+  fieldPermissions?: ClientFieldPermissions;
 }) {
   const { mode } = useRedesignMode();
   const onDark = mode === "dark";
@@ -61,6 +68,15 @@ export function SettingsBody({
         </div>
 
         <ProfileSection fullName={fullName} email={email} role={role} card={card} panel={panel} title={sectionTitle} fg2={fg2} fg3={fg3} onDark={onDark} />
+
+        {role === "client" && businessProfile && fieldPermissions && (
+          <BusinessProfileSection
+            profile={businessProfile}
+            perms={fieldPermissions}
+            card={card} panel={panel} title={sectionTitle}
+            fg1={fg1} fg2={fg2} fg3={fg3} onDark={onDark}
+          />
+        )}
 
         <EmailPrefsSection role={role} current={prefs} card={card} panel={panel} title={sectionTitle} onDark={onDark} fg1={fg1} fg3={fg3} />
       </div>
@@ -153,6 +169,65 @@ function ProfileSection({ fullName, email, role, card, panel, title, fg2, fg3, o
         <div><Button appearance="outline" loading={resetting} disabled={resetting || !email} onClick={sendReset}>Send password reset email</Button></div>
       </div>
     </>
+  );
+}
+
+/**
+ * 3c — the client's own business profile. A field is EDITABLE only if the admin granted the
+ * matching permission (deny-by-default); otherwise it renders read-only. Locked client
+ * fields (status, program, …) never appear here at all. Saving calls the gated RPC, which
+ * re-checks the grant server-side — the UI control is a convenience, not the enforcement.
+ */
+function BusinessProfileSection({ profile, perms, card, panel, title, fg1, fg2, fg3, onDark }: any) {
+  const router = useRouter();
+  const p: ClientFieldPermissions = perms;
+  const valueOf = (k: ClientEditableField) => (k === "website_url" ? profile.website_url : profile.comms_channel) ?? "";
+  const anyGranted = CLIENT_EDITABLE_FIELDS.some((f) => p[f.permKey]);
+  const border = onDark ? "#34302a" : "#e7e5e0";
+
+  return (
+    <div className={`${panel} rd-rise`} style={card}>
+      {title("Business profile", anyGranted
+        ? "Your team has let you keep a few details up to date."
+        : "Your 4Pie Labs team keeps these up to date for you.")}
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {CLIENT_EDITABLE_FIELDS.map((f) =>
+          p[f.permKey] ? (
+            <EditableField key={f.key} field={f.key} label={f.label} initial={valueOf(f.key)} />
+          ) : (
+            <div key={f.key}>
+              <span style={{ display: "block", fontSize: "0.82rem", color: fg3, marginBottom: 4 }}>{f.label}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 10, border: `1px solid ${border}`, padding: "0.55rem 0.7rem", fontSize: 14, color: fg2 }}>
+                <Lock size={13} style={{ flexShrink: 0, color: fg3 }} />
+                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{valueOf(f.key) || "—"}</span>
+              </div>
+            </div>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EditableField({ field, label, initial }: { field: ClientEditableField; label: string; initial: string }) {
+  const router = useRouter();
+  const [value, setValue] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  async function save() {
+    setSaving(true);
+    const res = await clientUpdateProfileFieldAction(field, value);
+    setSaving(false);
+    if (!res.ok) return toast.error("Couldn't save", { description: res.error });
+    toast.success(`${label} updated.`);
+    router.refresh();
+  }
+  return (
+    <Field label={label}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <Input aria-label={label} value={value} onChange={(_, d) => setValue(d.value)} style={{ flex: 1, minWidth: "12rem" }} />
+        <Button appearance="outline" aria-label={`Save ${label}`} loading={saving} disabled={saving || value === initial} onClick={save}>Save</Button>
+      </div>
+    </Field>
   );
 }
 

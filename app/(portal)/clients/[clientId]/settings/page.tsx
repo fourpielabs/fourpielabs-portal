@@ -24,7 +24,7 @@ export default async function ClientSettingsPage({
 
   if (!client) notFound();
 
-  const [{ data: team }, { data: assignments }] = await Promise.all([
+  const [{ data: team }, { data: assignments }, { data: perms }] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name, email")
@@ -35,6 +35,11 @@ export default async function ClientSettingsPage({
       .from("client_assignments")
       .select("user_id")
       .eq("client_id", clientId),
+    supabase
+      .from("client_field_permissions")
+      .select("can_edit_website_url, can_edit_comms_channel")
+      .eq("client_id", clientId)
+      .maybeSingle(),
   ]);
 
   const defaults: ClientUpdateValues = {
@@ -60,6 +65,10 @@ export default async function ClientSettingsPage({
       isProject={client.client_type === "project"}
       team={(team ?? []) as TeamMember[]}
       assignedIds={assignedIds}
+      fieldPermissions={{
+        can_edit_website_url: perms?.can_edit_website_url ?? false,
+        can_edit_comms_channel: perms?.can_edit_comms_channel ?? false,
+      }}
     />
   );
 }

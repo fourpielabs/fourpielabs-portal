@@ -13,6 +13,8 @@ import { Input, Textarea, Select, Button, EmberButton } from "@/components/redes
 import { DateField } from "@/components/redesign/ui/date-field";
 import { TitledPanel, Field, FieldGrid, usePanel } from "./ui";
 import { AssignmentManager, type TeamMember } from "./assignment-manager";
+import { ClientPermissionsPanel } from "./client-permissions-panel";
+import { type ClientFieldPermissions } from "@/lib/client-fields";
 
 // Keep ClientUpdateValues importable from this module for one import shape.
 export type { ClientUpdateValues } from "@/lib/schemas";
@@ -128,12 +130,14 @@ export function ClientSettingsBody({
   isProject = false,
   team,
   assignedIds,
+  fieldPermissions,
 }: {
   defaults: ClientUpdateValues;
   clientId: string;
   isProject?: boolean;
   team: TeamMember[];
   assignedIds: string[];
+  fieldPermissions: ClientFieldPermissions;
 }) {
   const base = `/clients/${clientId}`;
   // type-specific workspace entry points (presentation only — links to existing tabs).
@@ -183,6 +187,13 @@ export function ClientSettingsBody({
         description="Assigned team members get full access to this client's workspace (enforced by RLS)."
       >
         <AssignmentManager clientId={clientId} team={team} assignedIds={assignedIds} />
+      </TitledPanel>
+
+      <TitledPanel
+        title="Client edit permissions"
+        description="Grant this client permission to edit a few safe fields on their own profile (deny-by-default). Locked fields like status and approvals are never editable by clients."
+      >
+        <ClientPermissionsPanel clientId={clientId} permissions={fieldPermissions} />
       </TitledPanel>
 
       <style>{`

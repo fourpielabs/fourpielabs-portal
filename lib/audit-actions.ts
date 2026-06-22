@@ -65,6 +65,8 @@ export const AUDIT_ACTION_GROUPS = {
     "metric_definition.deactivated",
     "metric_definition.reordered",
     "metric_definition.starter_seeded",
+    "client_permissions.updated",
+    "client.field_edited",
     "metric_entries.saved",
     "metric_entries.csv_import",
   ],
