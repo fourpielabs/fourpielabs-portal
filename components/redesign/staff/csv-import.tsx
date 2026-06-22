@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Download, Upload } from "lucide-react";
 
 import { commitCsvAction } from "@/lib/actions/metrics";
-import { FileDropzone } from "@/components/ui/file-dropzone";
+import { FileDropzone } from "@/components/redesign/ui/file-dropzone";
 import { Button, EmberButton } from "@/components/redesign/ui";
 import { usePanel } from "./ui";
 

@@ -12,7 +12,7 @@ import { uploadClientFileAction } from "@/lib/actions/storage";
 import { DELIVERABLE_TYPES, DELIVERABLE_STATUSES } from "@/lib/constants";
 import { Input, Textarea, Select, Switch, Checkbox } from "@/components/redesign/ui";
 import { DateField } from "@/components/redesign/ui/date-field";
-import { FileDropzone } from "@/components/ui/file-dropzone";
+import { FileDropzone } from "@/components/redesign/ui/file-dropzone";
 import { FormDialog, Field, FieldGrid } from "./ui";
 
 export type DeliverableRow = {

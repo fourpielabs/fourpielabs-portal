@@ -18,10 +18,10 @@ import {
 } from "@/lib/actions/reports";
 import { uploadClientFileAction } from "@/lib/actions/storage";
 import { Input, Textarea, Checkbox, EmberButton, Button, StatusPill } from "@/components/redesign/ui";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { FileDropzone } from "@/components/ui/file-dropzone";
+import { DateField } from "@/components/redesign/ui/date-field";
+import { FileDropzone } from "@/components/redesign/ui/file-dropzone";
 import { StaffDownloadButton } from "./download-button";
-import { usePanel, EmptyPanel, FormDialog, Field, ConfirmDelete } from "./ui";
+import { usePanel, EmptyPanel, FormDialog, Field, FieldGrid, ConfirmDelete } from "./ui";
 
 export type Report = {
   id: string;
@@ -110,17 +110,14 @@ function ReportDialog({
           <Input value={field.value} onChange={(_, d) => field.onChange(d.value)} placeholder="April 2026 Performance" />
         </Field>
       )} />
-      <Field label="Reporting period">
-        <DateRangePicker
-          from={watch("period_start")}
-          to={watch("period_end")}
-          placeholder="Period start – end"
-          onChange={(f, t) => {
-            setValue("period_start", f, { shouldDirty: true, shouldValidate: true });
-            setValue("period_end", t, { shouldDirty: true, shouldValidate: true });
-          }}
-        />
-      </Field>
+      <FieldGrid>
+        <Field label="Period start">
+          <DateField value={watch("period_start") ?? ""} onChange={(v) => setValue("period_start", v, { shouldDirty: true, shouldValidate: true })} />
+        </Field>
+        <Field label="Period end">
+          <DateField value={watch("period_end") ?? ""} onChange={(v) => setValue("period_end", v, { shouldDirty: true, shouldValidate: true })} />
+        </Field>
+      </FieldGrid>
       <Controller control={control} name="summary" render={({ field }) => (
         <Field label="Summary (markdown)">
           <Textarea value={field.value ?? ""} onChange={(_, d) => field.onChange(d.value)} resize="vertical" />

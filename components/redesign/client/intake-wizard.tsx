@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight, Check, FileUp, Lock, Plus, X } from "lucide-reac
 import { Eyebrow, EmberButton, Button, Input, Textarea, Select, tokens } from "@/components/redesign/ui";
 import { useRedesignMode } from "@/components/redesign/themed-fluent";
 import { ClientPageFrame } from "@/components/redesign/client/page-frame";
-import { FileDropzone } from "@/components/ui/file-dropzone";
+import { FileDropzone } from "@/components/redesign/ui/file-dropzone";
 import { BookButton } from "@/components/booking/book-button";
 import {
   type IntakeConfig, type IntakeAnswers, type IntakeField, type IntakeAsset,

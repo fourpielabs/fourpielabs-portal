@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { programSchema, type ProgramValues } from "@/lib/schemas";
 import { updateProgramAction } from "@/lib/actions/program";
 import { Input, Textarea, EmberButton } from "@/components/redesign/ui";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateField } from "@/components/redesign/ui/date-field";
 import { Field, FieldGrid } from "./ui";
 
 // Keep ProgramValues importable from the original module for one import shape.
@@ -48,17 +48,14 @@ export function ProgramForm({ defaults }: { defaults: ProgramValues }) {
         )} />
       </FieldGrid>
 
-      <Field label="Program dates">
-        <DateRangePicker
-          from={watch("start_date")}
-          to={watch("end_date")}
-          placeholder="Start – end (optional)"
-          onChange={(f, t) => {
-            setValue("start_date", f, { shouldDirty: true, shouldValidate: true });
-            setValue("end_date", t, { shouldDirty: true, shouldValidate: true });
-          }}
-        />
-      </Field>
+      <FieldGrid>
+        <Field label="Start date">
+          <DateField value={watch("start_date") ?? ""} onChange={(v) => setValue("start_date", v, { shouldDirty: true, shouldValidate: true })} />
+        </Field>
+        <Field label="End date">
+          <DateField value={watch("end_date") ?? ""} onChange={(v) => setValue("end_date", v, { shouldDirty: true, shouldValidate: true })} />
+        </Field>
+      </FieldGrid>
 
       <FieldGrid>
         <Controller control={control} name="whats_included" render={({ field }) => (

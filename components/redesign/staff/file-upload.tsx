@@ -8,7 +8,7 @@ import { Upload } from "lucide-react";
 import { uploadDocumentAction } from "@/lib/actions/files";
 import { FILE_CATEGORIES } from "@/lib/constants";
 import { Select, Switch, EmberButton } from "@/components/redesign/ui";
-import { FileDropzone } from "@/components/ui/file-dropzone";
+import { FileDropzone } from "@/components/redesign/ui/file-dropzone";
 import { Field } from "./ui";
 
 /** R3 staff document upload form (re-skinned). uploadDocumentAction wiring verbatim. */
