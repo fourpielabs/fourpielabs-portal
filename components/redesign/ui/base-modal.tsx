@@ -53,7 +53,12 @@ export function BaseModal({ isOpen, onClose, title, footer, size = "md", childre
   const width = WIDTHS[size];
   const fg1 = tokens.colorNeutralForeground1, fg3 = tokens.colorNeutralForeground3;
   return (
-    <FluentScope>
+    // When closed, the scope collapses to display:none so it contributes NO layout box.
+    // Otherwise FluentScope's always-rendered FluentProvider div sits as an empty flex
+    // sibling next to the trigger — in a space-between header that stray item pushes the
+    // trigger button to the middle (the "centered button" bug). Open dialogs portal out,
+    // so this never affects the rendered modal; no mount/focus-restore change.
+    <FluentScope style={{ display: isOpen ? "contents" : "none" }}>
       <Dialog open={isOpen} onOpenChange={(_, d) => { if (!d.open) onClose(); }}>
         <DialogSurface style={{ width, maxWidth: width, maxHeight: "88vh", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
           <DialogBody style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, gap: 0 }}>
