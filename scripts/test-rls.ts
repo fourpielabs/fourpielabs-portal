@@ -315,6 +315,14 @@ async function main() {
   for (const { t, row } of insertPayloads(premierId, premierDef)) {
     await expectWriteDenied(client, "client", t, row);
   }
+  // 3b: a client cannot assign anyone (client_assignments has NO client policy at all)
+  {
+    const ins = await client.from("client_assignments").insert({ client_id: premierId, user_id: clientUid }).select("client_id");
+    rec("assignments", "client cannot write client_assignments (denied)", !!ins.error || (ins.data?.length ?? 0) === 0, ins.error?.code ?? `${ins.data?.length ?? 0} rows`);
+    if ((ins.data?.length ?? 0) > 0) await admin.from("client_assignments").delete().eq("client_id", premierId).eq("user_id", clientUid);
+    const rd = await client.from("client_assignments").select("client_id");
+    rec("assignments", "client reads 0 client_assignments rows", (rd.data?.length ?? 0) === 0, `${rd.data?.length ?? 0} rows`);
+  }
 
   // hidden/unpublished invisible
   {
@@ -808,6 +816,15 @@ async function main() {
     const ti = await team.from("projects").insert({ client_id: projId, title: "RLS team-un" }).select("id");
     rec("team→unassigned", "write projects denied", !!ti.error || (ti.data?.length ?? 0) === 0, ti.error?.code ?? `${ti.data?.length ?? 0} rows`);
     if (ti.data?.[0]?.id) await admin.from("projects").delete().eq("id", ti.data[0].id);
+  }
+  // 3b: client_assignments is ADMIN-ONLY write — a team member cannot self-assign or unassign.
+  {
+    const ins = await team.from("client_assignments").insert({ client_id: unId, user_id: teamUid }).select("client_id");
+    rec("assignments", "team cannot self-assign (insert client_assignments denied)", !!ins.error || (ins.data?.length ?? 0) === 0, ins.error?.code ?? `${ins.data?.length ?? 0} rows`);
+    if ((ins.data?.length ?? 0) > 0) await admin.from("client_assignments").delete().eq("client_id", unId).eq("user_id", teamUid);
+    const del = await team.from("client_assignments").delete().eq("client_id", premierId).eq("user_id", teamUid).select("client_id");
+    const still = await admin.from("client_assignments").select("client_id").eq("client_id", premierId).eq("user_id", teamUid);
+    rec("assignments", "team cannot unassign (delete client_assignments no-op)", (del.data?.length ?? 0) === 0 && (still.data?.length ?? 0) === 1, `deleted=${del.data?.length ?? 0} remain=${still.data?.length ?? 0}`);
   }
   // projects: ASSIGNED team (demo-team ↔ premier) can read + write premier's
   {
