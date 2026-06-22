@@ -22,7 +22,6 @@ export {
   Field,
   Checkbox,
   Switch,
-  Select,
   Combobox,
   Option,
   OptionGroup,
@@ -30,6 +29,8 @@ export {
   RadioGroup,
   SpinButton,
 } from "@fluentui/react-components";
+// themed drop-in Select (themeable open list) — replaces the native-style Fluent Select
+export { Select, type SelectProps } from "./select";
 
 // --- overlays & menus (surface may be glass; controls solid) ---
 export {

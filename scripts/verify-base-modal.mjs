@@ -56,6 +56,16 @@ try {
   rec("no horizontal overflow (page + scroller)", m && m.pageHoriz <= 1 && m.scrollerHoriz <= 1, m ? `page=${m.pageHoriz} scroller=${m.scrollerHoriz}` : "");
   rec("content scrolls INSIDE (single region)", m && m.canScroll > 50, m ? `canScroll=${m.canScroll}` : "");
   rec("labeled close button present", !!m?.hasClose, "");
+  // themed dropdown: open the Status list (now a themed Listbox, not the OS popup)
+  try {
+    await page.locator('.fui-DialogSurface [role="combobox"]').first().click();
+    await page.waitForSelector('[role="listbox"] [role="option"]', { timeout: 4000 });
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: `${OUT}/dropdown_open.png` });
+    const opts = await page.locator('[role="listbox"] [role="option"]').count();
+    rec("dropdown opens a THEMED listbox (not OS-native)", opts >= 3, `${opts} options`);
+    await page.keyboard.press("Escape");
+  } catch (e) { rec("dropdown opens a THEMED listbox (not OS-native)", false, String(e).slice(0, 60)); }
   for (let i = 0; i < 6; i++) await page.keyboard.press("Tab");
   rec("focus trap (focus stays in dialog after Tab)", (await metrics(page))?.focusInDialog === true, "");
   await page.locator('.fui-DialogSurface button[aria-label="Close"]').click();
