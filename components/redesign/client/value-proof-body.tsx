@@ -124,7 +124,9 @@ export function ValueProofBody({ data }: { data: ValueProof }) {
                             </span>
                           </span>
                         ) : (
-                          <span style={{ fontSize: "0.72rem", color: fg3 }}>vs last month</span>
+                          // defined-but-unentered reads as "awaiting data" (not a broken
+                          // "vs last month"); it's already excluded from wins + pacing.
+                          <span style={{ fontSize: "0.72rem", color: fg3 }}>{k.current == null ? "Awaiting data" : "vs last month"}</span>
                         )}
                       </button>
                     </StaggerItem>

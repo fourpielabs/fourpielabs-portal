@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Upload } from "lucide-react";
+import { Upload, Target } from "lucide-react";
 
 import { formatMonthYear } from "@/lib/format";
 import {
@@ -23,10 +23,11 @@ type CsvDef = { key: string; unit: "number" | "currency" | "percent" | "text" };
  * inside the WIDE metrics tab). Composition/presentation only — same data + actions.
  */
 export function MetricsWorkspace({
-  clientId, allDefs, activeDefs, currentMonth, initialValues, entryStatus,
+  clientId, isProject = false, allDefs, activeDefs, currentMonth, initialValues, entryStatus,
   csvDefs, numericDefs, textDefs, histEntries,
 }: {
   clientId: string;
+  isProject?: boolean;
   allDefs: MetricDef[];
   activeDefs: ActiveDef[];
   currentMonth: string;
@@ -51,6 +52,16 @@ export function MetricsWorkspace({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      {/* Discoverability: tie the staff Metrics tab to the client's Results page. */}
+      {isProject && (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, borderRadius: 14, border: `1px solid ${onDark ? "rgba(245,158,11,0.3)" : "#fcd34d"}`, background: onDark ? "rgba(245,158,11,0.10)" : "#fffbeb", padding: "0.7rem 0.95rem" }}>
+          <Target size={16} style={{ flexShrink: 0, marginTop: 2, color: onDark ? "#fcd34d" : "#b45309" }} />
+          <p style={{ margin: 0, fontSize: "0.85rem", color: fg1 }}>
+            This is the client&rsquo;s <strong>Results</strong> data. Define KPIs, enter each month&rsquo;s
+            numbers, and set targets here — that&rsquo;s what populates their <strong>Results</strong> page.
+          </p>
+        </div>
+      )}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
         <Segmented
           ariaLabel="Metrics mode"
@@ -95,7 +106,7 @@ export function MetricsWorkspace({
           <div className={panel} style={{ borderRadius: 20, padding: "clamp(1.2rem,3vw,1.6rem)" }}>
             <div style={{ marginBottom: "1rem" }}>
               <h3 className="rd-display" style={{ margin: 0, fontSize: "1.3rem", fontWeight: 600, color: fg1 }}>Client preview</h3>
-              <p style={{ margin: "2px 0 0", fontSize: "0.8rem", color: fg3 }}>Exactly what the client sees on their Performance page.</p>
+              <p style={{ margin: "2px 0 0", fontSize: "0.8rem", color: fg3 }}>Exactly what the client sees on their {isProject ? "Results" : "Performance"} page.</p>
             </div>
             <MetricsCharts numericDefs={numericDefs} textDefs={textDefs} entries={histEntries} />
           </div>

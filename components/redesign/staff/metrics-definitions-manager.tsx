@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, GaugeCircle, GripVertical, Pencil, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, GaugeCircle, GripVertical, Pencil, Plus, Sparkles } from "lucide-react";
 
 import { metricDefinitionSchema, type MetricDefinitionValues } from "@/lib/schemas";
 import {
@@ -13,6 +13,7 @@ import {
   updateMetricDefinitionAction,
   setMetricDefinitionActiveAction,
   moveMetricDefinitionAction,
+  seedStarterMetricsAction,
 } from "@/lib/actions/metrics";
 import { METRIC_UNITS, labelOf } from "@/lib/constants";
 import { Input, Select, Switch, Button } from "@/components/redesign/ui";
@@ -179,8 +180,20 @@ export function DefinitionsManager({
         <EmptyPanel
           icon={<GaugeCircle size={22} />}
           title="No metrics defined yet"
-          description="Define the metrics you'll track for this client — leads, revenue, rankings, and more."
-          action={addBtn}
+          description="These KPIs populate the client's Results page. Start from a template, then add, remove, or edit — or build your own from scratch."
+          action={
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
+              <Button
+                appearance="primary"
+                icon={<Sparkles size={16} />}
+                disabled={pending}
+                onClick={() => run(seedStarterMetricsAction(clientId))}
+              >
+                Start from a template
+              </Button>
+              {addBtn}
+            </div>
+          }
         />
       ) : (
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.7rem" }}>

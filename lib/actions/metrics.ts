@@ -67,6 +67,56 @@ export async function createMetricDefinitionAction(
   return { ok: true };
 }
 
+/**
+ * Seed a sensible DEFAULT STARTER SET of KPIs for a client that has none yet (the
+ * project-client blank-slate case). Staff-triggered, staff-only, own-client-scoped — a
+ * TEMPLATE staff then adjust (add/remove/edit), NOT a forced or auto-seeded set. Skips
+ * any key the client already has, so it's safe to run and never duplicates.
+ */
+const STARTER_KPIS: { key: string; label: string; unit: "number" | "currency" | "percent" | "text"; lower_is_better: boolean }[] = [
+  { key: "leads", label: "Leads", unit: "number", lower_is_better: false },
+  { key: "conversion_rate", label: "Conversion rate", unit: "percent", lower_is_better: false },
+  { key: "cost_per_lead", label: "Cost per lead", unit: "currency", lower_is_better: true },
+  { key: "website_traffic", label: "Website traffic", unit: "number", lower_is_better: false },
+  { key: "revenue_attributed", label: "Revenue attributed", unit: "currency", lower_is_better: false },
+];
+
+export async function seedStarterMetricsAction(clientId: string): Promise<Result> {
+  const me = await requireClientAccess(clientId);
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("metric_definitions")
+    .select("key, sort_order")
+    .eq("client_id", clientId);
+  const haveKeys = new Set((existing ?? []).map((d) => d.key));
+  let order = (existing ?? []).reduce((mx, d) => Math.max(mx, d.sort_order), 0);
+
+  const rows = STARTER_KPIS.filter((k) => !haveKeys.has(k.key)).map((k) => ({
+    client_id: clientId,
+    key: k.key,
+    label: k.label,
+    unit: k.unit,
+    is_active: true,
+    lower_is_better: k.lower_is_better,
+    target: null,
+    sort_order: ++order,
+  }));
+  if (rows.length === 0) return { ok: true };
+
+  const { error } = await supabase.from("metric_definitions").insert(rows);
+  if (error) return { ok: false, error: error.message };
+  await logAudit({
+    actorId: me.id,
+    action: "metric_definition.starter_seeded",
+    entity: "metric_definition",
+    clientId,
+    metadata: { count: rows.length, keys: rows.map((r) => r.key) },
+  });
+  revalidate(clientId);
+  return { ok: true };
+}
+
 export async function updateMetricDefinitionAction(
   clientId: string,
   id: string,

@@ -16,6 +16,9 @@ export default async function MetricsPage({
   await requireClientAccess(clientId);
   const supabase = await createClient();
 
+  const { data: clientRow } = await supabase.from("clients").select("client_type").eq("id", clientId).maybeSingle();
+  const isProject = clientRow?.client_type === "project";
+
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
   // last 12 months (ascending) as first-of-month periods
@@ -90,6 +93,7 @@ export default async function MetricsPage({
   return (
     <MetricsWorkspace
       clientId={clientId}
+      isProject={isProject}
       allDefs={allDefs}
       activeDefs={activeDefs}
       currentMonth={currentMonth}
