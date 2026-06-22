@@ -9,10 +9,10 @@ import { StaffPageFrame, StaffPageHeader } from "@/components/redesign/staff/ui"
 export default async function AuditPage({
   searchParams,
 }: {
-  searchParams: Promise<{ client?: string; action?: string }>;
+  searchParams: Promise<{ client?: string; action?: string; from?: string; to?: string }>;
 }) {
   await requireRole(["admin"]);
-  const { client: clientFilter, action: actionFilter } = await searchParams;
+  const { client: clientFilter, action: actionFilter, from, to } = await searchParams;
   const supabase = await createClient();
 
   let query = supabase
@@ -22,6 +22,8 @@ export default async function AuditPage({
     .limit(200);
   if (clientFilter) query = query.eq("client_id", clientFilter);
   if (actionFilter) query = query.eq("action", actionFilter);
+  if (from) query = query.gte("created_at", `${from}T00:00:00.000Z`);
+  if (to) query = query.lte("created_at", `${to}T23:59:59.999Z`);
 
   const [{ data: logs }, { data: clients }, { data: profiles }] =
     await Promise.all([
@@ -61,7 +63,7 @@ export default async function AuditPage({
       <AuditFilters
         clients={clients ?? []}
         actions={AUDIT_ACTIONS}
-        current={{ client: clientFilter, action: actionFilter }}
+        current={{ client: clientFilter, action: actionFilter, from, to }}
       />
 
       <AuditBody rows={rows} clientFilter={clientFilter} />
