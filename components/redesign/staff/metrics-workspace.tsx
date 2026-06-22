@@ -57,8 +57,8 @@ export function MetricsWorkspace({
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10, borderRadius: 14, border: `1px solid ${onDark ? "rgba(245,158,11,0.3)" : "#fcd34d"}`, background: onDark ? "rgba(245,158,11,0.10)" : "#fffbeb", padding: "0.7rem 0.95rem" }}>
           <Target size={16} style={{ flexShrink: 0, marginTop: 2, color: onDark ? "#fcd34d" : "#b45309" }} />
           <p style={{ margin: 0, fontSize: "0.85rem", color: fg1 }}>
-            This is the client&rsquo;s <strong>Results</strong> data. Define KPIs, enter each month&rsquo;s
-            numbers, and set targets here — that&rsquo;s what populates their <strong>Results</strong> page.
+            This is the client’s Results data — define KPIs, enter each month’s numbers, and set
+            targets here. That’s what populates their Results page.
           </p>
         </div>
       )}
