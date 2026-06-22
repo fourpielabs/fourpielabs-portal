@@ -102,7 +102,7 @@ export function StaffTasksManager({
                   )}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.25rem 0.85rem", paddingTop: 4, fontSize: 12, color: fg3 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><User size={12} /> {t.assigneeName ?? "Unassigned"}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><User size={12} /> {t.assigneeName ?? "Unassigned"}</span>
                   {t.due_date && <span>Due {formatDate(t.due_date)}</span>}
                   {t.source_message_id && (
                     <Link href={`/clients/${clientId}/messages${t.sourceThreadType === "internal" ? "?tab=internal" : ""}`} className="rd-focus" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: fg3, textDecoration: "none" }}><MessageSquare size={12} /> from a message</Link>

@@ -8,12 +8,7 @@ import { setUserActiveAction, deleteUserAction } from "@/lib/actions/users";
 import {
   Button,
   EmberButton,
-  Dialog,
-  DialogTrigger,
-  DialogSurface,
-  DialogBody,
-  DialogTitle,
-  DialogActions,
+  BaseModal,
 } from "@/components/redesign/ui";
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import { usePanel } from "./ui";
@@ -96,36 +91,36 @@ export function UserActiveToggle({ userId, isActive, isSelf, label }: Props) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6 }}>
       {active ? (
-        <Dialog open={confirmOpen} onOpenChange={(_, d) => setConfirmOpen(d.open)}>
-          <DialogTrigger disableButtonEnhancement>
-            <Button appearance="outline" size="small" disabled={pending}>
-              Deactivate
-            </Button>
-          </DialogTrigger>
-          <DialogSurface style={{ maxWidth: 460 }}>
-            <DialogBody>
-              <DialogTitle>Deactivate {label}?</DialogTitle>
-              <p style={{ margin: "8px 0 0", fontSize: 14, color: fg3 }}>
-                They&apos;ll be signed out and blocked at the login gate on their next
-                request. You can reactivate them anytime.
-              </p>
-              <DialogActions>
-                <Button appearance="subtle" onClick={() => setConfirmOpen(false)}>
-                  Cancel
-                </Button>
-                <EmberButton
-                  onClick={() => {
-                    setConfirmOpen(false);
-                    apply(false);
-                  }}
-                  style={{ background: "linear-gradient(180deg,#dc2626,#b91c1c)" }}
-                >
-                  Deactivate
-                </EmberButton>
-              </DialogActions>
-            </DialogBody>
-          </DialogSurface>
-        </Dialog>
+        <>
+          <Button appearance="outline" size="small" disabled={pending} onClick={() => setConfirmOpen(true)}>
+            Deactivate
+          </Button>
+          <BaseModal
+            isOpen={confirmOpen}
+            onClose={() => setConfirmOpen(false)}
+            title={`Deactivate ${label}?`}
+            size="sm"
+            footer={<>
+              <Button appearance="subtle" onClick={() => setConfirmOpen(false)}>
+                Cancel
+              </Button>
+              <EmberButton
+                onClick={() => {
+                  setConfirmOpen(false);
+                  apply(false);
+                }}
+                style={{ background: "linear-gradient(180deg,#dc2626,#b91c1c)" }}
+              >
+                Deactivate
+              </EmberButton>
+            </>}
+          >
+            <p style={{ margin: 0, fontSize: 14, color: fg3 }}>
+              They&apos;ll be signed out and blocked at the login gate on their next
+              request. You can reactivate them anytime.
+            </p>
+          </BaseModal>
+        </>
       ) : (
         <Button appearance="outline" size="small" disabled={pending} onClick={() => apply(true)}>
           Reactivate

@@ -7,8 +7,7 @@ import { UserPlus, Users } from "lucide-react";
 
 import { assignUserAction, unassignUserAction } from "@/lib/actions/users";
 import {
-  Dialog, DialogSurface, DialogBody, DialogTitle, DialogActions, DialogTrigger,
-  Select, Button, EmberButton,
+  BaseModal, Select, Button, EmberButton,
 } from "@/components/redesign/ui";
 import { usePanel } from "./ui";
 
@@ -30,25 +29,25 @@ function RemoveAssignment({
   name: string; disabled?: boolean; onConfirm: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const { fg1, fg3 } = usePanel();
+  const { fg3 } = usePanel();
   return (
-    <Dialog open={open} onOpenChange={(_, d) => setOpen(d.open)}>
-      <DialogTrigger disableButtonEnhancement>
-        <Button appearance="subtle" size="small" disabled={disabled}>Remove</Button>
-      </DialogTrigger>
-      <DialogSurface style={{ maxWidth: 420 }}>
-        <DialogBody>
-          <DialogTitle style={{ color: fg1 }}>Remove {name}?</DialogTitle>
-          <p style={{ margin: "8px 0 0", fontSize: 14, color: fg3 }}>
-            They&apos;ll immediately lose access to this client&apos;s workspace. You can reassign them anytime.
-          </p>
-          <DialogActions>
-            <Button appearance="subtle" onClick={() => setOpen(false)}>Cancel</Button>
-            <EmberButton onClick={() => { setOpen(false); onConfirm(); }} style={{ background: "linear-gradient(180deg,#dc2626,#b91c1c)" }}>Remove</EmberButton>
-          </DialogActions>
-        </DialogBody>
-      </DialogSurface>
-    </Dialog>
+    <>
+      <Button appearance="subtle" size="small" disabled={disabled} onClick={() => setOpen(true)}>Remove</Button>
+      <BaseModal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        title={`Remove ${name}?`}
+        size="sm"
+        footer={<>
+          <Button appearance="subtle" onClick={() => setOpen(false)}>Cancel</Button>
+          <EmberButton onClick={() => { setOpen(false); onConfirm(); }} style={{ background: "linear-gradient(180deg,#dc2626,#b91c1c)" }}>Remove</EmberButton>
+        </>}
+      >
+        <p style={{ margin: 0, fontSize: 14, color: fg3 }}>
+          They&apos;ll immediately lose access to this client&apos;s workspace. You can reassign them anytime.
+        </p>
+      </BaseModal>
+    </>
   );
 }
 

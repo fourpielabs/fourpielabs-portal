@@ -104,7 +104,7 @@ export function TaskBoard({ tasks, members, deps = [] }: { tasks: ClientTaskRow[
                       <StatusPill value={t.status} mode={mode} />
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.75rem", marginTop: "0.45rem", fontSize: "0.74rem", color: fg3 }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><User size={12} /> {t.assigneeName ?? "Unassigned"}</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><User size={12} /> {t.assigneeName ?? "Unassigned"}</span>
                       {t.due_date && <span>Due {formatDate(t.due_date)}</span>}
                       {t.source_message_id && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><MessageSquare size={12} /> from a message</span>}
                       {t.checklist.length > 0 && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><ListChecks size={12} /> {done}/{t.checklist.length}</span>}

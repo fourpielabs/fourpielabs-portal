@@ -4,8 +4,7 @@ import * as React from "react";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import {
-  Dialog, DialogSurface, DialogBody, DialogTitle, DialogActions, DialogTrigger,
-  EmberButton, Button, Eyebrow, AmbientField, tokens,
+  BaseModal, EmberButton, Button, Eyebrow, AmbientField, tokens,
 } from "@/components/redesign/ui";
 import { FluentScope, useRedesignMode } from "@/components/redesign/themed-fluent";
 
@@ -145,7 +144,8 @@ export function FieldGrid({ children }: { children: React.ReactNode }) {
 
 /**
  * Themed form-dialog shell. Manages open state (so it closes on a successful submit via
- * the `closeSignal` bump), renders the trigger + a Fluent DialogSurface + a <form>.
+ * the `closeSignal` bump), renders the trigger + a BaseModal wrapping the <form> (the
+ * pinned footer submit drives the form via form-id association).
  * The caller owns onSubmit (RHF handleSubmit) + submitting + submitLabel.
  */
 export function FormDialog({
@@ -162,22 +162,26 @@ export function FormDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const { fg3 } = usePanel();
+  const formId = React.useId();
   return (
-    <Dialog open={open} onOpenChange={(_, d) => onOpenChange(d.open)}>
-      <DialogTrigger disableButtonEnhancement>{trigger as React.ReactElement}</DialogTrigger>
-      <DialogSurface style={{ maxHeight: "90vh", overflowY: "auto" }}>
-        <DialogBody>
-          <DialogTitle>{title}</DialogTitle>
-          <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 10 }}>
-            {description && <p style={{ margin: "-4px 0 0", fontSize: 13, color: fg3 }}>{description}</p>}
-            {children}
-            <DialogActions>
-              <EmberButton type="submit" loading={submitting}>{submitLabel}</EmberButton>
-            </DialogActions>
-          </form>
-        </DialogBody>
-      </DialogSurface>
-    </Dialog>
+    <>
+      {/* trigger rendered outside the modal (BaseModal is fully controlled); the click
+          bubbles up from the caller's button to open. display:contents keeps layout intact. */}
+      <span style={{ display: "contents" }} onClick={() => onOpenChange(true)}>{trigger}</span>
+      <BaseModal
+        isOpen={open}
+        onClose={() => onOpenChange(false)}
+        title={title}
+        footer={<EmberButton type="submit" form={formId} loading={submitting}>{submitLabel}</EmberButton>}
+      >
+        {/* form lives in the body; the pinned footer submit drives it via form-id
+            association. All RHF/validation/server-action wiring is unchanged. */}
+        <form id={formId} onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {description && <p style={{ margin: "-4px 0 0", fontSize: 13, color: fg3 }}>{description}</p>}
+          {children}
+        </form>
+      </BaseModal>
+    </>
   );
 }
 
@@ -188,25 +192,25 @@ export function ConfirmDelete({
   title?: string; description: string; onConfirm: () => void; triggerLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const { fg1, fg3 } = usePanel();
+  const { fg3 } = usePanel();
   return (
-    <Dialog open={open} onOpenChange={(_, d) => setOpen(d.open)}>
-      <DialogTrigger disableButtonEnhancement>
-        <button type="button" aria-label={triggerLabel} className="rd-focus" style={{ flexShrink: 0, borderRadius: 8, border: "none", background: "none", cursor: "pointer", color: fg3, padding: 6, display: "inline-flex" }}>
-          <Trash2 size={16} />
-        </button>
-      </DialogTrigger>
-      <DialogSurface style={{ maxWidth: 420 }}>
-        <DialogBody>
-          <DialogTitle style={{ color: fg1 }}>{title}</DialogTitle>
-          <p style={{ margin: "8px 0 0", fontSize: 14, color: fg3 }}>{description}</p>
-          <DialogActions>
-            <Button appearance="subtle" onClick={() => setOpen(false)}>Cancel</Button>
-            <EmberButton onClick={() => { setOpen(false); onConfirm(); }} style={{ background: "linear-gradient(180deg,#dc2626,#b91c1c)" }}>Delete</EmberButton>
-          </DialogActions>
-        </DialogBody>
-      </DialogSurface>
-    </Dialog>
+    <>
+      <button type="button" aria-label={triggerLabel} onClick={() => setOpen(true)} className="rd-focus" style={{ flexShrink: 0, borderRadius: 8, border: "none", background: "none", cursor: "pointer", color: fg3, padding: 6, display: "inline-flex" }}>
+        <Trash2 size={16} />
+      </button>
+      <BaseModal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        title={title}
+        size="sm"
+        footer={<>
+          <Button appearance="subtle" onClick={() => setOpen(false)}>Cancel</Button>
+          <EmberButton onClick={() => { setOpen(false); onConfirm(); }} style={{ background: "linear-gradient(180deg,#dc2626,#b91c1c)" }}>Delete</EmberButton>
+        </>}
+      >
+        <p style={{ margin: 0, fontSize: 14, color: fg3 }}>{description}</p>
+      </BaseModal>
+    </>
   );
 }
 

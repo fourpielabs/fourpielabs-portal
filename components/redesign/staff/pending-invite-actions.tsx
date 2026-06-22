@@ -8,12 +8,7 @@ import { resendInviteAction, revokeInviteAction } from "@/lib/actions/users";
 import {
   Button,
   EmberButton,
-  Dialog,
-  DialogTrigger,
-  DialogSurface,
-  DialogBody,
-  DialogTitle,
-  DialogActions,
+  BaseModal,
 } from "@/components/redesign/ui";
 import { usePanel } from "./ui";
 
@@ -57,36 +52,34 @@ export function PendingInviteActions({
       <Button appearance="outline" size="small" disabled={pending} onClick={resend}>
         Resend
       </Button>
-      <Dialog open={revokeOpen} onOpenChange={(_, d) => setRevokeOpen(d.open)}>
-        <DialogTrigger disableButtonEnhancement>
-          <Button appearance="outline" size="small" disabled={pending} style={{ color: "#dc2626", borderColor: "#f3b4b4" }}>
-            Revoke
+      <Button appearance="outline" size="small" disabled={pending} onClick={() => setRevokeOpen(true)} style={{ color: "#dc2626", borderColor: "#f3b4b4" }}>
+        Revoke
+      </Button>
+      <BaseModal
+        isOpen={revokeOpen}
+        onClose={() => setRevokeOpen(false)}
+        title="Revoke this invite?"
+        size="sm"
+        footer={<>
+          <Button appearance="subtle" onClick={() => setRevokeOpen(false)}>
+            Cancel
           </Button>
-        </DialogTrigger>
-        <DialogSurface style={{ maxWidth: 460 }}>
-          <DialogBody>
-            <DialogTitle>Revoke this invite?</DialogTitle>
-            <p style={{ margin: "8px 0 0", fontSize: 14, color: fg3 }}>
-              {label} hasn&apos;t accepted yet. Revoking deletes the pending account; you
-              can invite them again later.
-            </p>
-            <DialogActions>
-              <Button appearance="subtle" onClick={() => setRevokeOpen(false)}>
-                Cancel
-              </Button>
-              <EmberButton
-                onClick={() => {
-                  setRevokeOpen(false);
-                  revoke();
-                }}
-                style={{ background: "linear-gradient(180deg,#dc2626,#b91c1c)" }}
-              >
-                Revoke
-              </EmberButton>
-            </DialogActions>
-          </DialogBody>
-        </DialogSurface>
-      </Dialog>
+          <EmberButton
+            onClick={() => {
+              setRevokeOpen(false);
+              revoke();
+            }}
+            style={{ background: "linear-gradient(180deg,#dc2626,#b91c1c)" }}
+          >
+            Revoke
+          </EmberButton>
+        </>}
+      >
+        <p style={{ margin: 0, fontSize: 14, color: fg3 }}>
+          {label} hasn&apos;t accepted yet. Revoking deletes the pending account; you
+          can invite them again later.
+        </p>
+      </BaseModal>
     </div>
   );
 }
