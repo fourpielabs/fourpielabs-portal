@@ -32,6 +32,7 @@ import { BrandLogo } from "@/components/ui/brand-logo";
 import { RouteTransition } from "@/components/motion/route-transition";
 import { FluentScope, useRedesignMode } from "@/components/redesign/themed-fluent";
 import { NotificationBell } from "@/components/redesign/shell/notification-bell";
+import { GlobalSearch } from "@/components/redesign/shell/global-search";
 import { UserMenu } from "@/components/redesign/shell/user-menu";
 
 type NavItem = { href: string; label: string; icon: typeof Users; admin?: boolean };
@@ -284,7 +285,8 @@ export function StaffShell({
             onDark && "rd-glass--dark",
           )}
         >
-          <FluentScope className="inline-flex items-center">
+          <FluentScope className="inline-flex items-center gap-1">
+            <GlobalSearch tone={onDark ? "dark" : "light"} />
             <NotificationBell tone={onDark ? "dark" : "light"} initialUnread={notifUnread} initialItems={notifItems} />
           </FluentScope>
         </header>
@@ -312,6 +314,7 @@ export function StaffShell({
           </Link>
           <div className="ml-auto">
             <FluentScope className="inline-flex items-center gap-1">
+              <GlobalSearch tone={onDark ? "dark" : "light"} />
               <NotificationBell tone={onDark ? "dark" : "light"} initialUnread={notifUnread} initialItems={notifItems} />
             </FluentScope>
           </div>

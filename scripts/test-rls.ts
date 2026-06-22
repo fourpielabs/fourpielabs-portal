@@ -359,6 +359,41 @@ async function main() {
     await admin.from("client_field_permissions").delete().eq("client_id", premierId);
   }
 
+  // 4b: GLOBAL SEARCH inherits RLS — these run the SAME user-scoped .ilike queries the
+  // search action runs, proving a client can never find cross-client OR internal data via
+  // search. (Kept permanently so a future change can't silently widen search.)
+  {
+    const S = "search";
+    const LK = "ZZSEARCHLEAK", IN = "ZZINTERNALLEAK", SH = "ZZSHAREDHIT";
+    const proj = (await admin.from("projects").insert({ client_id: unId, title: `${LK} proj` }).select("id").single()).data?.id ?? null;
+    const task = (await admin.from("tasks").insert({ client_id: unId, title: `${LK} task`, visible_to_client: true }).select("id").single()).data?.id ?? null;
+    const deliv = (await admin.from("deliverables").insert({ client_id: unId, title: `${LK} deliv`, visible_to_client: true }).select("id").single()).data?.id ?? null;
+    const file = (await admin.from("files").insert({ client_id: unId, name: `${LK}.pdf`, storage_path: `${unId}/zz`, category: "other", visible_to_client: true }).select("id").single()).data?.id ?? null;
+    const mInt = await seedMsg(premierInternal, "internal", teamUid, `${IN} msg`);
+    const mSh = await seedMsg(premierShared, "client_shared", teamUid, `${SH} msg`);
+
+    const cnt = async (q: { data: unknown[] | null }) => (q.data?.length ?? 0);
+    rec(S, "client search: cross-client PROJECT → 0", (await cnt(await client.from("projects").select("id").ilike("title", `%${LK}%`))) === 0);
+    rec(S, "client search: cross-client TASK → 0", (await cnt(await client.from("tasks").select("id").ilike("title", `%${LK}%`))) === 0);
+    rec(S, "client search: cross-client DELIVERABLE → 0", (await cnt(await client.from("deliverables").select("id").ilike("title", `%${LK}%`))) === 0);
+    rec(S, "client search: cross-client FILE → 0", (await cnt(await client.from("files").select("id").ilike("name", `%${LK}%`))) === 0);
+    rec(S, "client search: cross-client CLIENT name → 0", (await cnt(await client.from("clients").select("id").ilike("name", "%Coastal%"))) === 0);
+    rec(S, "client search: INTERNAL message → 0 (internal boundary via search)", (await cnt(await client.from("messages").select("id").ilike("body", `%${IN}%`).is("deleted_at", null))) === 0);
+    rec(S, "client search: own SHARED message found (positive)", (await cnt(await client.from("messages").select("id").ilike("body", `%${SH}%`).is("deleted_at", null))) >= 1);
+    rec(S, "client search: own task found (positive)", (await cnt(await client.from("tasks").select("id").ilike("title", "%RLSTASK%"))) >= 1);
+
+    const teamS = createClient(url, anonKey, { auth: { persistSession: false } });
+    await teamS.auth.signInWithPassword({ email: TEAM_EMAIL, password: PW });
+    rec(S, "unassigned-team search: pulse PROJECT → 0", (await cnt(await teamS.from("projects").select("id").ilike("title", `%${LK}%`))) === 0);
+    rec(S, "unassigned-team search: pulse FILE → 0", (await cnt(await teamS.from("files").select("id").ilike("name", `%${LK}%`))) === 0);
+
+    if (proj) await admin.from("projects").delete().eq("id", proj);
+    if (task) await admin.from("tasks").delete().eq("id", task);
+    if (deliv) await admin.from("deliverables").delete().eq("id", deliv);
+    if (file) await admin.from("files").delete().eq("id", file);
+    await admin.from("messages").delete().in("id", [mInt, mSh].filter(Boolean) as string[]);
+  }
+
   // hidden/unpublished invisible
   {
     const { data: d } = await client.from("deliverables").select("title");

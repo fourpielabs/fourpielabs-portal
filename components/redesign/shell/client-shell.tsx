@@ -23,6 +23,7 @@ import { BrandLogo } from "@/components/ui/brand-logo";
 import { RouteTransition } from "@/components/motion/route-transition";
 import { FluentScope, ThemeToggle, useRedesignMode } from "@/components/redesign/themed-fluent";
 import { NotificationBell } from "@/components/redesign/shell/notification-bell";
+import { GlobalSearch } from "@/components/redesign/shell/global-search";
 import { UserMenu } from "@/components/redesign/shell/user-menu";
 
 type Item = { href: string; label: string };
@@ -103,6 +104,7 @@ export function ClientShell({
 
   const island = (
     <FluentScope className="inline-flex items-center gap-1">
+      <GlobalSearch tone={onDark ? "dark" : "light"} />
       <ThemeToggle tone={onDark ? "dark" : "light"} />
       <NotificationBell tone={onDark ? "dark" : "light"} initialUnread={notifUnread} initialItems={notifItems} />
       <UserMenu name={name} email={email} avatarUrl={avatarUrl} tone={onDark ? "dark" : "light"} />
