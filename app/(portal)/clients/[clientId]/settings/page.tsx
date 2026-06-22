@@ -17,7 +17,7 @@ export default async function ClientSettingsPage({
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "id, name, slug, industry, program, status, website_url, start_date, service_type, investment, comms_channel, internal_notes",
+      "id, name, slug, industry, program, status, website_url, start_date, service_type, investment, comms_channel, internal_notes, client_type",
     )
     .eq("id", clientId)
     .single();
@@ -57,6 +57,7 @@ export default async function ClientSettingsPage({
     <ClientSettingsBody
       defaults={defaults}
       clientId={client.id}
+      isProject={client.client_type === "project"}
       team={(team ?? []) as TeamMember[]}
       assignedIds={assignedIds}
     />

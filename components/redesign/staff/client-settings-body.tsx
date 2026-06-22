@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { clientUpdateSchema, type ClientUpdateValues } from "@/lib/schemas";
 import { updateClientAction } from "@/lib/actions/clients";
 import { INDUSTRIES, PROGRAMS, CLIENT_STATUSES } from "@/lib/constants";
-import { Input, Textarea, Select, EmberButton } from "@/components/redesign/ui";
+import { Input, Textarea, Select, Button, EmberButton } from "@/components/redesign/ui";
 import { DateField } from "@/components/redesign/ui/date-field";
 import { TitledPanel, Field, FieldGrid, usePanel } from "./ui";
 import { AssignmentManager, type TeamMember } from "./assignment-manager";
@@ -17,8 +17,10 @@ import { AssignmentManager, type TeamMember } from "./assignment-manager";
 // Keep ClientUpdateValues importable from this module for one import shape.
 export type { ClientUpdateValues } from "@/lib/schemas";
 
-/** R3 client-details edit form (re-skinned, SOLID). RHF + updateClientAction wiring verbatim. */
-export function ClientEditForm({ defaults }: { defaults: ClientUpdateValues }) {
+/** R3 client-details edit form (re-skinned, SOLID). RHF + updateClientAction wiring verbatim.
+ *  Per-type: the Program assignment is shown ONLY for program clients (project clients carry a
+ *  neutral placeholder program that's never read — keep it in form state, hidden from the UI). */
+export function ClientEditForm({ defaults, isProject = false }: { defaults: ClientUpdateValues; isProject?: boolean }) {
   const router = useRouter();
   const { fg3 } = usePanel();
   const [submitting, setSubmitting] = useState(false);
@@ -52,13 +54,16 @@ export function ClientEditForm({ defaults }: { defaults: ClientUpdateValues }) {
             </Select>
           </Field>
         )} />
-        <Controller control={control} name="program" render={({ field }) => (
-          <Field label="Program">
-            <Select value={field.value} onChange={(e) => field.onChange(e.target.value)} style={{ width: "100%" }}>
-              {PROGRAMS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </Select>
-          </Field>
-        )} />
+        {/* Program assignment — program clients only (project clients have no program tier). */}
+        {!isProject && (
+          <Controller control={control} name="program" render={({ field }) => (
+            <Field label="Program">
+              <Select value={field.value} onChange={(e) => field.onChange(e.target.value)} style={{ width: "100%" }}>
+                {PROGRAMS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </Select>
+            </Field>
+          )} />
+        )}
         <Controller control={control} name="status" render={({ field }) => (
           <Field label="Status">
             <Select value={field.value} onChange={(e) => field.onChange(e.target.value)} style={{ width: "100%" }}>
@@ -120,21 +125,57 @@ export function ClientEditForm({ defaults }: { defaults: ClientUpdateValues }) {
 export function ClientSettingsBody({
   defaults,
   clientId,
+  isProject = false,
   team,
   assignedIds,
 }: {
   defaults: ClientUpdateValues;
   clientId: string;
+  isProject?: boolean;
   team: TeamMember[];
   assignedIds: string[];
 }) {
+  const base = `/clients/${clientId}`;
+  // type-specific workspace entry points (presentation only — links to existing tabs).
+  const links = isProject
+    ? [
+        { href: `${base}/projects`, label: "Projects", hint: "Manage this client's project board" },
+        { href: `${base}/metrics`, label: "Results & metrics", hint: "Define KPIs + targets that populate their Results page" },
+        { href: `${base}/deliverables`, label: "Deliverables", hint: "Drafts, links, and files" },
+      ]
+    : [
+        { href: `${base}/program`, label: "Program & milestones", hint: "Roadmap and program delivery" },
+        { href: `${base}/metrics`, label: "Performance metrics", hint: "Program KPIs + monthly entries" },
+        { href: `${base}/content`, label: "Content calendar", hint: "Scheduled content" },
+      ];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <TitledPanel
-        title="Client details"
-        description="Core client info, program, and status. Setting status to Paused or Churned is the soft-delete (no hard delete in v1)."
+        title={isProject ? "Project workspace" : "Program workspace"}
+        description={isProject
+          ? "This is a project client — jump into their projects, Results metrics, or deliverables."
+          : "This is a program client — jump into their program roadmap, performance metrics, or content."}
       >
-        <ClientEditForm defaults={defaults} />
+        <div className="rd-cs-links">
+          {links.map((l) => (
+            <Button key={l.href} as="a" href={l.href} appearance="outline" style={{ height: "auto", justifyContent: "flex-start", padding: "0.7rem 0.9rem", textAlign: "left" }}>
+              <span style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-start" }}>
+                <span style={{ fontWeight: 600 }}>{l.label}</span>
+                <span style={{ fontSize: 12, opacity: 0.75, fontWeight: 400 }}>{l.hint}</span>
+              </span>
+            </Button>
+          ))}
+        </div>
+      </TitledPanel>
+
+      <TitledPanel
+        title="Client details"
+        description={isProject
+          ? "Core client info and status. Setting status to Paused or Churned is the soft-delete (no hard delete in v1)."
+          : "Core client info, program, and status. Setting status to Paused or Churned is the soft-delete (no hard delete in v1)."}
+      >
+        <ClientEditForm defaults={defaults} isProject={isProject} />
       </TitledPanel>
 
       <TitledPanel
@@ -143,6 +184,11 @@ export function ClientSettingsBody({
       >
         <AssignmentManager clientId={clientId} team={team} assignedIds={assignedIds} />
       </TitledPanel>
+
+      <style>{`
+        .rd-cs-links{display:grid;gap:0.6rem;grid-template-columns:1fr;}
+        @media(min-width:640px){.rd-cs-links{grid-template-columns:1fr 1fr 1fr;}}
+      `}</style>
     </div>
   );
 }
