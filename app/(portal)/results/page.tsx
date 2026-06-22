@@ -22,12 +22,12 @@ export default async function ClientResultsPage() {
 
   const [{ data: defs }, { data: entries }] = await Promise.all([
     // RLS already scopes to the caller's own client + is_active; explicit for clarity.
-    supabase.from("metric_definitions").select("id, key, label, unit, target").eq("is_active", true).order("sort_order"),
+    supabase.from("metric_definitions").select("id, key, label, unit, target, lower_is_better").eq("is_active", true).order("sort_order"),
     supabase.from("metric_entries").select("definition_id, period, value_numeric, value_text").order("period"),
   ]);
 
   const data = buildValueProof(
-    (defs ?? []).map((d) => ({ id: d.id, key: d.key, label: d.label, unit: d.unit, target: d.target })),
+    (defs ?? []).map((d) => ({ id: d.id, key: d.key, label: d.label, unit: d.unit, target: d.target, lowerIsBetter: d.lower_is_better })),
     (entries ?? []).map((e) => ({ definition_id: e.definition_id, period: e.period, value_numeric: e.value_numeric, value_text: e.value_text })),
   );
 

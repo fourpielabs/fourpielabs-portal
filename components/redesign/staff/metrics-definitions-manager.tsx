@@ -26,6 +26,7 @@ export type MetricDef = {
   is_active: boolean;
   sort_order: number;
   target?: number | null;
+  lower_is_better?: boolean;
 };
 
 function slugifyKey(s: string) {
@@ -59,6 +60,7 @@ function DefDialog({
       unit: def?.unit ?? "number",
       is_active: def?.is_active ?? true,
       target: def?.target ?? null,
+      lower_is_better: def?.lower_is_better ?? false,
     },
   });
 
@@ -113,6 +115,13 @@ function DefDialog({
       <Controller control={control} name="target" render={({ field }) => (
         <Field label="Target (optional) — shown to the client as a pacing bar">
           <Input type="number" value={field.value == null ? "" : String(field.value)} onChange={(_, d) => field.onChange(d.value === "" ? null : Number(d.value))} placeholder="e.g. 100" />
+        </Field>
+      )} />
+      <Controller control={control} name="lower_is_better" render={({ field }) => (
+        <Field label="Lower is better (cost KPI) — a drop counts as a win; on track = at/below target">
+          <div style={{ display: "flex", height: 32, alignItems: "center" }}>
+            <Switch checked={field.value} onChange={(_, d) => field.onChange(d.checked)} label={field.value ? "Lower is better" : "Higher is better"} />
+          </div>
         </Field>
       )} />
       <Controller control={control} name="is_active" render={({ field }) => (
@@ -186,6 +195,7 @@ export function DefinitionsManager({
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
                   <span style={{ fontWeight: 600, color: fg1 }}>{d.label}</span>
                   <span style={{ ...pillBase, background: onDark ? "rgba(255,255,255,0.08)" : "#f1efe8", color: fg3 }}>{labelOf(METRIC_UNITS, d.unit)}</span>
+                  {d.lower_is_better && <span style={{ ...pillBase, background: onDark ? "rgba(245,158,11,0.16)" : "#fef3c7", color: onDark ? "#fcd34d" : "#92400e" }}>lower is better</span>}
                   {!d.is_active && <span style={{ ...pillBase, background: "transparent", color: fg3, border: `1px solid ${border}` }}>inactive</span>}
                 </div>
                 <code style={{ fontSize: 12, color: fg3 }}>{d.key}</code>

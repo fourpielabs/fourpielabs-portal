@@ -295,6 +295,10 @@ export const metricDefinitionSchema = z.object({
   // converts a blank input → null, so no schema transform is needed (keeping the
   // resolver's input/output types identical for react-hook-form).
   target: z.number().nullable().optional(),
+  // lower value = better outcome (a cost KPI): a DROP is a win, "on track" = at/below
+  // target. Mirrors is_active as a plain boolean (the form always supplies it; false =
+  // the more-is-better default for every metric in use today).
+  lower_is_better: z.boolean(),
 });
 export type MetricDefinitionValues = z.infer<typeof metricDefinitionSchema>;
 

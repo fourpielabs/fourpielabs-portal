@@ -16,6 +16,8 @@ export type ValueProofDef = {
   label: string;
   unit: string;
   target: number | null;
+  /** per-definition cost-KPI flag (staff-set). When absent, the known-key set decides. */
+  lowerIsBetter?: boolean;
 };
 export type ValueProofEntry = {
   definition_id: string;
@@ -54,9 +56,13 @@ export type ValueProof = {
   notes: ValueProofTextNote[];
 };
 
-// Lower value = better outcome (so a DROP is a win). Extensible by key.
+// Lower value = better outcome (so a DROP is a win). The per-definition
+// `lower_is_better` flag is authoritative; this known-key set is the FALLBACK so the
+// program cost KPIs (whose flag may be unset) keep pacing right — one code path:
+// `def.lowerIsBetter === true || isLowerBetter(def.key)`.
 const LOWER_IS_BETTER = new Set(["cost_per_lead", "blended_cost_per_lead"]);
 export const isLowerBetter = (key: string) => LOWER_IS_BETTER.has(key);
+const lowerIsBetterFor = (d: ValueProofDef) => d.lowerIsBetter === true || isLowerBetter(d.key);
 
 // Category grouping — ordered top-funnel → business outcome so the story reads well.
 const CATEGORY_ORDER: { key: string; label: string; keys: string[] }[] = [
@@ -102,7 +108,7 @@ export function buildValueProof(defs: ValueProofDef[], entries: ValueProofEntry[
     const prior = prevFilled?.value ?? null;
     const delta = current != null && prior != null ? current - prior : null;
     const deltaPct = delta != null && prior != null && prior !== 0 ? (delta / Math.abs(prior)) * 100 : null;
-    const lowerIsBetter = isLowerBetter(d.key);
+    const lowerIsBetter = lowerIsBetterFor(d);
     const improved = delta == null || delta === 0 ? (delta === 0 ? false : null) : lowerIsBetter ? delta < 0 : delta > 0;
     let pacingPct: number | null = null;
     let onTrack: boolean | null = null;
