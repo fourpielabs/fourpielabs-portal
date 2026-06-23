@@ -651,6 +651,11 @@ async function main() {
     rec("messaging", "client post to OWN internal thread DENIED", !!pInternal.error, pInternal.error?.message ?? "");
     const pCross = await client.rpc("post_message", { p_thread_id: pulseShared, p_body: "RLSPOST-cross" });
     rec("messaging", "client post to CROSS-CLIENT thread DENIED", !!pCross.error, pCross.error?.message ?? "");
+    // S1 rich path: the new body_rich field rides the SAME gated RPC — it can't reach internal.
+    const pRichInt = await client.rpc("post_message", { p_thread_id: premierInternal, p_body: "x", p_body_rich: "<p>x</p>" });
+    rec("messaging", "client post RICH to internal thread DENIED (body_rich can't bypass)", !!pRichInt.error, pRichInt.error?.message ?? "");
+    const pRichSh = await client.rpc("post_message", { p_thread_id: premierShared, p_body: "richhi", p_body_rich: "<p><strong>richhi</strong></p>" });
+    rec("messaging", "client post RICH to own shared allowed + stored", !pRichSh.error && (pRichSh.data as { body_rich?: string } | null)?.body_rich === "<p><strong>richhi</strong></p>", pRichSh.error?.message ?? "");
 
     // edit/delete (Batch 2): author-only + the internal boundary, BOTH ways
     const eInt = await client.rpc("edit_message", { p_message_id: mIntMsg, p_body: "hijack" });

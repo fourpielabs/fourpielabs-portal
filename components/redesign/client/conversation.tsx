@@ -1,41 +1,43 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Bold, Italic, ListPlus, Lock, Eye, Paperclip, Pencil, Search, Send, Smile, Trash2, X } from "lucide-react";
+import dynamic from "next/dynamic";
+import { CheckSquare, Eye, Lock, Paperclip, Pencil, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { formatRelative } from "@/lib/format";
 import { useReducedMotion } from "@/lib/motion";
-import { useMediaQuery } from "@/lib/use-media-query";
-import { Markdown } from "@/components/markdown";
-import { TaskCreateDialog } from "@/components/tasks/task-create-dialog";
 import { MessageAttachment } from "@/components/messaging/message-attachment";
 import type { TaskMember } from "@/lib/tasks";
 import {
   postMessageAction, getThreadMessagesAction, markThreadViewedAction, getThreadParticipantsAction,
-  editMessageAction, deleteMessageAction, searchThreadMessagesAction,
+  editMessageAction, deleteMessageAction, searchThreadMessagesAction, createTaskFromChatAction,
   type ThreadMessage, type ThreadParticipant,
 } from "@/lib/actions/messages";
 import { uploadMessageAttachmentAction } from "@/lib/actions/message-attachments";
-import {
-  Button, EmberButton, Popover, PopoverTrigger, PopoverSurface,
-  BaseModal, tokens,
-} from "@/components/redesign/ui";
+import { Button, EmberButton, BaseModal, tokens } from "@/components/redesign/ui";
+import { RichMessage } from "@/components/redesign/messaging/rich-message";
+import type { RichComposerApi } from "@/components/redesign/messaging/rich-composer";
 import { useRedesignMode } from "@/components/redesign/themed-fluent";
 import { ClientPageFrame } from "@/components/redesign/client/page-frame";
 
 export type ConversationTaskContext = { role: "client" | "staff"; clientId: string; members: TaskMember[] };
 
-const EMOJIS = ["👍","🙏","🎉","🔥","✅","👀","💪","😄","🙌","❤️","🚀","💡","📈","⭐","👏","🤝","✨","📝","⏰","💬","🎯","👋","🤔","😊","💯","🆗","📌","⚡","🥳","😅","🙂","🫶"];
+// TipTap is heavy → code-split: the editor chunk loads only when a Conversation mounts,
+// never in the entry/shell bundle. A light placeholder avoids layout shift while it loads.
+const RichComposer = dynamic(
+  () => import("@/components/redesign/messaging/rich-composer").then((m) => m.RichComposer),
+  { ssr: false, loading: () => <div style={{ minHeight: 96, borderRadius: 10, opacity: 0.5 }} aria-hidden /> },
+);
 
 /**
- * R2 client Conversation (re-skinned to Warm Obsidian, mode-aware). ALL logic is
- * preserved verbatim from components/messaging/conversation.tsx: optimistic own-message
- * append, incremental syncNew, realtime (RLS-scoped refetch — never the raw payload, the
- * internal boundary's third layer), @mentions, attachments, edit/delete, in-thread
- * search. Headerless surface; left-aligned ember composer toolbar; mobile "Write a
- * message…". The page only ever passes the client_shared thread, so internal content is
- * unreachable. Native <textarea>/<input> keep the cursor/selection logic intact.
+ * R2 client Conversation (Warm Obsidian, mode-aware). Track-5 S1: the markdown textarea is
+ * replaced by a TipTap WYSIWYG composer (code-split). Content coexistence: NEW messages
+ * store TipTap HTML in body_rich (rendered sanitized); OLD messages have body_rich=null and
+ * render their legacy markdown body via <Markdown> — no history re-encoding. The boundary is
+ * unchanged: the page only ever passes the client_shared thread, post/edit/delete go through
+ * the RLS+author-gated RPCs, realtime triggers an RLS-scoped refetch (never the raw payload),
+ * and create-task-from-chat posts to the current thread only (never internal).
  */
 export function Conversation({
   threadId, notifLink, currentUserId, currentUserName, initialMessages, audience, taskContext, bare = false,
@@ -46,24 +48,19 @@ export function Conversation({
   const { mode } = useRedesignMode();
   const onDark = mode === "dark";
   const [messages, setMessages] = useState<ThreadMessage[]>(initialMessages);
-  const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [taskBusy, setTaskBusy] = useState(false);
   const [, startTransition] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
-  const taRef = useRef<HTMLTextAreaElement>(null);
   const [participants, setParticipants] = useState<ThreadParticipant[]>([]);
-  const [mentions, setMentions] = useState<ThreadParticipant[]>([]);
-  const [mention, setMention] = useState<{ query: string; at: number } | null>(null);
-  const [mentionIndex, setMentionIndex] = useState(0);
   const reduced = useReducedMotion();
-  const coarse = useMediaQuery("(pointer: coarse)");
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<ThreadMessage[] | null>(null);
-  const [taskOpen, setTaskOpen] = useState(false);
+  const composerApi = useRef<RichComposerApi | null>(null);
 
   const messagesRef = useRef(initialMessages);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
@@ -91,11 +88,12 @@ export function Conversation({
   async function saveEdit(m: ThreadMessage) {
     const text = editBody.trim();
     if (!text) return;
-    const prevBody = m.body, prevEdited = m.editedAt;
-    setMessages((xs) => xs.map((x) => (x.id === m.id ? { ...x, body: text, editedAt: new Date().toISOString() } : x)));
+    const prev = { body: m.body, bodyRich: m.bodyRich, edited: m.editedAt };
+    // inline edit is plain-text → the edited message renders as plain (body_rich cleared).
+    setMessages((xs) => xs.map((x) => (x.id === m.id ? { ...x, body: text, bodyRich: null, editedAt: new Date().toISOString() } : x)));
     setEditingId(null); setEditBody("");
-    const res = await editMessageAction(m.id, text);
-    if (!res.ok) { setMessages((xs) => xs.map((x) => (x.id === m.id ? { ...x, body: prevBody, editedAt: prevEdited } : x))); toast.error("Couldn't edit", { description: res.error }); }
+    const res = await editMessageAction(m.id, text, null);
+    if (!res.ok) { setMessages((xs) => xs.map((x) => (x.id === m.id ? { ...x, body: prev.body, bodyRich: prev.bodyRich, editedAt: prev.edited } : x))); toast.error("Couldn't edit", { description: res.error }); }
   }
   async function deleteMessage(m: ThreadMessage) {
     removedRef.current.add(m.id);
@@ -105,20 +103,6 @@ export function Conversation({
     if (!res.ok) { removedRef.current.delete(m.id); setMessages(snapshot); toast.error("Couldn't delete", { description: res.error }); }
   }
 
-  function insertAtCursor(text: string) {
-    const ta = taRef.current;
-    const start = ta?.selectionStart ?? body.length, end = ta?.selectionEnd ?? body.length;
-    setBody(body.slice(0, start) + text + body.slice(end));
-    requestAnimationFrame(() => { const pos = start + text.length; ta?.focus(); ta?.setSelectionRange(pos, pos); });
-  }
-  function wrapSelection(marker: string) {
-    const ta = taRef.current;
-    const start = ta?.selectionStart ?? body.length, end = ta?.selectionEnd ?? body.length;
-    const hasSel = end > start, sel = body.slice(start, end);
-    setBody(body.slice(0, start) + marker + sel + marker + body.slice(end));
-    requestAnimationFrame(() => { ta?.focus(); if (hasSel) ta?.setSelectionRange(start + marker.length, start + marker.length + sel.length); else { const caret = start + marker.length; ta?.setSelectionRange(caret, caret); } });
-  }
-
   useEffect(() => { getThreadParticipantsAction(threadId).then(setParticipants).catch(() => {}); }, [threadId]);
   useEffect(() => {
     const q = search.trim();
@@ -126,27 +110,6 @@ export function Conversation({
     const t = setTimeout(() => { searchThreadMessagesAction(threadId, q).then(setSearchResults).catch(() => setSearchResults(null)); }, 300);
     return () => clearTimeout(t);
   }, [search, threadId]);
-
-  function detectMention(value: string, caret: number) {
-    const at = value.slice(0, caret).lastIndexOf("@");
-    if (at < 0) return null;
-    if (at > 0 && !/\s/.test(value[at - 1])) return null;
-    const token = value.slice(at + 1, caret);
-    if (/\s/.test(token)) return null;
-    return { query: token, at };
-  }
-  function onBodyChange(value: string, caret: number) { setBody(value); setMention(detectMention(value, caret)); setMentionIndex(0); }
-  function pickMention(p: ThreadParticipant) {
-    if (!mention) return;
-    const caret = taRef.current?.selectionStart ?? body.length;
-    const before = body.slice(0, mention.at), insert = `@${p.name} `;
-    const next = `${before}${insert}${body.slice(caret)}`;
-    setBody(next);
-    setMentions((xs) => (xs.some((m) => m.id === p.id) ? xs : [...xs, p]));
-    setMention(null);
-    requestAnimationFrame(() => { const pos = before.length + insert.length; taRef.current?.focus(); taRef.current?.setSelectionRange(pos, pos); });
-  }
-  const mentionMatches = mention ? participants.filter((p) => p.name.toLowerCase().includes(mention.query.toLowerCase())).slice(0, 6) : [];
 
   useEffect(() => { startTransition(() => { void markThreadViewedAction(threadId, notifLink); }); }, [threadId, notifLink, startTransition]);
 
@@ -167,11 +130,10 @@ export function Conversation({
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth" }); }, [messages.length, reduced]);
 
-  async function send() {
-    const text = body.trim();
+  async function send(payload: { text: string; html: string; mentionIds: string[] }) {
+    const text = payload.text.trim();
     if ((!text && !file) || sending) return;
     setSending(true);
-    const mentionedIds = mentions.filter((m) => text.includes(`@${m.name}`)).map((m) => m.id);
     let attachmentPath: string | undefined, attachmentName: string | undefined;
     if (file) {
       const fd = new FormData(); fd.append("file", file);
@@ -179,12 +141,39 @@ export function Conversation({
       if (!up.ok) { setSending(false); return toast.error("Attachment failed", { description: up.error }); }
       attachmentPath = up.path; attachmentName = up.name;
     }
-    const tmp: ThreadMessage = { id: `tmp-${Date.now()}`, body: text, authorId: currentUserId, authorName: currentUserName, authorRole: null, createdAt: new Date().toISOString(), attachmentName: attachmentName ?? null, editedAt: null };
-    setMessages((xs) => [...xs, tmp]); setBody(""); setMention(null); setFile(null);
-    const res = await postMessageAction(threadId, text, mentionedIds, attachmentPath, attachmentName);
+    const tmp: ThreadMessage = { id: `tmp-${Date.now()}`, body: text, bodyRich: payload.html || null, authorId: currentUserId, authorName: currentUserName, authorRole: null, createdAt: new Date().toISOString(), attachmentName: attachmentName ?? null, editedAt: null, linkedTask: null };
+    setMessages((xs) => [...xs, tmp]); composerApi.current?.clear(); setFile(null);
+    const res = await postMessageAction(threadId, text, payload.mentionIds, attachmentPath, attachmentName, payload.html || null);
     setSending(false);
-    if (!res.ok) { setMessages((xs) => xs.filter((m) => m.id !== tmp.id)); setBody(text); return toast.error("Message not sent", { description: res.error }); }
-    setMentions([]); void syncNew();
+    if (!res.ok) { setMessages((xs) => xs.filter((m) => m.id !== tmp.id)); composerApi.current?.setHTML(payload.html); return toast.error("Message not sent", { description: res.error }); }
+    void syncNew();
+  }
+
+  const taskBusyRef = useRef(false);
+  async function createTaskFromChat(text: string) {
+    const draft = text.trim();
+    if (!draft || taskBusyRef.current) return; // synchronous re-entry guard (no double-create)
+    taskBusyRef.current = true; setTaskBusy(true);
+    try {
+      const res = await createTaskFromChatAction(threadId, draft);
+      if (!res.ok) return void toast.error("Couldn't create task", { description: res.error });
+      composerApi.current?.clear();
+      toast.success("Task created.");
+      // The action returns the posted message + new task id, so attach the bubble directly —
+      // no refetch race (the realtime INSERT for the same message id de-dupes in syncNew). If the
+      // message already arrived via realtime, fold linkedTask onto it; otherwise append it.
+      const d = res.data;
+      if (d) {
+        const linked = { id: d.taskId, title: d.title, status: d.status };
+        setMessages((xs) =>
+          xs.some((m) => m.id === d.messageId)
+            ? xs.map((m) => (m.id === d.messageId ? { ...m, linkedTask: linked } : m))
+            : [...xs, { id: d.messageId, body: draft, bodyRich: null, authorId: currentUserId, authorName: currentUserName, authorRole: null, createdAt: new Date().toISOString(), attachmentName: null, editedAt: null, linkedTask: linked }],
+        );
+      }
+    } finally {
+      taskBusyRef.current = false; setTaskBusy(false);
+    }
   }
 
   // ----- styling tokens (mode-aware) -----
@@ -200,11 +189,8 @@ export function Conversation({
     ? { bg: onDark ? "rgba(245,158,11,0.12)" : "#fffaf0", bd: onDark ? "rgba(245,158,11,0.3)" : "#fde68a", fg: onDark ? "#fcd34d" : "#92400e", icon: <Lock size={13} />, label: "Internal — the client cannot see this" }
     : { bg: onDark ? "rgba(34,197,94,0.12)" : "#ecfdf5", bd: onDark ? "rgba(34,197,94,0.3)" : "#a7f3d0", fg: onDark ? "#86efac" : "#166534", icon: <Eye size={13} />, label: "Visible to the client" };
 
-  const toolBtn = (extra?: React.CSSProperties): React.CSSProperties => ({
-    display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 8, padding: "5px 10px",
-    fontSize: "0.78rem", fontWeight: 500, cursor: "pointer",
-    border: `1px solid ${border}`, background: surface, color: fg2, ...extra,
-  });
+  const taskHref = (taskId: string) =>
+    isClient ? `/tasks?task=${taskId}` : `/clients/${taskContext?.clientId}/tasks?task=${taskId}`;
 
   const inner = (
     <>
@@ -267,7 +253,17 @@ export function Conversation({
                     </div>
                   ) : (
                     <>
-                      {m.body && <div className="rd-msg" style={{ fontSize: 14, color: fg1 }}><Markdown>{m.body}</Markdown></div>}
+                      <RichMessage body={m.body} bodyRich={m.bodyRich} fg1={fg1} />
+                      {m.linkedTask && (
+                        <a href={taskHref(m.linkedTask.id)} className="rd-focus"
+                          style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8, borderRadius: 10, border: `1px solid ${onDark ? "rgba(245,158,11,0.35)" : "#fcd34d"}`, background: onDark ? "rgba(245,158,11,0.1)" : "#fffbeb", padding: "8px 10px", textDecoration: "none", color: fg1 }}>
+                          <CheckSquare size={16} color={onDark ? "#fcd34d" : "#b45309"} style={{ flexShrink: 0 }} />
+                          <span style={{ minWidth: 0 }}>
+                            <span style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: onDark ? "#fcd34d" : "#92400e" }}>Task</span>
+                            <span style={{ display: "block", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.linkedTask.title}</span>
+                          </span>
+                        </a>
+                      )}
                       {m.attachmentName && (m.id.startsWith("tmp-") ? (
                         <span style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 8, border: `1px solid ${border}`, background: surface2, padding: "6px 10px", fontSize: 12, fontWeight: 500, color: fg3 }}><Paperclip size={14} /> {m.attachmentName}</span>
                       ) : (
@@ -290,64 +286,35 @@ export function Conversation({
               {file && <span style={{ display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 999, border: `1px solid ${border}`, background: surface2, padding: "4px 10px", fontSize: 11, fontWeight: 500, color: fg1 }}><Paperclip size={12} /><span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</span><button type="button" onClick={() => setFile(null)} aria-label="Remove attachment" style={{ background: "none", border: "none", cursor: "pointer", color: fg3 }}><X size={12} /></button></span>}
             </div>
           )}
-          {/* left-aligned ember toolbar */}
-          <div style={{ marginBottom: 8, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-            <Popover positioning="above-start" withArrow>
-              <PopoverTrigger disableButtonEnhancement>
-                <button type="button" aria-label="Insert emoji" className="rd-focus rd-tool" style={toolBtn()}><Smile size={14} /> Emoji</button>
-              </PopoverTrigger>
-              <PopoverSurface style={{ padding: 8 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", gap: 2 }}>
-                  {EMOJIS.map((e) => <button key={e} type="button" onClick={() => insertAtCursor(e)} style={{ borderRadius: 6, border: "none", background: "none", cursor: "pointer", padding: 4, fontSize: 18, lineHeight: 1 }}>{e}</button>)}
-                </div>
-              </PopoverSurface>
-            </Popover>
-            <button type="button" onClick={() => wrapSelection("**")} aria-label="Bold (markdown **)" className="rd-focus rd-tool" style={toolBtn()}><Bold size={14} /> Bold</button>
-            <button type="button" onClick={() => wrapSelection("*")} aria-label="Italic (markdown *)" className="rd-focus rd-tool" style={toolBtn()}><Italic size={14} /> Italic</button>
-            <button type="button" onClick={() => fileRef.current?.click()} disabled={sending} aria-label="Attach a file" className="rd-focus rd-tool" style={toolBtn(sending ? { opacity: 0.5, cursor: "not-allowed" } : undefined)}><Paperclip size={14} /> Attach</button>
-            {taskContext && <button type="button" onClick={() => setTaskOpen(true)} aria-label="Create a task" className="rd-focus rd-tool" style={toolBtn()}><ListPlus size={14} /> Task</button>}
-          </div>
-          {taskContext && <TaskCreateDialog open={taskOpen} onOpenChange={setTaskOpen} role={taskContext.role} clientId={taskContext.clientId} members={taskContext.members} audience={audience} initialTitle={body.trim()} />}
           <input ref={fileRef} type="file" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); e.target.value = ""; }} />
-          <div style={{ position: "relative", display: "flex", alignItems: "flex-end", gap: 8 }}>
-            {mention && mentionMatches.length > 0 && (
-              <div role="listbox" aria-label="Mention a person" style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 4, width: 256, overflow: "hidden", borderRadius: 12, border: `1px solid ${border}`, background: surface, padding: "4px 0", boxShadow: "0 10px 30px -10px rgba(0,0,0,0.3)" }}>
-                {mentionMatches.map((p, i) => {
-                  const activeOpt = i === Math.min(mentionIndex, mentionMatches.length - 1);
-                  return (
-                    <button key={p.id} type="button" role="option" aria-selected={activeOpt} onMouseDown={(e) => { e.preventDefault(); pickMention(p); }} onMouseEnter={() => setMentionIndex(i)}
-                      style={{ display: "flex", width: "100%", alignItems: "center", gap: 6, padding: "6px 12px", textAlign: "left", fontSize: 14, border: "none", cursor: "pointer", background: activeOpt ? surface2 : "transparent", color: fg1 }}>
-                      <span style={{ color: fg3 }}>@</span>{p.name}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <textarea ref={taRef} value={body}
-              onChange={(e) => onBodyChange(e.target.value, e.target.selectionStart ?? e.target.value.length)}
-              onKeyUp={(e) => setMention(detectMention(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length))}
-              onClick={(e) => setMention(detectMention(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length))}
-              onBlur={() => setTimeout(() => setMention(null), 150)}
-              onKeyDown={(e) => {
-                if (mention && mentionMatches.length > 0) {
-                  if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex((i) => (i + 1) % mentionMatches.length); return; }
-                  if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex((i) => (i - 1 + mentionMatches.length) % mentionMatches.length); return; }
-                  if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); pickMention(mentionMatches[Math.min(mentionIndex, mentionMatches.length - 1)]); return; }
-                }
-                if (e.key === "Escape") setMention(null);
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void send(); }
-              }}
-              rows={2} placeholder={coarse ? "Write a message…" : "Write a message… (markdown · @ to mention · ⌘↵ to send)"}
-              style={{ flex: 1, resize: "none", borderRadius: 10, border: `1px solid ${border}`, background: surface, color: fg1, padding: "8px 12px", fontSize: 14, outline: "none", fontFamily: "var(--font-inter), Inter, sans-serif" }} />
-            <EmberButton onClick={() => void send()} loading={sending} disabled={!body.trim() && !file} icon={<Send size={16} />}>{internal ? "Post internal" : "Send"}</EmberButton>
-          </div>
+          <RichComposer
+            participants={participants}
+            placeholder="Write a message…  ( @ to mention · ⌘↵ to send )"
+            sending={sending}
+            canSendWhenEmpty={!!file}
+            sendLabel={internal ? "Post internal" : "Send"}
+            onSend={(p) => void send(p)}
+            onAttach={() => fileRef.current?.click()}
+            onTask={(text) => void createTaskFromChat(text)}
+            showTask={!!taskContext}
+            taskBusy={taskBusy}
+            registerApi={(api) => { composerApi.current = api; }}
+            border={border} surface={surface} fg1={fg1} fg2={fg2} onDark={onDark}
+          />
         </div>
       </div>
       <style>{`
-        .rd-tool:hover{border-color:#fcd34d !important;background:${onDark ? "rgba(245,158,11,0.12)" : "#fffaf0"} !important;color:${onDark ? "#fcd34d" : "#92400e"} !important;}
         .rd-msg :where(p,li,strong,h1,h2,h3,blockquote){color:${fg1} !important;}
-        .rd-msg code{color:${fg1} !important;background:${surface2} !important;}
+        .rd-msg p{margin:0 0 6px;} .rd-msg p:last-child{margin-bottom:0;}
+        .rd-msg ul,.rd-msg ol{margin:0 0 6px;padding-left:1.2rem;}
+        .rd-msg code{color:${fg1} !important;background:${surface2} !important;border-radius:4px;padding:1px 4px;}
         .rd-msg a{color:${onDark ? "#fcd34d" : "#b45309"} !important;}
+        .rd-mention{color:${onDark ? "#fcd34d" : "#b45309"};font-weight:600;}
+        .rd-richeditor{outline:none;font-size:14px;color:${fg1};min-height:44px;max-height:200px;overflow-y:auto;}
+        .rd-richeditor p{margin:0 0 4px;} .rd-richeditor p:last-child{margin-bottom:0;}
+        .rd-richeditor ul,.rd-richeditor ol{margin:0;padding-left:1.2rem;}
+        .rd-richeditor .rd-mention{color:${onDark ? "#fcd34d" : "#b45309"};font-weight:600;}
+        .rd-richeditor p.is-editor-empty:first-child::before{content:attr(data-placeholder);float:left;color:${fg3};pointer-events:none;height:0;}
       `}</style>
     </>
   );
@@ -363,8 +330,7 @@ function ClientFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Per-message delete confirm — owns its own open state so it standardizes on BaseModal
-// (the old inline Fluent DialogTrigger was self-contained). Delete wiring unchanged.
+// Per-message delete confirm — owns its own open state (BaseModal). Delete wiring unchanged.
 function DeleteMessageButton({ color, onConfirm }: { color: string; onConfirm: () => void }) {
   const [open, setOpen] = useState(false);
   return (
