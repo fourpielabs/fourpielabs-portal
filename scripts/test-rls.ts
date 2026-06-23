@@ -289,6 +289,27 @@ async function main() {
   const sharedMsgId = sharedMsg!.id as string;
   const internalMsgId = internalMsg!.id as string;
 
+  // --- reactions fixtures (S3) ---------------------------------------------
+  // a reaction on the SHARED message (client SHOULD see) and one on the INTERNAL message
+  // (client must NEVER see/count — its existence can't leak the internal message). Service-
+  // role insert (bypasses RLS); denormalized cols mirror the parent message.
+  await admin.from("messages").delete().eq("client_id", pulseId).like("body", "RLS%");
+  const { data: pulseMsg } = await admin.from("messages").insert({ thread_id: pulseShared, client_id: pulseId, thread_type: "client_shared", body: "RLSMSG-pulse" }).select("id").single();
+  const pulseSharedMsgId = pulseMsg!.id as string; // a message the premier client can't see (cross-client react target)
+  await admin.from("messages").delete().eq("client_id", unId).like("body", "RLS%");
+  const { data: unMsg } = await admin.from("messages").insert({ thread_id: unShared, client_id: unId, thread_type: "client_shared", body: "RLSMSG-unassigned" }).select("id").single();
+  const unSharedMsgId = unMsg!.id as string; // a message demo-team is NOT assigned to (unassigned react target)
+  await admin.from("message_reactions").delete().eq("client_id", premierId);
+  await admin.from("message_reactions").insert([
+    { message_id: sharedMsgId, thread_id: premierShared, client_id: premierId, thread_type: "client_shared", user_id: teamUid, emoji: "👍" },
+    { message_id: internalMsgId, thread_id: premierInternal, client_id: premierId, thread_type: "internal", user_id: teamUid, emoji: "🔥" },
+  ]);
+  // a SOFT-DELETED shared message with a reaction: the reaction must mirror the message's
+  // visibility (invisible once the message is soft-deleted) — the deleted_at mirror.
+  const { data: delMsg } = await admin.from("messages").insert({ thread_id: premierShared, client_id: premierId, thread_type: "client_shared", body: "RLSMSG-shared-deleted", deleted_at: new Date().toISOString() }).select("id").single();
+  const deletedMsgId = delMsg!.id as string;
+  await admin.from("message_reactions").insert({ message_id: deletedMsgId, thread_id: premierShared, client_id: premierId, thread_type: "client_shared", user_id: teamUid, emoji: "🎯" });
+
   // --- edit/delete fixtures (Batch 2) --------------------------------------
   // messages with KNOWN authors: client-authored shared (edit + delete), a
   // staff-authored shared (author-only checks), and a staff-authored internal
@@ -679,6 +700,34 @@ async function main() {
     const rDirect = await client.from("messages").insert({ thread_id: premierShared, client_id: premierId, thread_type: "client_shared", body: "RLSREPLY-direct", parent_message_id: sharedMsgId }).select("id");
     rec("messaging", "client direct-INSERT reply DENIED", !!rDirect.error || (rDirect.data?.length ?? 0) === 0, rDirect.error?.code ?? `${rDirect.data?.length ?? 0} rows`);
 
+    // S3 emoji reactions — both leaks closed: WRITE (can't react to internal) + READ/EXISTENCE
+    // (can't see/count internal reactions).
+    // READ: client sees the SHARED-message reaction but NOT the internal one (existence boundary).
+    const rxShared = await client.from("message_reactions").select("emoji").eq("message_id", sharedMsgId);
+    rec("messaging", "client reads reactions on OWN shared message", (rxShared.data?.length ?? 0) === 1, `${rxShared.data?.length ?? 0} rows`);
+    const rxInt = await client.from("message_reactions").select("emoji").eq("message_id", internalMsgId);
+    rec("messaging", "client CANNOT read/count reactions on internal message (existence boundary)", (rxInt.data?.length ?? 0) === 0, `${rxInt.data?.length ?? 0} rows`);
+    const rxAll = await client.from("message_reactions").select("thread_type");
+    rec("messaging", "client sees NO internal-thread reactions at all", !(rxAll.data ?? []).some((r) => r.thread_type === "internal"), `${(rxAll.data ?? []).filter((r) => r.thread_type === "internal").length} internal`);
+    const rxCross = await client.from("message_reactions").select("id").eq("client_id", pulseId);
+    rec("messaging", "client cross-client reactions 0", (rxCross.data?.length ?? 0) === 0, `${rxCross.data?.length ?? 0} rows`);
+    const rxDeleted = await client.from("message_reactions").select("id").eq("message_id", deletedMsgId);
+    rec("messaging", "reaction on a SOFT-DELETED message not readable (visibility mirror)", (rxDeleted.data?.length ?? 0) === 0, `${rxDeleted.data?.length ?? 0} rows`);
+    // WRITE: react to OWN shared message allowed (toggle add then remove); react to INTERNAL denied.
+    const rxAdd = await client.rpc("toggle_reaction", { p_message_id: sharedMsgId, p_emoji: "🎉" });
+    rec("messaging", "client reacts to OWN shared message allowed (added)", !rxAdd.error && rxAdd.data === true, rxAdd.error?.message ?? `added=${rxAdd.data}`);
+    const rxRemove = await client.rpc("toggle_reaction", { p_message_id: sharedMsgId, p_emoji: "🎉" });
+    rec("messaging", "client toggles OWN reaction off (removed)", !rxRemove.error && rxRemove.data === false, rxRemove.error?.message ?? `added=${rxRemove.data}`);
+    const rxIntWrite = await client.rpc("toggle_reaction", { p_message_id: internalMsgId, p_emoji: "👍" });
+    rec("messaging", "client react to INTERNAL message DENIED (boundary)", !!rxIntWrite.error, rxIntWrite.error?.message ?? "");
+    const rxCrossWrite = await client.rpc("toggle_reaction", { p_message_id: pulseSharedMsgId, p_emoji: "👍" });
+    rec("messaging", "client react to CROSS-CLIENT message DENIED", !!rxCrossWrite.error, rxCrossWrite.error?.message ?? "");
+    // direct table writes denied (no client write policy — RPC is the sole path)
+    const rxDi = await client.from("message_reactions").insert({ message_id: sharedMsgId, thread_id: premierShared, client_id: premierId, thread_type: "client_shared", user_id: clientUid, emoji: "👍" }).select("id");
+    rec("messaging", "client direct-INSERT reaction DENIED", !!rxDi.error || (rxDi.data?.length ?? 0) === 0, rxDi.error?.code ?? `${rxDi.data?.length ?? 0} rows`);
+    const rxDd = await client.from("message_reactions").delete().eq("message_id", sharedMsgId).select("id");
+    rec("messaging", "client direct-DELETE reaction DENIED", !!rxDd.error || (rxDd.data?.length ?? 0) === 0, rxDd.error?.code ?? `${rxDd.data?.length ?? 0} rows`);
+
     // edit/delete (Batch 2): author-only + the internal boundary, BOTH ways
     const eInt = await client.rpc("edit_message", { p_message_id: mIntMsg, p_body: "hijack" });
     rec("messaging", "client edit INTERNAL message DENIED (boundary)", !!eInt.error, eInt.error?.message ?? "");
@@ -972,6 +1021,17 @@ async function main() {
     rec("team→assigned", "staff reply in internal thread allowed + stays internal",
       !tIntReply.error && tIntReplyRow?.thread_type === "internal" && tIntReplyRow?.parent_message_id === mIntMsg, tIntReply.error?.message ?? "");
 
+    // S3 reactions: assigned staff can react in BOTH threads + READ internal reactions.
+    const tRxShared = await team.rpc("toggle_reaction", { p_message_id: sharedMsgId, p_emoji: "✅" });
+    rec("team→assigned", "staff reacts in shared thread allowed", !tRxShared.error, tRxShared.error?.message ?? "");
+    const tRxInt = await team.rpc("toggle_reaction", { p_message_id: internalMsgId, p_emoji: "👀" });
+    rec("team→assigned", "staff reacts in internal thread allowed", !tRxInt.error, tRxInt.error?.message ?? "");
+    const tRxRead = await team.from("message_reactions").select("emoji").eq("message_id", internalMsgId);
+    rec("team→assigned", "staff reads internal reactions (assigned)", (tRxRead.data?.length ?? 0) > 0, `${tRxRead.data?.length ?? 0} rows`);
+    // unique (message_id,user_id,emoji): a second direct insert of the same triple violates
+    const tDup = await admin.from("message_reactions").insert({ message_id: sharedMsgId, thread_id: premierShared, client_id: premierId, thread_type: "client_shared", user_id: teamUid, emoji: "👍" }).select("id");
+    rec("team→assigned", "UNIQUE prevents double-react (same emoji)", !!tDup.error, tDup.error?.code ?? "inserted (BAD)");
+
     // edit/delete (Batch 2): the client's soft-deleted message must be absent from
     // STAFF reads too (proves the policy change vanishes it everywhere AND that the
     // staff is_assigned scoping still works); staff are author-only as well.
@@ -990,6 +1050,10 @@ async function main() {
     rec("team→unassigned", "post denied", !!tunPost.error, tunPost.error?.message ?? "");
     const tunMark = await team.rpc("mark_thread_read", { p_thread_id: unShared });
     rec("team→unassigned", "mark_thread_read denied", !!tunMark.error, tunMark.error?.message ?? "");
+    const tunRx = await team.rpc("toggle_reaction", { p_message_id: unSharedMsgId, p_emoji: "👍" });
+    rec("team→unassigned", "react to unassigned message denied", !!tunRx.error, tunRx.error?.message ?? "");
+    const tunRxRead = await team.from("message_reactions").select("id").eq("client_id", unId);
+    rec("team→unassigned", "read unassigned reactions 0", (tunRxRead.data?.length ?? 0) === 0, `${tunRxRead.data?.length ?? 0} rows`);
   }
   // tasks: ASSIGNED team reads + writes premier's; UNASSIGNED team neither
   {
@@ -1104,6 +1168,10 @@ async function main() {
     rec("anon", "edit_message denied", !!anEdit.error);
     const anDel = await anon.rpc("delete_message", { p_message_id: mClientEdit });
     rec("anon", "delete_message denied", !!anDel.error);
+    const anRx = await anon.from("message_reactions").select("id");
+    rec("anon", "read reactions 0", (anRx.data?.length ?? 0) === 0, `${anRx.data?.length ?? 0} rows`);
+    const anRxToggle = await anon.rpc("toggle_reaction", { p_message_id: sharedMsgId, p_emoji: "👍" });
+    rec("anon", "toggle_reaction denied", !!anRxToggle.error);
     const anNotes = await anon.from("notifications").select("id");
     rec("anon", "read notifications 0", (anNotes.data?.length ?? 0) === 0, `${anNotes.data?.length ?? 0} rows`);
     const anUpd = await anon.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", clientNoteId).select("id");
