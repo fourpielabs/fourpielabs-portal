@@ -39,6 +39,7 @@ export function RichComposer({
   onSend,
   onAttach,
   onTask,
+  onType,
   showTask,
   taskBusy,
   registerApi,
@@ -56,6 +57,7 @@ export function RichComposer({
   onSend: (p: RichSendPayload) => void;
   onAttach: () => void;
   onTask?: (text: string) => void;
+  onType?: () => void;
   showTask?: boolean;
   taskBusy?: boolean;
   registerApi?: (api: RichComposerApi) => void;
@@ -82,6 +84,7 @@ export function RichComposer({
 
   const editor = useEditor({
     immediatelyRender: false, // SSR-safe (avoids hydration mismatch)
+    onUpdate: () => onType?.(), // emit a typing signal to the parent (debounced there)
     extensions: [
       StarterKit.configure({ heading: { levels: [3] } }),
       Placeholder.configure({ placeholder }),
@@ -143,7 +146,7 @@ export function RichComposer({
   React.useEffect(() => {
     if (!editor || !registerApi) return;
     registerApi({
-      clear: () => editor.commands.clearContent(true),
+      clear: () => editor.commands.clearContent(false), // emitUpdate=false → no spurious onType after send
       focus: () => editor.commands.focus("end"),
       setHTML: (html: string) => editor.commands.setContent(html || "<p></p>", false),
     });

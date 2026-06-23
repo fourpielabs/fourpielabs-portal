@@ -16,6 +16,7 @@ import {
   type ThreadMessage, type ThreadParticipant,
 } from "@/lib/actions/messages";
 import { getThreadReactionsAction, toggleReactionAction, type ReactionGroup } from "@/lib/actions/reactions";
+import { setTypingAction, getActiveTypersAction, getThreadReadsAction, type Typer, type ReadReceipt } from "@/lib/actions/presence";
 import { uploadMessageAttachmentAction } from "@/lib/actions/message-attachments";
 import { Button, EmberButton, BaseModal, Popover, PopoverTrigger, PopoverSurface, tokens } from "@/components/redesign/ui";
 import { RichMessage } from "@/components/redesign/messaging/rich-message";
@@ -62,6 +63,8 @@ export function Conversation({
   const [editBody, setEditBody] = useState("");
   const [replyingTo, setReplyingTo] = useState<ThreadMessage | null>(null);
   const [reactions, setReactions] = useState<Record<string, ReactionGroup[]>>({});
+  const [typers, setTypers] = useState<Typer[]>([]);
+  const [reads, setReads] = useState<ReadReceipt[]>([]);
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<ThreadMessage[] | null>(null);
   const composerApi = useRef<RichComposerApi | null>(null);
@@ -130,6 +133,21 @@ export function Conversation({
     void refetchReactions(); // reconcile with the authoritative, RLS-scoped state
   }
 
+  // Typing + read receipts ride RLS-filtered postgres_changes (typing_states / thread_reads),
+  // NOT presence/broadcast — so a client physically can't receive an internal-thread signal
+  // (the SELECT policies mirror messages; the events are RLS-filtered; INSERT/UPDATE only).
+  const refetchTypers = () => getActiveTypersAction(threadId).then(setTypers).catch(() => {});
+  const refetchReads = () => getThreadReadsAction(threadId).then(setReads).catch(() => {});
+  // Signal "typing" at most once per interval while the user edits (the RPC upserts; the row
+  // expires by timestamp, so no stop-signal/DELETE is needed).
+  const lastTypingSent = useRef(0);
+  function onType() {
+    const now = Date.now();
+    if (now - lastTypingSent.current < 2500) return;
+    lastTypingSent.current = now;
+    void setTypingAction(threadId);
+  }
+
   function startEdit(m: ThreadMessage) { setEditingId(m.id); setEditBody(m.body); }
   function cancelEdit() { setEditingId(null); setEditBody(""); }
   async function saveEdit(m: ThreadMessage) {
@@ -152,7 +170,13 @@ export function Conversation({
 
   useEffect(() => { getThreadParticipantsAction(threadId).then(setParticipants).catch(() => {}); }, [threadId]);
   useEffect(() => {
+    lastTypingSent.current = 0; // reset the typing debounce if this component is reused across threads
     void refetchReactions();
+    void refetchReads();
+    void refetchTypers();
+    // re-poll typers so stale "is typing…" clears even without a new event
+    const iv = setInterval(() => void refetchTypers(), 3000);
+    return () => clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
   useEffect(() => {
@@ -183,6 +207,13 @@ export function Conversation({
           if (contentChanged) void fullRefetch();
           void refetchReactions();
         })
+        // typing + read receipts: INSERT/UPDATE only, RLS-filtered + scoped to this thread, so a
+        // client NEVER receives an internal-thread typing/seen event. The payload is never
+        // rendered — each event triggers an RLS-scoped refetch (the proven third boundary layer).
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "typing_states", filter: `thread_id=eq.${threadId}` }, () => void refetchTypers())
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "typing_states", filter: `thread_id=eq.${threadId}` }, () => void refetchTypers())
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "thread_reads", filter: `thread_id=eq.${threadId}` }, () => void refetchReads())
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "thread_reads", filter: `thread_id=eq.${threadId}` }, () => void refetchReads())
         .subscribe();
     });
     return () => { if (channel) supabase.removeChannel(channel); };
@@ -255,6 +286,19 @@ export function Conversation({
 
   const taskHref = (taskId: string) =>
     isClient ? `/tasks?task=${taskId}` : `/clients/${taskContext?.clientId}/tasks?task=${taskId}`;
+
+  // S4 read receipts: the viewer's LAST own (non-temp) message, and who has read up to it. Only
+  // reads RLS-scoped to this thread are in `reads`, so a client never sees internal seen-state.
+  const lastOwnMsgId = useMemo(
+    () => [...messages].reverse().find((m) => m.authorId === currentUserId && !m.id.startsWith("tmp-"))?.id ?? null,
+    [messages, currentUserId],
+  );
+  const seenBy = useMemo(() => {
+    const m = messages.find((x) => x.id === lastOwnMsgId);
+    if (!m) return [] as ReadReceipt[];
+    const at = new Date(m.createdAt).getTime();
+    return reads.filter((r) => new Date(r.lastReadAt).getTime() >= at);
+  }, [messages, lastOwnMsgId, reads]);
 
   // S2 threading: group replies under their top-level ROOT. A message is a root when it has
   // no parent OR its parent isn't in the visible set (a soft-deleted or not-yet-loaded parent
@@ -363,6 +407,12 @@ export function Conversation({
                   ))}
                 </div>
               )}
+              {m.id === lastOwnMsgId && seenBy.length > 0 && (
+                <div style={{ marginTop: 4, textAlign: "right", fontSize: 10.5, fontWeight: 500, color: fg3 }}>
+                  <Eye size={10} style={{ verticalAlign: "-1px", marginRight: 3 }} />
+                  Seen by {seenBy.map((s) => s.name).join(", ")} · <span className="rd-tnum">{formatRelative(seenBy.reduce((a, b) => (new Date(a.lastReadAt).getTime() > new Date(b.lastReadAt).getTime() ? a : b)).lastReadAt)}</span>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -418,6 +468,14 @@ export function Conversation({
               </div>
             );
           })}
+          {typers.length > 0 && (
+            <div aria-live="polite" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: fg3, paddingInlineStart: 2 }}>
+              <span className="rd-typing-dots" aria-hidden style={{ display: "inline-flex", gap: 2 }}>
+                <span /><span /><span />
+              </span>
+              {typers.length === 1 ? `${typers[0].name} is typing…` : typers.length === 2 ? `${typers[0].name} and ${typers[1].name} are typing…` : `${typers[0].name} and ${typers.length - 1} others are typing…`}
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
 
@@ -449,6 +507,7 @@ export function Conversation({
             onSend={(p) => void send(p)}
             onAttach={() => fileRef.current?.click()}
             onTask={(text) => void createTaskFromChat(text)}
+            onType={onType}
             showTask={!!taskContext}
             taskBusy={taskBusy}
             registerApi={(api) => { composerApi.current = api; }}
@@ -472,6 +531,10 @@ export function Conversation({
         .rd-bubble:hover .rd-react-bar,.rd-bubble:focus-within .rd-react-bar{opacity:1;}
         @media (hover:none){.rd-bubble .rd-react-bar{opacity:1;}}
         @media (prefers-reduced-motion:reduce){.rd-bubble .rd-react-bar{transition:none;}}
+        .rd-typing-dots span{width:5px;height:5px;border-radius:999px;background:${fg3};display:inline-block;animation:rd-typing 1.2s infinite ease-in-out;}
+        .rd-typing-dots span:nth-child(2){animation-delay:.18s;} .rd-typing-dots span:nth-child(3){animation-delay:.36s;}
+        @keyframes rd-typing{0%,60%,100%{opacity:.25;transform:translateY(0);}30%{opacity:1;transform:translateY(-2px);}}
+        @media (prefers-reduced-motion:reduce){.rd-typing-dots span{animation:none;opacity:.6;}}
       `}</style>
     </>
   );

@@ -310,6 +310,21 @@ async function main() {
   const deletedMsgId = delMsg!.id as string;
   await admin.from("message_reactions").insert({ message_id: deletedMsgId, thread_id: premierShared, client_id: premierId, thread_type: "client_shared", user_id: teamUid, emoji: "🎯" });
 
+  // --- typing + read-receipt fixtures (S4) ---------------------------------
+  // a staff typing signal + read receipt on the SHARED thread (client SHOULD see) and on the
+  // INTERNAL thread (client must NEVER see — a live internal signal would leak internal activity).
+  const nowIso = new Date().toISOString();
+  await admin.from("typing_states").delete().eq("user_id", teamUid).in("thread_id", [premierShared, premierInternal]);
+  await admin.from("typing_states").insert([
+    { thread_id: premierShared, user_id: teamUid, client_id: premierId, thread_type: "client_shared", updated_at: nowIso },
+    { thread_id: premierInternal, user_id: teamUid, client_id: premierId, thread_type: "internal", updated_at: nowIso },
+  ]);
+  await admin.from("thread_reads").delete().eq("user_id", teamUid).in("thread_id", [premierShared, premierInternal]);
+  await admin.from("thread_reads").insert([
+    { thread_id: premierShared, user_id: teamUid, client_id: premierId, thread_type: "client_shared", last_read_at: nowIso },
+    { thread_id: premierInternal, user_id: teamUid, client_id: premierId, thread_type: "internal", last_read_at: nowIso },
+  ]);
+
   // --- edit/delete fixtures (Batch 2) --------------------------------------
   // messages with KNOWN authors: client-authored shared (edit + delete), a
   // staff-authored shared (author-only checks), and a staff-authored internal
@@ -728,6 +743,34 @@ async function main() {
     const rxDd = await client.from("message_reactions").delete().eq("message_id", sharedMsgId).select("id");
     rec("messaging", "client direct-DELETE reaction DENIED", !!rxDd.error || (rxDd.data?.length ?? 0) === 0, rxDd.error?.code ?? `${rxDd.data?.length ?? 0} rows`);
 
+    // S4 typing indicators — a client gets ZERO internal typing signal (read + write + existence).
+    const tyShared = await client.from("typing_states").select("user_id").eq("thread_id", premierShared);
+    rec("messaging", "client reads typing on OWN shared thread", (tyShared.data?.length ?? 0) === 1, `${tyShared.data?.length ?? 0} rows`);
+    const tyInt = await client.from("typing_states").select("user_id").eq("thread_id", premierInternal);
+    rec("messaging", "client CANNOT read typing on internal thread (realtime existence boundary)", (tyInt.data?.length ?? 0) === 0, `${tyInt.data?.length ?? 0} rows`);
+    const tyAll = await client.from("typing_states").select("thread_type");
+    rec("messaging", "client sees NO internal typing at all", !(tyAll.data ?? []).some((r) => r.thread_type === "internal"), `${(tyAll.data ?? []).filter((r) => r.thread_type === "internal").length} internal`);
+    const tyWriteShared = await client.rpc("set_typing", { p_thread_id: premierShared });
+    rec("messaging", "client set_typing OWN shared allowed", !tyWriteShared.error, tyWriteShared.error?.message ?? "");
+    const tyWriteInt = await client.rpc("set_typing", { p_thread_id: premierInternal });
+    rec("messaging", "client set_typing internal DENIED (boundary)", !!tyWriteInt.error, tyWriteInt.error?.message ?? "");
+    const tyWriteCross = await client.rpc("set_typing", { p_thread_id: pulseShared });
+    rec("messaging", "client set_typing cross-client DENIED", !!tyWriteCross.error, tyWriteCross.error?.message ?? "");
+    const tyDi = await client.from("typing_states").insert({ thread_id: premierShared, user_id: clientUid, client_id: premierId, thread_type: "client_shared" }).select("user_id");
+    rec("messaging", "client direct-INSERT typing DENIED", !!tyDi.error || (tyDi.data?.length ?? 0) === 0, tyDi.error?.code ?? `${tyDi.data?.length ?? 0} rows`);
+
+    // S4 read receipts — a client sees staff's seen-state on the SHARED thread, NEVER internal.
+    const rdShared = await client.from("thread_reads").select("user_id, last_read_at").eq("thread_id", premierShared);
+    rec("messaging", "client reads staff seen-state on OWN shared thread", (rdShared.data ?? []).some((r) => r.user_id === teamUid), `${rdShared.data?.length ?? 0} rows`);
+    const rdInt = await client.from("thread_reads").select("user_id").eq("thread_id", premierInternal);
+    rec("messaging", "client CANNOT read seen-state on internal thread (boundary)", (rdInt.data?.length ?? 0) === 0, `${rdInt.data?.length ?? 0} rows`);
+    const rdAll = await client.from("thread_reads").select("thread_type");
+    rec("messaging", "client sees NO internal seen-state at all", !(rdAll.data ?? []).some((r) => r.thread_type === "internal"), `${(rdAll.data ?? []).filter((r) => r.thread_type === "internal").length} internal`);
+    const rdCross = await client.from("thread_reads").select("user_id").eq("client_id", pulseId);
+    rec("messaging", "client cross-client seen-state 0", (rdCross.data?.length ?? 0) === 0, `${rdCross.data?.length ?? 0} rows`);
+    const rdDi = await client.from("thread_reads").insert({ thread_id: premierShared, user_id: clientUid, client_id: premierId, thread_type: "client_shared" }).select("user_id");
+    rec("messaging", "client direct-INSERT thread_reads DENIED", !!rdDi.error || (rdDi.data?.length ?? 0) === 0, rdDi.error?.code ?? `${rdDi.data?.length ?? 0} rows`);
+
     // edit/delete (Batch 2): author-only + the internal boundary, BOTH ways
     const eInt = await client.rpc("edit_message", { p_message_id: mIntMsg, p_body: "hijack" });
     rec("messaging", "client edit INTERNAL message DENIED (boundary)", !!eInt.error, eInt.error?.message ?? "");
@@ -762,11 +805,13 @@ async function main() {
     const mrCross = await client.rpc("mark_thread_read", { p_thread_id: pulseShared });
     rec("messaging", "client mark_thread_read cross-client DENIED", !!mrCross.error, mrCross.error?.message ?? "");
 
-    // reads OWN thread_reads only (admin seeds a team read row that must stay hidden)
-    await admin.from("thread_reads").upsert({ thread_id: premierShared, user_id: teamUid });
-    const { data: trRows } = await client.from("thread_reads").select("user_id");
-    const onlyOwn = (trRows ?? []).length >= 1 && (trRows ?? []).every((r) => r.user_id === clientUid);
-    rec("messaging", "client reads OWN thread_reads only", onlyOwn, `${trRows?.length ?? 0} row(s)`);
+    // S4: read receipts WIDEN thread_reads so a client sees co-participants' SHARED seen-state
+    // (own + staff on the shared thread) — but NEVER any internal seen-state (the boundary holds).
+    await admin.from("thread_reads").upsert({ thread_id: premierShared, user_id: teamUid, client_id: premierId, thread_type: "client_shared" });
+    const { data: trRows } = await client.from("thread_reads").select("user_id, thread_type");
+    const noInternal = !(trRows ?? []).some((r) => r.thread_type === "internal");
+    const seesStaffShared = (trRows ?? []).some((r) => r.user_id === teamUid);
+    rec("messaging", "client thread_reads: sees shared co-participants, NEVER internal", noInternal && seesStaffShared, `${trRows?.length ?? 0} row(s), internal=${(trRows ?? []).filter((r) => r.thread_type === "internal").length}`);
   }
 
   // --- notifications: client (own-only read/update; no direct insert) -------
@@ -1032,6 +1077,16 @@ async function main() {
     const tDup = await admin.from("message_reactions").insert({ message_id: sharedMsgId, thread_id: premierShared, client_id: premierId, thread_type: "client_shared", user_id: teamUid, emoji: "👍" }).select("id");
     rec("team→assigned", "UNIQUE prevents double-react (same emoji)", !!tDup.error, tDup.error?.code ?? "inserted (BAD)");
 
+    // S4 typing + seen: assigned staff signal/read in BOTH threads (incl. internal).
+    const tTyShared = await team.rpc("set_typing", { p_thread_id: premierShared });
+    rec("team→assigned", "staff set_typing in shared thread allowed", !tTyShared.error, tTyShared.error?.message ?? "");
+    const tTyInt = await team.rpc("set_typing", { p_thread_id: premierInternal });
+    rec("team→assigned", "staff set_typing in internal thread allowed", !tTyInt.error, tTyInt.error?.message ?? "");
+    const tTyRead = await team.from("typing_states").select("user_id").eq("thread_id", premierInternal);
+    rec("team→assigned", "staff reads internal typing (assigned)", (tTyRead.data?.length ?? 0) > 0, `${tTyRead.data?.length ?? 0} rows`);
+    const tRdRead = await team.from("thread_reads").select("user_id").eq("thread_id", premierInternal);
+    rec("team→assigned", "staff reads internal seen-state (assigned)", (tRdRead.data?.length ?? 0) > 0, `${tRdRead.data?.length ?? 0} rows`);
+
     // edit/delete (Batch 2): the client's soft-deleted message must be absent from
     // STAFF reads too (proves the policy change vanishes it everywhere AND that the
     // staff is_assigned scoping still works); staff are author-only as well.
@@ -1052,6 +1107,12 @@ async function main() {
     rec("team→unassigned", "mark_thread_read denied", !!tunMark.error, tunMark.error?.message ?? "");
     const tunRx = await team.rpc("toggle_reaction", { p_message_id: unSharedMsgId, p_emoji: "👍" });
     rec("team→unassigned", "react to unassigned message denied", !!tunRx.error, tunRx.error?.message ?? "");
+    const tunTy = await team.rpc("set_typing", { p_thread_id: unShared });
+    rec("team→unassigned", "set_typing on unassigned thread denied", !!tunTy.error, tunTy.error?.message ?? "");
+    const tunTyRead = await team.from("typing_states").select("user_id").eq("client_id", unId);
+    rec("team→unassigned", "read unassigned typing 0", (tunTyRead.data?.length ?? 0) === 0, `${tunTyRead.data?.length ?? 0} rows`);
+    const tunRdRead = await team.from("thread_reads").select("user_id").eq("client_id", unId);
+    rec("team→unassigned", "read unassigned seen-state 0", (tunRdRead.data?.length ?? 0) === 0, `${tunRdRead.data?.length ?? 0} rows`);
     const tunRxRead = await team.from("message_reactions").select("id").eq("client_id", unId);
     rec("team→unassigned", "read unassigned reactions 0", (tunRxRead.data?.length ?? 0) === 0, `${tunRxRead.data?.length ?? 0} rows`);
   }
@@ -1172,6 +1233,12 @@ async function main() {
     rec("anon", "read reactions 0", (anRx.data?.length ?? 0) === 0, `${anRx.data?.length ?? 0} rows`);
     const anRxToggle = await anon.rpc("toggle_reaction", { p_message_id: sharedMsgId, p_emoji: "👍" });
     rec("anon", "toggle_reaction denied", !!anRxToggle.error);
+    const anTy = await anon.from("typing_states").select("user_id");
+    rec("anon", "read typing 0", (anTy.data?.length ?? 0) === 0, `${anTy.data?.length ?? 0} rows`);
+    const anTyW = await anon.rpc("set_typing", { p_thread_id: premierShared });
+    rec("anon", "set_typing denied", !!anTyW.error);
+    const anRd = await anon.from("thread_reads").select("user_id");
+    rec("anon", "read thread_reads 0", (anRd.data?.length ?? 0) === 0, `${anRd.data?.length ?? 0} rows`);
     const anNotes = await anon.from("notifications").select("id");
     rec("anon", "read notifications 0", (anNotes.data?.length ?? 0) === 0, `${anNotes.data?.length ?? 0} rows`);
     const anUpd = await anon.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", clientNoteId).select("id");
