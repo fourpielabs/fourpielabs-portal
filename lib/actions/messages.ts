@@ -23,6 +23,7 @@ export type ThreadMessage = {
   createdAt: string;
   attachmentName: string | null;
   editedAt: string | null;
+  parentMessageId: string | null; // S2 threaded replies: null → top-level; else replies under this parent
   linkedTask: { id: string; title: string; status: string } | null; // task-bubble (source_message_id)
 };
 
@@ -50,16 +51,21 @@ export async function postMessageAction(
   attachmentPath?: string | null,
   attachmentName?: string | null,
   bodyRich?: string | null,
+  parentMessageId?: string | null,
 ): Promise<Result<{ id: string }>> {
   const me = await requireProfile();
   const supabase = await createClient();
 
+  // p_parent_message_id (S2): a reply. The RPC re-validates the parent is in the SAME
+  // thread, so a client can never reply to (or cross into) the internal thread — even if
+  // an internal message id is passed here, the thread mismatch is rejected server-side.
   const { data, error } = await supabase.rpc("post_message", {
     p_thread_id: threadId,
     p_body: body,
     p_attachment_path: attachmentPath ?? null,
     p_attachment_name: attachmentName ?? null,
     p_body_rich: bodyRich ?? null,
+    p_parent_message_id: parentMessageId ?? null,
   });
   if (error) return { ok: false, error: error.message };
 
@@ -179,7 +185,7 @@ export async function getThreadMessagesAction(threadId: string, after?: string):
   // RLS-scoped (the boundary holds — we never render the raw realtime payload).
   let q = supabase
     .from("messages")
-    .select("id, body, body_rich, author_id, created_at, attachment_name, edited_at")
+    .select("id, body, body_rich, author_id, created_at, attachment_name, edited_at, parent_message_id")
     .eq("thread_id", threadId);
   if (after) q = q.gt("created_at", after);
   const { data } = await q.order("created_at", { ascending: true });
@@ -207,6 +213,7 @@ type RawMessage = {
   created_at: string;
   attachment_name: string | null;
   edited_at: string | null;
+  parent_message_id: string | null;
 };
 
 /** Resolve author names (service-role; the caller can already see these rows) + map. */
@@ -230,6 +237,7 @@ async function hydrateMessages(msgs: RawMessage[], taskByMsg?: Map<string, { id:
       createdAt: m.created_at,
       attachmentName: m.attachment_name ?? null,
       editedAt: m.edited_at ?? null,
+      parentMessageId: m.parent_message_id ?? null,
       linkedTask: taskByMsg?.get(m.id) ?? null,
     };
   });
@@ -249,7 +257,7 @@ export async function searchThreadMessagesAction(threadId: string, query: string
   const supabase = await createClient();
   const { data } = await supabase
     .from("messages")
-    .select("id, body, body_rich, author_id, created_at, attachment_name, edited_at")
+    .select("id, body, body_rich, author_id, created_at, attachment_name, edited_at, parent_message_id")
     .eq("thread_id", threadId)
     .ilike("body", `%${esc}%`)
     .order("created_at", { ascending: false })

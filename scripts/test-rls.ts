@@ -657,6 +657,28 @@ async function main() {
     const pRichSh = await client.rpc("post_message", { p_thread_id: premierShared, p_body: "richhi", p_body_rich: "<p><strong>richhi</strong></p>" });
     rec("messaging", "client post RICH to own shared allowed + stored", !pRichSh.error && (pRichSh.data as { body_rich?: string } | null)?.body_rich === "<p><strong>richhi</strong></p>", pRichSh.error?.message ?? "");
 
+    // S2 threaded replies: a reply inherits its parent's thread; a client can NEVER reply to
+    // (or cross into) the internal thread, even passing an internal message id as the parent.
+    type ReplyRow = { thread_type?: string; parent_message_id?: string; client_id?: string } | null;
+    const rOwn = await client.rpc("post_message", { p_thread_id: premierShared, p_body: "RLSREPLY-own", p_parent_message_id: sharedMsgId });
+    rec("messaging", "client reply to OWN shared parent allowed", !rOwn.error, rOwn.error?.message ?? "");
+    const rOwnRow = rOwn.data as ReplyRow;
+    rec("messaging", "reply INHERITS parent thread (client_shared + parent + client_id)",
+      !rOwn.error && rOwnRow?.thread_type === "client_shared" && rOwnRow?.parent_message_id === sharedMsgId && rOwnRow?.client_id === premierId,
+      `${rOwnRow?.thread_type}/${rOwnRow?.parent_message_id === sharedMsgId}`);
+    // parent in the INTERNAL thread, posting into the client's OWN shared thread → cross-thread → DENIED
+    const rIntParent = await client.rpc("post_message", { p_thread_id: premierShared, p_body: "RLSREPLY-intparent", p_parent_message_id: internalMsgId });
+    rec("messaging", "client reply with INTERNAL parent into shared thread DENIED (boundary)", !!rIntParent.error, rIntParent.error?.message ?? "");
+    // reply directly INTO the internal thread (even with the matching internal parent) → access DENIED
+    const rIntThread = await client.rpc("post_message", { p_thread_id: premierInternal, p_body: "RLSREPLY-intthread", p_parent_message_id: internalMsgId });
+    rec("messaging", "client reply INTO internal thread DENIED (boundary)", !!rIntThread.error, rIntThread.error?.message ?? "");
+    // reply with a CROSS-CLIENT parent → cross-thread → DENIED
+    const rCrossParent = await client.rpc("post_message", { p_thread_id: premierShared, p_body: "RLSREPLY-cross", p_parent_message_id: mIntMsg });
+    rec("messaging", "client reply with cross-thread parent DENIED", !!rCrossParent.error, rCrossParent.error?.message ?? "");
+    // direct INSERT of a reply row (bypassing the RPC) still denied — no client write policy
+    const rDirect = await client.from("messages").insert({ thread_id: premierShared, client_id: premierId, thread_type: "client_shared", body: "RLSREPLY-direct", parent_message_id: sharedMsgId }).select("id");
+    rec("messaging", "client direct-INSERT reply DENIED", !!rDirect.error || (rDirect.data?.length ?? 0) === 0, rDirect.error?.code ?? `${rDirect.data?.length ?? 0} rows`);
+
     // edit/delete (Batch 2): author-only + the internal boundary, BOTH ways
     const eInt = await client.rpc("edit_message", { p_message_id: mIntMsg, p_body: "hijack" });
     rec("messaging", "client edit INTERNAL message DENIED (boundary)", !!eInt.error, eInt.error?.message ?? "");
@@ -943,6 +965,12 @@ async function main() {
     rec("team→assigned", "post to shared thread allowed", !tShared.error, tShared.error?.message ?? "");
     const tInternal = await team.rpc("post_message", { p_thread_id: premierInternal, p_body: "RLS team internal" });
     rec("team→assigned", "post to internal thread allowed", !tInternal.error, tInternal.error?.message ?? "");
+    // S2: staff reply in the INTERNAL thread stays internal (inherits parent thread) — the
+    // reply is invisible to the client (the boundary holds on the new reply path too).
+    const tIntReply = await team.rpc("post_message", { p_thread_id: premierInternal, p_body: "RLS team internal reply", p_parent_message_id: mIntMsg });
+    const tIntReplyRow = tIntReply.data as { thread_type?: string; parent_message_id?: string } | null;
+    rec("team→assigned", "staff reply in internal thread allowed + stays internal",
+      !tIntReply.error && tIntReplyRow?.thread_type === "internal" && tIntReplyRow?.parent_message_id === mIntMsg, tIntReply.error?.message ?? "");
 
     // edit/delete (Batch 2): the client's soft-deleted message must be absent from
     // STAFF reads too (proves the policy change vanishes it everywhere AND that the
