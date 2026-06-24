@@ -5,12 +5,46 @@ import { useEditor, EditorContent, useEditorState, type Editor } from "@tiptap/r
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Mention from "@tiptap/extension-mention";
-import { Bold, Italic, List, ListPlus, Paperclip, Send, Smile } from "lucide-react";
+import { PluginKey } from "@tiptap/pm/state";
+import { Bold, Italic, List, ListPlus, Paperclip, Send, Smile, FolderKanban, CheckSquare, Package } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverSurface, EmberButton, tokens } from "@/components/redesign/ui";
+import { searchLinkablesAction, type LinkableEntity } from "@/lib/actions/search";
 import type { ThreadParticipant } from "@/lib/actions/messages";
 
 export type RichSendPayload = { text: string; html: string; mentionIds: string[] };
 export type RichComposerApi = { clear: () => void; focus: () => void; setHTML: (html: string) => void };
+
+// S5 # deep-link: a second mention-like inline node for entity references. Stored as
+// `<span class="rd-entity" data-type="TYPE" data-id="UUID">#title</span>` in body_rich; the
+// title rides only in body_rich (re-resolved per-viewer server-side, never trusted on render).
+// renderText is GENERIC (#type, no title) so the plaintext `body` carries no entity title.
+const EntityLink = Mention.extend({
+  name: "entityLink",
+  addAttributes() {
+    return {
+      id: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute("data-id") },
+      type: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute("data-type") },
+      label: { default: null, parseHTML: (el: HTMLElement) => (el.textContent || "").replace(/^#/, "") },
+    };
+  },
+  // round-trip the AUTHORED chip when body_rich is re-parsed (e.g. composer restore on send
+  // failure). Only authored chips carry data-type+data-id; the server-resolved render form
+  // (data-href / --gone) is never re-parsed into the composer.
+  parseHTML() {
+    return [{ tag: "span.rd-entity[data-id][data-type]" }];
+  },
+  renderHTML({ node }) {
+    return ["span", { class: "rd-entity", "data-type": String(node.attrs.type ?? ""), "data-id": String(node.attrs.id ?? "") }, `#${node.attrs.label ?? ""}`];
+  },
+  renderText({ node }) {
+    return `#${node.attrs.type ?? "link"}`;
+  },
+});
+
+const ENTITY_ICON = { project: FolderKanban, task: CheckSquare, deliverable: Package } as const;
+// distinct suggestion plugin key — the default Mention suggestion uses a SHARED MentionPluginKey,
+// so a second Mention-based extension MUST set its own key or the two suggestion plugins collide.
+const ENTITY_SUGGESTION_KEY = new PluginKey("entityLinkSuggestion");
 
 const EMOJIS = ["👍","🙏","🎉","🔥","✅","👀","💪","😄","🙌","❤️","🚀","💡","📈","⭐","👏","🤝","✨","📝","⏰","💬","🎯","👋","🤔","😊","💯","🆗","📌","⚡","🥳","😅","🙂","🫶"];
 
@@ -42,6 +76,7 @@ export function RichComposer({
   onType,
   showTask,
   taskBusy,
+  linkClientId,
   registerApi,
   border,
   surface,
@@ -60,6 +95,7 @@ export function RichComposer({
   onType?: () => void;
   showTask?: boolean;
   taskBusy?: boolean;
+  linkClientId?: string; // S5: the thread's client — scopes the # entity-link suggestions (RLS-bounded)
   registerApi?: (api: RichComposerApi) => void;
   border: string;
   surface: string;
@@ -81,6 +117,15 @@ export function RichComposer({
   // command in refs (set by onStart/onUpdate) so keyboard nav can act on them.
   const itemsRef = React.useRef<{ id: string; name: string }[]>([]);
   const commandRef = React.useRef<((x: { id: string; label: string }) => void) | null>(null);
+
+  // S5 entity-link (#) suggestion state — a parallel bridge to the @ one above.
+  const [entityState, setEntityState] = React.useState<{ items: LinkableEntity[]; rect: DOMRect | null } | null>(null);
+  const entitySelIdx = React.useRef(0);
+  const [entitySelView, setEntitySelView] = React.useState(0);
+  const entityItemsRef = React.useRef<LinkableEntity[]>([]);
+  const entityCommandRef = React.useRef<((x: { id: string; label: string; type: string }) => void) | null>(null);
+  const linkClientIdRef = React.useRef(linkClientId);
+  React.useEffect(() => { linkClientIdRef.current = linkClientId; }, [linkClientId]);
 
   const editor = useEditor({
     immediatelyRender: false, // SSR-safe (avoids hydration mismatch)
@@ -128,6 +173,47 @@ export function RichComposer({
               return false;
             },
             onExit: () => { itemsRef.current = []; commandRef.current = null; setMentionState(null); },
+          }),
+        },
+      }),
+      // S5: the # entity-link picker — RLS-scoped to the thread's client (searchLinkablesAction
+      // runs as the caller, so a client is only ever offered their own visible items).
+      EntityLink.configure({
+        suggestion: {
+          char: "#",
+          pluginKey: ENTITY_SUGGESTION_KEY,
+          items: async ({ query }) => {
+            const cid = linkClientIdRef.current;
+            if (!cid) return [];
+            return await searchLinkablesAction(cid, query).catch(() => [] as LinkableEntity[]);
+          },
+          render: () => ({
+            onStart: (props) => {
+              const items = props.items as LinkableEntity[];
+              entityItemsRef.current = items; entityCommandRef.current = props.command as never;
+              entitySelIdx.current = 0; setEntitySelView(0);
+              setEntityState({ items, rect: props.clientRect?.() ?? null });
+            },
+            onUpdate: (props) => {
+              const items = props.items as LinkableEntity[];
+              entityItemsRef.current = items; entityCommandRef.current = props.command as never;
+              entitySelIdx.current = 0; setEntitySelView(0);
+              setEntityState({ items, rect: props.clientRect?.() ?? null });
+            },
+            onKeyDown: (props) => {
+              const items = entityItemsRef.current;
+              if (!items.length) return false;
+              if (props.event.key === "ArrowDown") { entitySelIdx.current = (entitySelIdx.current + 1) % items.length; setEntitySelView(entitySelIdx.current); return true; }
+              if (props.event.key === "ArrowUp") { entitySelIdx.current = (entitySelIdx.current - 1 + items.length) % items.length; setEntitySelView(entitySelIdx.current); return true; }
+              if (props.event.key === "Enter" || props.event.key === "Tab") {
+                const it = items[Math.min(entitySelIdx.current, items.length - 1)];
+                entityCommandRef.current?.({ id: it.id, label: it.title, type: it.type });
+                return true;
+              }
+              if (props.event.key === "Escape") { setEntityState(null); return true; }
+              return false;
+            },
+            onExit: () => { entityItemsRef.current = []; entityCommandRef.current = null; setEntityState(null); },
           }),
         },
       }),
@@ -214,6 +300,32 @@ export function RichComposer({
                   style={{ display: "flex", width: "100%", alignItems: "center", gap: 6, padding: "6px 12px", textAlign: "left", fontSize: 14, border: "none", cursor: "pointer", background: on ? (onDark ? "rgba(255,255,255,0.06)" : "#f4f4f0") : "transparent", color: fg1 }}>
                   <span style={{ color: tokens.colorNeutralForeground3 }}>@</span>{p.name}
                 </button>
+              );
+            })}
+          </div>
+        )}
+
+        {entityState && entityState.items.length > 0 && (
+          <div role="listbox" aria-label="Link a project, task, or deliverable"
+            style={{ position: "fixed", zIndex: 50, left: entityState.rect?.left ?? 0, top: (entityState.rect?.top ?? 0) - 8, transform: "translateY(-100%)", width: 300, maxHeight: 280, overflowY: "auto", borderRadius: 12, border: `1px solid ${border}`, background: surface, padding: "4px 0", boxShadow: "0 10px 30px -10px rgba(0,0,0,0.3)" }}>
+            {entityState.items.map((e, i) => {
+              const on = i === Math.min(entitySelView, entityState.items.length - 1);
+              const prev = entityState.items[i - 1];
+              const Icon = ENTITY_ICON[e.type];
+              const groupLabel = { project: "Projects", task: "Tasks", deliverable: "Deliverables" }[e.type];
+              return (
+                <React.Fragment key={`${e.type}:${e.id}`}>
+                  {(!prev || prev.type !== e.type) && (
+                    <div style={{ padding: "6px 12px 2px", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: tokens.colorNeutralForeground3 }}>{groupLabel}</div>
+                  )}
+                  <button type="button" role="option" aria-selected={on}
+                    onMouseDown={(ev) => { ev.preventDefault(); entityCommandRef.current?.({ id: e.id, label: e.title, type: e.type }); }}
+                    onMouseEnter={() => { entitySelIdx.current = i; setEntitySelView(i); }}
+                    style={{ display: "flex", width: "100%", alignItems: "center", gap: 8, padding: "6px 12px", textAlign: "left", fontSize: 14, border: "none", cursor: "pointer", background: on ? (onDark ? "rgba(255,255,255,0.06)" : "#f4f4f0") : "transparent", color: fg1 }}>
+                    <Icon size={14} style={{ flexShrink: 0, color: onDark ? "#fcd34d" : "#b45309" }} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.title}</span>
+                  </button>
+                </React.Fragment>
               );
             })}
           </div>

@@ -8,6 +8,8 @@ import { notify, clientUserIds, staffUserIds } from "@/lib/notifications";
 import { messageRecipientIds } from "@/lib/notification-recipients";
 import { createTaskAction } from "@/lib/actions/tasks-client";
 import { staffCreateTaskAction } from "@/lib/actions/tasks";
+import DOMPurify from "isomorphic-dompurify";
+import { RICH_SANITIZE } from "@/lib/messaging/sanitize";
 
 type Result<T = undefined> =
   | { ok: true; data?: T }
@@ -178,7 +180,7 @@ export async function getThreadParticipantsAction(threadId: string): Promise<Thr
  * resolved via the service role (the caller can already see these messages).
  */
 export async function getThreadMessagesAction(threadId: string, after?: string): Promise<ThreadMessage[]> {
-  await requireProfile();
+  const me = await requireProfile();
   const supabase = await createClient();
   // `after` → incremental fetch (only messages newer than the caller's latest), so
   // a realtime event appends ~1 row instead of re-loading the whole thread. Still
@@ -202,7 +204,7 @@ export async function getThreadMessagesAction(threadId: string, after?: string):
       .in("source_message_id", ids);
     for (const t of tasks ?? []) if (t.source_message_id) taskByMsg.set(t.source_message_id as string, { id: t.id as string, title: t.title as string, status: t.status as string });
   }
-  return hydrateMessages(rows, taskByMsg);
+  return hydrateMessages(rows, taskByMsg, supabase, me.role);
 }
 
 type RawMessage = {
@@ -216,8 +218,16 @@ type RawMessage = {
   parent_message_id: string | null;
 };
 
-/** Resolve author names (service-role; the caller can already see these rows) + map. */
-async function hydrateMessages(msgs: RawMessage[], taskByMsg?: Map<string, { id: string; title: string; status: string }>): Promise<ThreadMessage[]> {
+type SupaClient = Awaited<ReturnType<typeof createClient>>;
+
+/** Resolve author names (service-role; the caller can already see these rows) + map, then
+ * resolve any S5 #-deep-links PER-VIEWER through the caller's RLS-scoped client. */
+async function hydrateMessages(
+  msgs: RawMessage[],
+  taskByMsg: Map<string, { id: string; title: string; status: string }> | undefined,
+  supabase: SupaClient,
+  role: "admin" | "team" | "client",
+): Promise<ThreadMessage[]> {
   const authorIds = [...new Set(msgs.map((m) => m.author_id).filter(Boolean))] as string[];
   const nameById = new Map<string, { name: string; role: ThreadMessage["authorRole"] }>();
   if (authorIds.length) {
@@ -225,7 +235,7 @@ async function hydrateMessages(msgs: RawMessage[], taskByMsg?: Map<string, { id:
     const { data: profs } = await admin.from("profiles").select("id, full_name, email, role").in("id", authorIds);
     for (const p of profs ?? []) nameById.set(p.id, { name: p.full_name ?? p.email ?? "Unknown", role: p.role });
   }
-  return msgs.map((m) => {
+  const out: ThreadMessage[] = msgs.map((m) => {
     const a = m.author_id ? nameById.get(m.author_id) : null;
     return {
       id: m.id,
@@ -241,6 +251,90 @@ async function hydrateMessages(msgs: RawMessage[], taskByMsg?: Map<string, { id:
       linkedTask: taskByMsg?.get(m.id) ?? null,
     };
   });
+  await resolveEntityLinks(out, supabase, role); // S5: rewrite #-chips per-viewer (RLS-scoped)
+  return out;
+}
+
+// ── S5 # deep-link resolution ───────────────────────────────────────────────
+// A stored #-chip is `<span class="rd-entity" data-type="TYPE" data-id="UUID">#title</span>`
+// (the inner title is the AUTHOR's; NEVER trusted on render). For EACH viewer we re-resolve the
+// referenced entity THROUGH THE CALLER'S RLS-scoped client: if the viewer may see it, render a
+// deep-link chip with the CURRENT DB title; if not (cross-client, or a staff-only/internal item),
+// render a generic "unavailable" chip that leaks NO title/detail.
+//
+// SECURITY: we parse with a real DOM (DOMPurify on jsdom) and rewrite EVERY element carrying
+// class "rd-entity" — regardless of attribute order, id format, or inner markup — clearing its
+// children and attributes and setting the resolved title via textContent. So a non-canonical or
+// hand-crafted chip (a malicious author posting raw body_rich) CANNOT smuggle an author-supplied
+// title past the per-viewer access check. A stored link can never bypass access.
+const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+function entityHref(type: string, id: string, clientId: string | null, role: "admin" | "team" | "client"): string {
+  const base = role === "client" ? "" : `/clients/${clientId ?? ""}`;
+  if (type === "task") return `${base}/tasks?task=${id}`;        // task has ?task= deep-focus both sides
+  if (type === "deliverable") return `${base}/deliverables`;     // no per-item focus → list route
+  return role === "client" ? "/dashboard" : `${base}/projects`;  // project: client board on /dashboard
+}
+
+type EntityEl = { nodeType: number; getAttribute: (n: string) => string | null; setAttribute: (n: string, v: string) => void; removeAttribute: (n: string) => void; attributes: { name: string }[]; firstChild: unknown | null; removeChild: (c: unknown) => void; textContent: string };
+const isEntityEl = (node: unknown): node is EntityEl => {
+  const n = node as EntityEl | null;
+  return !!n && n.nodeType === 1 && typeof n.getAttribute === "function" && (n.getAttribute("class") || "").split(/\s+/).includes("rd-entity");
+};
+
+async function resolveEntityLinks(msgs: ThreadMessage[], supabase: SupaClient, role: "admin" | "team" | "client"): Promise<void> {
+  const targets = msgs.filter((m) => m.bodyRich && m.bodyRich.includes("rd-entity"));
+  if (!targets.length) return;
+
+  // NOTE: DOMPurify hooks are global, but each add→(sync sanitize loop)→remove region below
+  // contains NO await, so Node runs it atomically — no concurrent request can interleave while a
+  // hook is registered (the only await is BETWEEN the two regions, with no hook active).
+  // pass 1 — collect refs via the DOM (authoritative: every rd-entity element, any shape)
+  const byType: Record<string, Set<string>> = { project: new Set(), task: new Set(), deliverable: new Set() };
+  const collect = (node: unknown) => {
+    if (!isEntityEl(node)) return;
+    const type = node.getAttribute("data-type") ?? "", id = node.getAttribute("data-id") ?? "";
+    if (byType[type] && UUID_RE.test(id)) byType[type].add(id);
+  };
+  DOMPurify.addHook("afterSanitizeElements", collect as never);
+  for (const m of targets) DOMPurify.sanitize(m.bodyRich as string, RICH_SANITIZE);
+  DOMPurify.removeHook("afterSanitizeElements");
+
+  // resolve accessible entities THROUGH RLS (the caller's client) — inaccessible ones (cross-client,
+  // staff-only, or a bogus id) simply don't come back, so they render "unavailable".
+  const resolved = new Map<string, { title: string; clientId: string | null }>();
+  const tables: Record<string, string> = { project: "projects", task: "tasks", deliverable: "deliverables" };
+  await Promise.all(
+    Object.keys(byType).map(async (type) => {
+      const ids = [...byType[type]];
+      if (!ids.length) return;
+      const { data } = await supabase.from(tables[type]).select("id, title, client_id").in("id", ids);
+      for (const r of data ?? []) resolved.set(`${type}:${r.id}`, { title: r.title as string, clientId: (r.client_id as string) ?? null });
+    }),
+  );
+
+  // pass 2 — rewrite EVERY rd-entity element. textContent escapes the title automatically; the
+  // author's original children + attributes are removed, so nothing author-controlled survives.
+  const rewrite = (node: unknown) => {
+    if (!isEntityEl(node)) return;
+    const type = node.getAttribute("data-type") ?? "", id = node.getAttribute("data-id") ?? "";
+    const r = resolved.get(`${type}:${id}`);
+    while (node.firstChild) node.removeChild(node.firstChild);
+    for (const a of [...node.attributes]) node.removeAttribute(a.name);
+    if (r) {
+      node.setAttribute("class", "rd-entity");
+      node.setAttribute("data-href", entityHref(type, id, r.clientId, role)); // internal route only
+      node.setAttribute("role", "link");
+      node.setAttribute("tabindex", "0");
+      node.textContent = `#${r.title}`;
+    } else {
+      node.setAttribute("class", "rd-entity rd-entity--gone");
+      node.textContent = "#unavailable";
+    }
+  };
+  DOMPurify.addHook("afterSanitizeElements", rewrite as never);
+  for (const m of targets) m.bodyRich = DOMPurify.sanitize(m.bodyRich as string, RICH_SANITIZE);
+  DOMPurify.removeHook("afterSanitizeElements");
 }
 
 /**
@@ -250,7 +344,7 @@ async function hydrateMessages(msgs: RawMessage[], taskByMsg?: Map<string, { id:
  * the internal boundary holds (a client gets nothing for an internal thread id).
  */
 export async function searchThreadMessagesAction(threadId: string, query: string): Promise<ThreadMessage[]> {
-  await requireProfile();
+  const me = await requireProfile();
   const q = query.trim();
   if (q.length < 2) return [];
   const esc = q.replace(/[%_\\]/g, (c) => `\\${c}`); // literal — escape ILIKE wildcards
@@ -262,7 +356,7 @@ export async function searchThreadMessagesAction(threadId: string, query: string
     .ilike("body", `%${esc}%`)
     .order("created_at", { ascending: false })
     .limit(20);
-  return hydrateMessages((data ?? []) as RawMessage[]);
+  return hydrateMessages((data ?? []) as RawMessage[], undefined, supabase, me.role);
 }
 
 /**

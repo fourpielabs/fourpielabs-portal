@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { CheckSquare, CornerDownRight, Eye, Lock, Paperclip, Pencil, Reply, Search, Smile, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -50,6 +51,17 @@ export function Conversation({
 }) {
   const { mode } = useRedesignMode();
   const onDark = mode === "dark";
+  const router = useRouter();
+  // S5: deep-link chips render as spans with data-href (set ONLY by the server resolver, from an
+  // internal route). Delegate clicks/Enter to navigate — guard to internal paths defensively.
+  const onEntityActivate = (e: React.MouseEvent | React.KeyboardEvent) => {
+    const el = (e.target as HTMLElement).closest?.(".rd-entity[data-href]") as HTMLElement | null;
+    if (!el) return;
+    const href = el.getAttribute("data-href");
+    if (!href || !href.startsWith("/")) return;
+    e.preventDefault();
+    router.push(href);
+  };
   const [messages, setMessages] = useState<ThreadMessage[]>(initialMessages);
   const [sending, setSending] = useState(false);
   const [taskBusy, setTaskBusy] = useState(false);
@@ -449,7 +461,8 @@ export function Conversation({
         </div>
 
         {/* message list */}
-        <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 12, background: internal ? (onDark ? "rgba(245,158,11,0.05)" : "#fffdf5") : "transparent" }}>
+        <div onClick={onEntityActivate} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onEntityActivate(e); }}
+          style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 12, background: internal ? (onDark ? "rgba(245,158,11,0.05)" : "#fffdf5") : "transparent" }}>
           {messages.length === 0 ? (
             <p style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: fg3 }}>No messages yet — say hello.</p>
           ) : roots.map((m) => {
@@ -500,7 +513,7 @@ export function Conversation({
           <input ref={fileRef} type="file" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); e.target.value = ""; }} />
           <RichComposer
             participants={participants}
-            placeholder="Write a message…  ( @ to mention · ⌘↵ to send )"
+            placeholder="Write a message…  ( @ to mention · # to link · ⌘↵ to send )"
             sending={sending}
             canSendWhenEmpty={!!file}
             sendLabel={internal ? "Post internal" : "Send"}
@@ -510,6 +523,7 @@ export function Conversation({
             onType={onType}
             showTask={!!taskContext}
             taskBusy={taskBusy}
+            linkClientId={taskContext?.clientId}
             registerApi={(api) => { composerApi.current = api; }}
             border={border} surface={surface} fg1={fg1} fg2={fg2} onDark={onDark}
           />
@@ -531,6 +545,10 @@ export function Conversation({
         .rd-bubble:hover .rd-react-bar,.rd-bubble:focus-within .rd-react-bar{opacity:1;}
         @media (hover:none){.rd-bubble .rd-react-bar{opacity:1;}}
         @media (prefers-reduced-motion:reduce){.rd-bubble .rd-react-bar{transition:none;}}
+        .rd-msg .rd-entity,.rd-richeditor .rd-entity{color:${onDark ? "#fcd34d" : "#b45309"} !important;font-weight:600;text-decoration:none;border-radius:6px;padding:0 3px;background:${onDark ? "rgba(245,158,11,0.12)" : "#fff7ed"};}
+        .rd-msg .rd-entity[data-href]{cursor:pointer;}
+        .rd-msg .rd-entity[data-href]:hover{text-decoration:underline;}
+        .rd-msg .rd-entity--gone{color:${fg3} !important;background:${surface2} !important;font-weight:500;font-style:italic;cursor:default;}
         .rd-typing-dots span{width:5px;height:5px;border-radius:999px;background:${fg3};display:inline-block;animation:rd-typing 1.2s infinite ease-in-out;}
         .rd-typing-dots span:nth-child(2){animation-delay:.18s;} .rd-typing-dots span:nth-child(3){animation-delay:.36s;}
         @keyframes rd-typing{0%,60%,100%{opacity:.25;transform:translateY(0);}30%{opacity:1;transform:translateY(-2px);}}

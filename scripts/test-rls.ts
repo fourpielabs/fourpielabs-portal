@@ -325,6 +325,19 @@ async function main() {
     { thread_id: premierInternal, user_id: teamUid, client_id: premierId, thread_type: "internal", last_read_at: nowIso },
   ]);
 
+  // --- # deep-link (S5) fixtures -------------------------------------------
+  // linkable entities for the # suggestion + per-viewer resolution boundary: premier project +
+  // visible deliverable (client CAN link/resolve), premier staff-only deliverable (client CANNOT),
+  // pulse cross-client project + deliverable (client CANNOT). The same RLS that scopes the
+  // suggestion (searchLinkablesAction, as-caller) scopes the resolution.
+  await admin.from("projects").delete().like("title", "RLSLINK%");
+  await admin.from("deliverables").delete().like("title", "RLSLINK%");
+  const projPremier = (await admin.from("projects").insert({ client_id: premierId, title: "RLSLINK premier project" }).select("id").single()).data!.id as string;
+  const projPulse = (await admin.from("projects").insert({ client_id: pulseId, title: "RLSLINK pulse project" }).select("id").single()).data!.id as string;
+  const delivVisible = (await admin.from("deliverables").insert({ client_id: premierId, title: "RLSLINK premier visible", type: "other", status: "pending", visible_to_client: true }).select("id").single()).data!.id as string;
+  const delivHidden = (await admin.from("deliverables").insert({ client_id: premierId, title: "RLSLINK premier hidden", type: "other", status: "pending", visible_to_client: false }).select("id").single()).data!.id as string;
+  const delivPulse = (await admin.from("deliverables").insert({ client_id: pulseId, title: "RLSLINK pulse deliverable", type: "other", status: "pending", visible_to_client: true }).select("id").single()).data!.id as string;
+
   // --- edit/delete fixtures (Batch 2) --------------------------------------
   // messages with KNOWN authors: client-authored shared (edit + delete), a
   // staff-authored shared (author-only checks), and a staff-authored internal
@@ -770,6 +783,29 @@ async function main() {
     rec("messaging", "client cross-client seen-state 0", (rdCross.data?.length ?? 0) === 0, `${rdCross.data?.length ?? 0} rows`);
     const rdDi = await client.from("thread_reads").insert({ thread_id: premierShared, user_id: clientUid, client_id: premierId, thread_type: "client_shared" }).select("user_id");
     rec("messaging", "client direct-INSERT thread_reads DENIED", !!rdDi.error || (rdDi.data?.length ?? 0) === 0, rdDi.error?.code ?? `${rdDi.data?.length ?? 0} rows`);
+
+    // S5 # deep-link suggestion + resolution boundary — both run AS THE CALLER, so the SAME RLS
+    // gates the picker and the per-viewer chip resolution. A client linking/resolving by id:
+    //   accessible (own visible) → resolves; cross-client or staff-only → 0 rows → "unavailable".
+    const lkProjOwn = await client.from("projects").select("id, title").eq("id", projPremier);
+    rec("messaging", "client CAN resolve OWN project (# link)", (lkProjOwn.data?.length ?? 0) === 1, `${lkProjOwn.data?.length ?? 0} rows`);
+    const lkProjCross = await client.from("projects").select("id, title").eq("id", projPulse);
+    rec("messaging", "client CANNOT resolve cross-client project (# unavailable)", (lkProjCross.data?.length ?? 0) === 0, `${lkProjCross.data?.length ?? 0} rows`);
+    const lkDelivOwn = await client.from("deliverables").select("id, title").eq("id", delivVisible);
+    rec("messaging", "client CAN resolve OWN visible deliverable (# link)", (lkDelivOwn.data?.length ?? 0) === 1, `${lkDelivOwn.data?.length ?? 0} rows`);
+    const lkDelivHidden = await client.from("deliverables").select("id, title").eq("id", delivHidden);
+    rec("messaging", "client CANNOT resolve staff-only deliverable (# unavailable)", (lkDelivHidden.data?.length ?? 0) === 0, `${lkDelivHidden.data?.length ?? 0} rows`);
+    const lkDelivCross = await client.from("deliverables").select("id, title").eq("id", delivPulse);
+    rec("messaging", "client CANNOT resolve cross-client deliverable (# unavailable)", (lkDelivCross.data?.length ?? 0) === 0, `${lkDelivCross.data?.length ?? 0} rows`);
+    const lkTaskOwn = await client.from("tasks").select("id, title").eq("id", visTaskId);
+    rec("messaging", "client CAN resolve OWN visible task (# link)", (lkTaskOwn.data?.length ?? 0) === 1, `${lkTaskOwn.data?.length ?? 0} rows`);
+    const lkTaskHidden = await client.from("tasks").select("id, title").eq("id", hidTaskId);
+    rec("messaging", "client CANNOT resolve staff-only task (# unavailable)", (lkTaskHidden.data?.length ?? 0) === 0, `${lkTaskHidden.data?.length ?? 0} rows`);
+    const lkTaskCross = await client.from("tasks").select("id, title").eq("id", xcTaskId);
+    rec("messaging", "client CANNOT resolve cross-client task (# unavailable)", (lkTaskCross.data?.length ?? 0) === 0, `${lkTaskCross.data?.length ?? 0} rows`);
+    // the suggestion query scoped to a CROSS-CLIENT id returns nothing (the picker can't offer it)
+    const lkSuggestCross = await client.from("projects").select("id").eq("client_id", pulseId);
+    rec("messaging", "client # suggestion scoped to cross-client yields 0", (lkSuggestCross.data?.length ?? 0) === 0, `${lkSuggestCross.data?.length ?? 0} rows`);
 
     // edit/delete (Batch 2): author-only + the internal boundary, BOTH ways
     const eInt = await client.rpc("edit_message", { p_message_id: mIntMsg, p_body: "hijack" });

@@ -46,8 +46,22 @@ ok("link: safe https href + rel survive", sanitizeRich(link).includes('href="htt
 const jsLink = '<p><a href="javascript:alert(1)">x</a></p>';
 ok("xss: javascript: URI stripped from href", !sanitizeRich(jsLink).toLowerCase().includes("javascript:"));
 
+// 4b) S5 # deep-link entity chips: the server resolver outputs a span with data-href (accessible)
+// or an "unavailable" span; both survive the client sanitize. The title is set via textContent
+// server-side (auto-escaped), so a malicious title renders inert.
+const entOk = '<p>see <span class="rd-entity" data-href="/clients/abc/tasks?task=123" role="link" tabindex="0">#Ship the homepage</span></p>';
+const entClean = sanitizeRich(entOk);
+ok("entity chip: resolved span (data-href) survives", entClean.includes('class="rd-entity"') && entClean.includes('data-href="/clients/abc/tasks?task=123"') && entClean.includes("#Ship the homepage"));
+const entGone = '<p>see <span class="rd-entity rd-entity--gone">#unavailable</span></p>';
+ok("entity chip: 'unavailable' span survives (no leak)", sanitizeRich(entGone).includes("rd-entity--gone") && sanitizeRich(entGone).includes("#unavailable"));
+const entTitleXss = '<span class="rd-entity" data-href="/tasks?task=1">#&lt;img src=x onerror=alert(1)&gt;</span>';
+ok("entity chip: a server-escaped malicious title stays inert (no <img>)", !sanitizeRich(entTitleXss).toLowerCase().includes("<img"));
+// a raw <a href="javascript:"> (not produced by us) is still stripped by the sanitizer
+const entJs = '<p><a class="rd-entity" href="javascript:alert(1)">#x</a></p>';
+ok("entity chip: javascript: href stripped by sanitizer", !sanitizeRich(entJs).toLowerCase().includes("javascript:"));
+
 // 5) XSS payloads stripped
-const xss = '<p>hi</p><script>alert(1)</script><img src=x onerror="alert(2)"><iframe src="https://evil"></iframe><p onclick="steal()">click</p>';
+const xss ='<p>hi</p><script>alert(1)</script><img src=x onerror="alert(2)"><iframe src="https://evil"></iframe><p onclick="steal()">click</p>';
 const xClean = sanitizeRich(xss).toLowerCase();
 ok("xss: <script> stripped", !xClean.includes("<script") && !xClean.includes("alert(1)"));
 ok("xss: <img onerror> stripped", !xClean.includes("<img") && !xClean.includes("onerror"));

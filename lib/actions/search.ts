@@ -67,3 +67,32 @@ export async function globalSearchAction(qRaw: string): Promise<SearchResults> {
   const total = clients.length + projects.length + tasks.length + deliverables.length + messages.length + documents.length;
   return { clients, projects, tasks, deliverables, messages, documents, total };
 }
+
+export type LinkableEntity = { type: "project" | "task" | "deliverable"; id: string; title: string };
+
+/**
+ * RLS-SCOPED suggestions for the chat "#" deep-link picker, constrained to ONE client (the
+ * thread's client). Runs AS THE CALLER through the user-scoped client (no SECURITY DEFINER, no
+ * view) — each entity table's own RLS does the filtering, so a CLIENT sees only their own
+ * client's projects/tasks/deliverables AND only client-visible tasks/deliverables (the
+ * visible_to_client gate); a TEAM member only assigned clients; admin all. The .eq(client_id)
+ * scopes to the thread's client and is itself RLS-bounded (a foreign clientId yields zero rows).
+ * A client therefore can never be offered another client's — or a staff-only — item to link.
+ */
+export async function searchLinkablesAction(clientId: string, qRaw: string): Promise<LinkableEntity[]> {
+  await requireProfile();
+  if (!clientId) return [];
+  const q = (qRaw ?? "").trim();
+  const supabase = await createClient(); // ← user-scoped: RLS inherited
+  const like = q.length >= 1 ? `%${escapeLike(q)}%` : "%";
+  const [p, t, d] = await Promise.all([
+    supabase.from("projects").select("id, title").eq("client_id", clientId).ilike("title", like).order("created_at", { ascending: false }).limit(6),
+    supabase.from("tasks").select("id, title").eq("client_id", clientId).ilike("title", like).order("created_at", { ascending: false }).limit(6),
+    supabase.from("deliverables").select("id, title").eq("client_id", clientId).ilike("title", like).order("created_at", { ascending: false }).limit(6),
+  ]);
+  const out: LinkableEntity[] = [];
+  for (const r of p.data ?? []) out.push({ type: "project", id: r.id as string, title: r.title as string });
+  for (const r of t.data ?? []) out.push({ type: "task", id: r.id as string, title: r.title as string });
+  for (const r of d.data ?? []) out.push({ type: "deliverable", id: r.id as string, title: r.title as string });
+  return out;
+}

@@ -7,7 +7,9 @@ import DOMPurify from "isomorphic-dompurify";
 // round-trip/XSS test (scripts/test-content-format.ts).
 export const RICH_SANITIZE = {
   ALLOWED_TAGS: ["p", "br", "strong", "b", "em", "i", "u", "s", "code", "pre", "blockquote", "ul", "ol", "li", "h3", "span", "a"],
-  ALLOWED_ATTR: ["class", "href", "target", "rel", "data-id", "data-label", "data-type"],
+  // data-href/role/tabindex carry the S5 #-link chip (a span the client turns into a deep-link on
+  // click; the href is set ONLY by the server resolver from an internal route, never author input).
+  ALLOWED_ATTR: ["class", "href", "target", "rel", "data-id", "data-label", "data-type", "data-href", "role", "tabindex"],
 };
 
 export function sanitizeRich(html: string): string {
