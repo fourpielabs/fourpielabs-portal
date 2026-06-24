@@ -62,27 +62,40 @@ try {
   rec("edit opens the TipTap composer pre-filled (bold survives into editor)", await waitFor(cp, () => editor.locator("strong").count().then((c) => c > 0)));
   rec("edit composer pre-fills the #-link chip", await editor.locator('.rd-entity:has-text("ZZS6TASK")').count() > 0);
   await cp.screenshot({ path: `${OUT}/editing_rich.png`, fullPage: true });
-  await editor.click();
-  await cp.keyboard.press("End");
-  await cp.keyboard.type(" EDITED");
+  // Append " EDITED" to the END of the contenteditable. Headless typing into a freshly-mounted
+  // TipTap editor can drop keystrokes if it fires before the editor is focus-ready, so: focus the
+  // contenteditable, move the caret to the very end, type via pressSequentially (per-key, reliable
+  // for contenteditable), then FAIL FAST if the append didn't land — retry the focus+type once.
+  let typed = false;
+  for (let attempt = 0; attempt < 2 && !typed; attempt++) {
+    await editor.click();
+    await cp.waitForTimeout(150);
+    await cp.keyboard.press("Control+End");
+    await editor.pressSequentially(" EDITED", { delay: 25 });
+    await cp.waitForTimeout(200);
+    typed = (await editor.innerText()).includes("EDITED");
+  }
+  rec("typed append landed in the editor before Save", typed);
   await bubble.getByRole("button", { name: "Save" }).click();
   await cp.waitForTimeout(1800);
 
-  // after edit: formatting + #-link PRESERVED, body text updated, (edited) shown
+  // after edit: formatting + #-link PRESERVED, body text updated, (edited) shown. NB: match
+  // "linked EDITED" (the appended word after the chip label) — a bare `text=EDITED` would also
+  // match the "(edited)" tag (case-insensitive substring) and give a false positive.
   rec("after edit: bold formatting PRESERVED (body_rich not cleared)", await waitFor(cp, () => bubbleOf(cp, "ZZS6BOLD").locator("strong").count().then((c) => c > 0)));
   rec("after edit: #-link chip PRESERVED", await bubbleOf(cp, "ZZS6BOLD").locator('.rd-entity:has-text("ZZS6TASK")').count() > 0);
-  rec("after edit: new text saved (EDITED)", await bubbleOf(cp, "ZZS6BOLD").locator('text=EDITED').count() > 0);
+  rec("after edit: new text saved (… linked EDITED)", await waitFor(cp, () => bubbleOf(cp, "ZZS6BOLD").locator("text=/linked EDITED/").count().then((c) => c > 0)));
   rec("after edit: (edited) tag shows", await bubbleOf(cp, "ZZS6BOLD").locator('text=/\\(edited\\)/').count() > 0);
   await cp.screenshot({ path: `${OUT}/edited_tag.png`, fullPage: true });
 
-  // DB: body_rich was UPDATED (still has <strong> + the entity ref), edited_at set, not cleared
-  // poll: the edit dispatch is deferred (setTimeout) + the action is cold, so the commit lands a
-  // beat after the optimistic UI update.
+  // DB: body_rich was UPDATED (still has <strong> + the entity ref), edited_at set, not cleared.
+  // Poll: the edit dispatch is deferred (setTimeout) + the action can be cold, so the commit lands
+  // a beat after the optimistic UI update.
   let stored = null;
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 30; i++) {
     stored = (await admin.from("messages").select("body, body_rich, edited_at").eq("client_id", clientId).ilike("body", "%ZZS6BOLD%").maybeSingle()).data;
     if (stored?.edited_at && stored.body.includes("EDITED")) break;
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 700));
   }
   rec("DB: edited body_rich preserved (strong + entity ref), edited_at set", !!stored && !!stored.body_rich && stored.body_rich.includes("<strong>") && stored.body_rich.includes(`data-id="${task}"`) && !!stored.edited_at && stored.body.includes("EDITED"));
   rec("no client console errors", cerrs.length === 0, cerrs.slice(0, 1).join("").slice(0, 140));

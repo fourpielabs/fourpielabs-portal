@@ -46,7 +46,7 @@ the Pencil handler but not the composer handler.)
 | `tsc` / `build` | clean / green (TipTap still code-split) |
 | `npm run test:rls` | **398 / 398** (was 396; +2 edit-with-body_rich checks) |
 | `npm run test:content` (sanitize/XSS) | 28 / 28 |
-| `node scripts/verify-s6.mjs` (E2E) | **14 / 14** |
+| `node scripts/verify-s6.mjs` (E2E) | **15 / 15** |
 | ESLint (S6 files) | clean¹ |
 
 **E2E proves:** editing a rich message **preserves bold + the #-link chip** (DB confirms
@@ -58,6 +58,14 @@ inert** (no `<img>`/`<script>`, no execution). **RLS:** client edits own-shared 
 
 ¹ The one remaining ESLint error is the **pre-existing** `set-state-in-effect` in the unchanged
 search-debounce effect (present on `main`) — out of S6 scope.
+
+**E2E hardening (during the merge-to-main verify):** the edit-append step now focuses the
+contenteditable, moves the caret to the end, types via `pressSequentially`, and **fails fast** if
+the append didn't land (headless typing into a freshly-mounted TipTap editor could drop keystrokes
+before it was focus-ready) — a 15th check. The post-edit text assertion was tightened from a bare
+`text=EDITED` (which also matched the **"(edited)"** tag, a false positive) to `text=/linked
+EDITED/`. The underlying feature was always correct — the composer round-trips `body_rich` and the
+edit persists via the RPC; only the test's typing was flaky. 15/15, stable across reruns.
 
 Screenshots: `editing_rich` (edit composer pre-filled with bold + #-link), `edited_tag` (the
 edited message: bold + chip preserved + "(edited)"; the unedited one has no tag), `dark_edited`.
