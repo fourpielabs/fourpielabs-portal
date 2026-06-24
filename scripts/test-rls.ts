@@ -818,6 +818,12 @@ async function main() {
     rec("messaging", "client delete ANOTHER author's message DENIED", !!dOther.error, dOther.error?.message ?? "");
     const eOwn = await client.rpc("edit_message", { p_message_id: mClientEdit, p_body: "RLSED-client-edit (edited)" });
     rec("messaging", "client edits OWN shared message allowed", !eOwn.error, eOwn.error?.message ?? "");
+    // S6 re-rich-ify: an edit now PRESERVES body_rich (the seam closed). Edit own shared WITH
+    // body_rich → stored; edit an INTERNAL message with body_rich → still DENIED (boundary holds).
+    const eRich = await client.rpc("edit_message", { p_message_id: mClientEdit, p_body: "RLSED-rich", p_body_rich: "<p><strong>edited rich</strong></p>" });
+    rec("messaging", "client edit OWN shared with body_rich allowed + stored", !eRich.error && (eRich.data as { body_rich?: string } | null)?.body_rich === "<p><strong>edited rich</strong></p>", eRich.error?.message ?? "");
+    const eRichInt = await client.rpc("edit_message", { p_message_id: mIntMsg, p_body: "x", p_body_rich: "<p>x</p>" });
+    rec("messaging", "client edit INTERNAL with body_rich DENIED (boundary)", !!eRichInt.error, eRichInt.error?.message ?? "");
     const dOwn = await client.rpc("delete_message", { p_message_id: mClientDel });
     rec("messaging", "client deletes OWN shared message allowed", !dOwn.error, dOwn.error?.message ?? "");
     const cGone = await client.from("messages").select("id").eq("id", mClientDel);

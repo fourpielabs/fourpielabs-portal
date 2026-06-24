@@ -393,6 +393,29 @@ export async function editMessageAction(messageId: string, body: string, bodyRic
   return { ok: true };
 }
 
+/**
+ * S6 re-rich-ify edit: fetch a message's RAW (authored) body_rich to pre-fill the TipTap edit
+ * composer — so formatting / @mentions / #-links round-trip through an edit. AUTHOR-ONLY (mirrors
+ * the edit_message gate): we return the raw body_rich ONLY for the caller's own, non-deleted
+ * message. So this adds no read path into anyone else's content — a client can't pull the raw,
+ * unresolved body_rich (with entity titles) of a staff message; you can only edit (and pre-fill)
+ * what you authored.
+ */
+export async function getMessageForEditAction(messageId: string): Promise<{ body: string; bodyRich: string | null } | null> {
+  const me = await requireProfile();
+  // load-bearing: the RLS-scoped USER client is part of the boundary here — do NOT swap to the
+  // admin client. The explicit author_id check below is sufficient on its own, but the RLS read
+  // is defense-in-depth; an admin-client refactor would silently make this a cross-author read.
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("messages")
+    .select("body, body_rich, author_id, deleted_at")
+    .eq("id", messageId)
+    .maybeSingle();
+  if (!data || data.author_id !== me.id || data.deleted_at) return null;
+  return { body: data.body as string, bodyRich: (data.body_rich as string) ?? null };
+}
+
 export async function deleteMessageAction(messageId: string): Promise<Result> {
   await requireProfile();
   const supabase = await createClient();

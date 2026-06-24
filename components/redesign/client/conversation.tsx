@@ -13,7 +13,7 @@ import { REACTION_EMOJIS, QUICK_REACT } from "@/lib/emoji";
 import type { TaskMember } from "@/lib/tasks";
 import {
   postMessageAction, getThreadMessagesAction, markThreadViewedAction, getThreadParticipantsAction,
-  editMessageAction, deleteMessageAction, searchThreadMessagesAction, createTaskFromChatAction,
+  editMessageAction, getMessageForEditAction, deleteMessageAction, searchThreadMessagesAction, createTaskFromChatAction,
   type ThreadMessage, type ThreadParticipant,
 } from "@/lib/actions/messages";
 import { getThreadReactionsAction, toggleReactionAction, type ReactionGroup } from "@/lib/actions/reactions";
@@ -72,7 +72,7 @@ export function Conversation({
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editBody, setEditBody] = useState("");
+  const [editDraft, setEditDraft] = useState<string | null>(null); // S6: raw body_rich pre-fill for the edit composer
   const [replyingTo, setReplyingTo] = useState<ThreadMessage | null>(null);
   const [reactions, setReactions] = useState<Record<string, ReactionGroup[]>>({});
   const [typers, setTypers] = useState<Typer[]>([]);
@@ -160,17 +160,32 @@ export function Conversation({
     void setTypingAction(threadId);
   }
 
-  function startEdit(m: ThreadMessage) { setEditingId(m.id); setEditBody(m.body); }
-  function cancelEdit() { setEditingId(null); setEditBody(""); }
-  async function saveEdit(m: ThreadMessage) {
-    const text = editBody.trim();
+  // S6: open the rich edit composer pre-filled with the message's RAW authored body_rich (so
+  // formatting / @mentions / #-links round-trip the edit). Author-only fetch (the edit gate).
+  async function startEdit(m: ThreadMessage) {
+    const raw = await getMessageForEditAction(m.id).catch(() => null);
+    setEditDraft(raw?.bodyRich ?? (raw?.body ? `<p>${raw.body.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c] as string))}</p>` : "<p></p>"));
+    setEditingId(m.id);
+  }
+  function cancelEdit() { setEditingId(null); setEditDraft(null); }
+  // S6 re-rich-ify: editing now PRESERVES/updates body_rich (TipTap), not clears it. Apply the
+  // optimistic update + close the editor, then DEFER the editMessageAction dispatch to a fresh
+  // task: a server action dispatched directly from the (dynamically-imported) edit composer's
+  // Save handler is severed when that composer unmounts — the timer dispatches from the still-
+  // mounted conversation context instead.
+  function saveEdit(m: ThreadMessage, payload: { text: string; html: string }) {
+    const text = payload.text.trim();
     if (!text) return;
+    const newRich = payload.html || null;
     const prev = { body: m.body, bodyRich: m.bodyRich, edited: m.editedAt };
-    // inline edit is plain-text → the edited message renders as plain (body_rich cleared).
-    setMessages((xs) => xs.map((x) => (x.id === m.id ? { ...x, body: text, bodyRich: null, editedAt: new Date().toISOString() } : x)));
-    setEditingId(null); setEditBody("");
-    const res = await editMessageAction(m.id, text, null);
-    if (!res.ok) { setMessages((xs) => xs.map((x) => (x.id === m.id ? { ...x, body: prev.body, bodyRich: prev.bodyRich, editedAt: prev.edited } : x))); toast.error("Couldn't edit", { description: res.error }); }
+    setMessages((xs) => xs.map((x) => (x.id === m.id ? { ...x, body: text, bodyRich: newRich, editedAt: new Date().toISOString() } : x)));
+    setEditingId(null); setEditDraft(null);
+    setTimeout(() => { void persistEdit(m.id, text, newRich, prev); }, 0);
+  }
+  async function persistEdit(id: string, text: string, newRich: string | null, prev: { body: string; bodyRich: string | null; edited: string | null }) {
+    const res = await editMessageAction(id, text, newRich);
+    if (!res.ok) { setMessages((xs) => xs.map((x) => (x.id === id ? { ...x, body: prev.body, bodyRich: prev.bodyRich, editedAt: prev.edited } : x))); return void toast.error("Couldn't edit", { description: res.error }); }
+    void fullRefetch(); // re-resolve #-links + canonicalize the edited body_rich per-viewer
   }
   async function deleteMessage(m: ThreadMessage) {
     removedRef.current.add(m.id);
@@ -348,13 +363,13 @@ export function Conversation({
             <span style={{ fontWeight: 600, color: fg2 }}>{mine ? "You" : m.authorName}</span>
             {!mine && m.authorRole === "client" && <span style={{ borderRadius: 999, background: surface2, padding: "1px 6px", fontSize: 9, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: fg2 }}>Client</span>}
             <span className="rd-tnum">{formatRelative(m.createdAt)}</span>
-            {m.editedAt && <span style={{ color: fg3 }}>· edited</span>}
+            {m.editedAt && <span title={`Edited ${formatRelative(m.editedAt)}`} style={{ color: fg3, fontStyle: "italic" }}>(edited)</span>}
             {!isReply && !isTmp && editingId !== m.id && (
               <button type="button" onClick={() => startReply(m)} aria-label="Reply to message" className="rd-focus" style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center", justifyContent: "center", borderRadius: 999, border: "none", background: "none", cursor: "pointer", color: fg3 }}><Reply size={12} /></button>
             )}
             {mine && !isTmp && editingId !== m.id && (
               <>
-                <button type="button" onClick={() => startEdit(m)} aria-label="Edit message" className="rd-focus" style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center", justifyContent: "center", borderRadius: 999, border: "none", background: "none", cursor: "pointer", color: fg3 }}><Pencil size={12} /></button>
+                <button type="button" onClick={() => void startEdit(m)} aria-label="Edit message" className="rd-focus" style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center", justifyContent: "center", borderRadius: 999, border: "none", background: "none", cursor: "pointer", color: fg3 }}><Pencil size={12} /></button>
                 <DeleteMessageButton color={fg3} onConfirm={() => deleteMessage(m)} />
               </>
             )}
@@ -378,14 +393,24 @@ export function Conversation({
             )}
           </div>
           {editingId === m.id ? (
-            <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 6 }}>
-              <textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={2} autoFocus
-                onKeyDown={(e) => { if (e.key === "Escape") cancelEdit(); if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void saveEdit(m); } }}
-                style={{ resize: "none", fontSize: 14, borderRadius: 8, border: `1px solid ${border}`, background: surface, color: fg1, padding: 8, outline: "none" }} />
-              <div style={{ display: "flex", gap: 8 }}>
-                <EmberButton size="small" onClick={() => void saveEdit(m)} disabled={!editBody.trim()}>Save</EmberButton>
-                <Button size="small" appearance="subtle" onClick={cancelEdit}>Cancel</Button>
-              </div>
+            <div style={{ marginTop: 4 }}>
+              {/* S6 re-rich-ify: edit via the SAME TipTap composer, pre-filled with the RAW authored
+                  body_rich so formatting / @mentions / #-links survive the edit (body_rich updated, not cleared). */}
+              <RichComposer
+                participants={participants}
+                placeholder="Edit your message…  ( ⌘↵ to save · Esc to cancel )"
+                sending={false}
+                canSendWhenEmpty={false}
+                sendLabel="Save"
+                onSend={(p) => void saveEdit(m, p)}
+                onCancel={cancelEdit}
+                onAttach={() => {}}
+                showAttach={false}
+                initialHTML={editDraft ?? "<p></p>"}
+                autoFocus
+                linkClientId={taskContext?.clientId}
+                border={border} surface={surface} fg1={fg1} fg2={fg2} onDark={onDark}
+              />
             </div>
           ) : (
             <>

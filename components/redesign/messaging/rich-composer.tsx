@@ -74,9 +74,13 @@ export function RichComposer({
   onAttach,
   onTask,
   onType,
+  onCancel,
   showTask,
+  showAttach = true,
   taskBusy,
   linkClientId,
+  initialHTML,
+  autoFocus,
   registerApi,
   border,
   surface,
@@ -93,9 +97,13 @@ export function RichComposer({
   onAttach: () => void;
   onTask?: (text: string) => void;
   onType?: () => void;
+  onCancel?: () => void;      // S6: inline edit — renders a Cancel button + Esc cancels
   showTask?: boolean;
+  showAttach?: boolean;       // S6: hide Attach when reused as the inline edit composer
   taskBusy?: boolean;
   linkClientId?: string; // S5: the thread's client — scopes the # entity-link suggestions (RLS-bounded)
+  initialHTML?: string;      // S6: pre-fill (the message's RAW authored body_rich) for re-rich edit
+  autoFocus?: boolean;
   registerApi?: (api: RichComposerApi) => void;
   border: string;
   surface: string;
@@ -129,6 +137,8 @@ export function RichComposer({
 
   const editor = useEditor({
     immediatelyRender: false, // SSR-safe (avoids hydration mismatch)
+    content: initialHTML ?? "", // S6: pre-fill for inline edit (the message's raw authored body_rich)
+    autofocus: autoFocus ? "end" : false,
     onUpdate: () => onType?.(), // emit a typing signal to the parent (debounced there)
     extensions: [
       StarterKit.configure({ heading: { levels: [3] } }),
@@ -222,8 +232,10 @@ export function RichComposer({
     editorProps: {
       attributes: { class: "rd-richeditor", "aria-label": "Message" },
       handleKeyDown: (_view, event) => {
-        // ⌘↵ / Ctrl↵ sends — but let the mention dropdown consume Enter when open
+        // ⌘↵ / Ctrl↵ sends — but let the mention/entity dropdown consume Enter when open
         if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); doSend(); return true; }
+        // Esc cancels an inline edit (only when a suggestion popup isn't open to consume it)
+        if (event.key === "Escape" && onCancel && !mentionState && !entityState) { event.preventDefault(); onCancel(); return true; }
         return false;
       },
     },
@@ -278,7 +290,7 @@ export function RichComposer({
         <button type="button" aria-pressed={active?.bold} onClick={() => editor?.chain().focus().toggleBold().run()} aria-label="Bold" className="rd-focus" style={tool(active?.bold)}><Bold size={14} /> Bold</button>
         <button type="button" aria-pressed={active?.italic} onClick={() => editor?.chain().focus().toggleItalic().run()} aria-label="Italic" className="rd-focus" style={tool(active?.italic)}><Italic size={14} /> Italic</button>
         <button type="button" aria-pressed={active?.bullet} onClick={() => editor?.chain().focus().toggleBulletList().run()} aria-label="Bulleted list" className="rd-focus" style={tool(active?.bullet)}><List size={14} /> List</button>
-        <button type="button" onClick={onAttach} disabled={sending} aria-label="Attach a file" className="rd-focus" style={tool()}><Paperclip size={14} /> Attach</button>
+        {showAttach && <button type="button" onClick={onAttach} disabled={sending} aria-label="Attach a file" className="rd-focus" style={tool()}><Paperclip size={14} /> Attach</button>}
         {showTask && <button type="button" disabled={taskBusy} onClick={() => onTask?.(editor?.getText().trim() ?? "")} aria-label="Create a task" className="rd-focus" style={tool(false)}><ListPlus size={14} /> Task</button>}
       </div>
 
@@ -286,6 +298,7 @@ export function RichComposer({
         <div style={{ flex: 1, minWidth: 0, borderRadius: 10, border: `1px solid ${border}`, background: surface, padding: "8px 12px" }}>
           <EditorContent editor={editor} />
         </div>
+        {onCancel && <button type="button" onClick={onCancel} className="rd-focus" style={tool()}>Cancel</button>}
         <EmberButton onClick={doSend} loading={sending} disabled={(active?.empty ?? true) && !canSendWhenEmpty} icon={<Send size={16} />}>{sendLabel}</EmberButton>
 
         {mentionState && mentionState.items.length > 0 && (
